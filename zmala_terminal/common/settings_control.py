@@ -43,7 +43,7 @@ class SettingsControl:
         if token != getattr(self, 'ringtone_preview_token', None):
             power.stop_preview()
             self.ringtone_preview_token = token
-            self.ringtone_preview_due = now+.4
+            self.ringtone_preview_due = now
             self.ringtone_preview_started = False
         state = ''
         if token:

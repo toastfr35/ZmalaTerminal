@@ -1,10 +1,18 @@
 """Desktop substitutes for Pi-only power and television services.
 
 Windows call ringing stays in the native call engine. These objects deliberately
-perform no USB, CEC, I2C or background-thread work; they preserve the disabled
-Pi adapters' externally visible behaviour used by the shared controllers.
+perform no USB, CEC or I2C work. Ringtone previews use the Windows sound device
+with independent gain and a bounded, cancellable playback timer.
 """
 from pathlib import Path
+import threading
+import wave
+
+
+def play_sound(file):
+    import winsound
+    winsound.PlaySound(str(file) if file else None,
+                      winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT if file else 0)
 
 
 class DesktopFan:
@@ -58,6 +66,11 @@ class DesktopPower:
         self.ringtone_file = Path(root) / 'common/assets/gentle-chime.wav'
         self.ringtone_volume = 50
         self.ringtone_preview_status = ''
+        from zmala_terminal.linux.sound_levels import ToneLevels
+        self.tone_levels = ToneLevels()
+        self.preview_lock = threading.RLock()
+        self.preview_timer = None
+        self.preview_generation = 0
 
     def require(self, urgent=False):
         return True
@@ -67,18 +80,50 @@ class DesktopPower:
 
     def update(self, active, battery, ringing=False):
         self.ringing = ringing
+        if ringing:
+            self.stop_preview()
 
     def set_ringtone(self, file, percent=50):
         self.ringtone_file = Path(file)
         self.ringtone_volume = percent
 
+    # @llr LLR-TERM-AUDIO-009
     def preview_tone(self, file):
-        # Desktop previews were not played by the disabled Linux adapter either.
-        if not self.ringing and not self.stopped:
-            self.ringtone_preview_status = 'waiting'
+        with self.preview_lock:
+            self.stop_preview()
+            if self.ringing or self.stopped:
+                return
+            if not self.ringtone_volume:
+                self.ringtone_preview_status = 'muted'
+                return
+            try:
+                prepared = self.tone_levels.prepare(file, self.ringtone_volume)
+                with wave.open(str(prepared), 'rb') as audio:
+                    duration = min(10, audio.getnframes()/audio.getframerate())
+                play_sound(prepared)
+                self.ringtone_preview_status = 'playing'
+                generation = self.preview_generation
+                self.preview_timer = threading.Timer(duration, self.finish_preview, (generation,))
+                self.preview_timer.daemon = True
+                self.preview_timer.start()
+            except (OSError, ValueError, RuntimeError, wave.Error):
+                self.stop_preview()
+                self.ringtone_preview_status = 'error'
+
+    def finish_preview(self, generation):
+        with self.preview_lock:
+            if generation == self.preview_generation:
+                self.stop_preview()
 
     def stop_preview(self):
-        self.ringtone_preview_status = ''
+        with self.preview_lock:
+            self.preview_generation += 1
+            if self.preview_timer:
+                self.preview_timer.cancel()
+                self.preview_timer = None
+            if self.ringtone_preview_status == 'playing':
+                play_sound(None)
+            self.ringtone_preview_status = ''
 
     def stop_ringing(self):
         self.ringing = False
@@ -87,6 +132,7 @@ class DesktopPower:
     def close(self):
         self.stopped = True
         self.stop_ringing()
+        self.tone_levels.close()
 
 
 class DesktopRemote:

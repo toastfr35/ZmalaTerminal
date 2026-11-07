@@ -487,12 +487,12 @@ inside the small-window layout.
 | Ringtone volume | 0–100%, in 5% steps; incoming/outgoing tones and previews |
 | Button sounds volume | 0–100%, in 5% steps; idle navigation feedback |
 | Portraits | Three/five; short contact lists retain three positions |
-| Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
+| Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |
 | Reset to factory defaults | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
-Preview starts after 400 ms without another selection and plays for at most ten
+Preview starts as soon as the highlighted audio is ready and plays for at most ten
 seconds through the C20 at Ringtone volume. The Ringtone volume editor also previews the selected tone. It waits for a waking C20;
 zero volume remains silent. Green saves the choice after server acknowledgement;
 red cancels it. Leaving the editor or receiving a call stops preview immediately.

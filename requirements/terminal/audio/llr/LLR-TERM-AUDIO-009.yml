@@ -29,17 +29,21 @@ references:
   type: file
 - path: zmala_terminal/linux/sound_levels.py
   type: file
+- path: zmala_terminal/windows/platform_services.py
+  type: file
 reviewed: null
 scope: Core
 text: |
   Settings shall offer the server ringtone list, defaulting to Nokia. In its editor,
   left from the first choice shall wrap to the last, and right from the last shall
   wrap to the first; moving shall not change the saved choice. A highlighted
-  editor choice shall preview after 400 ms without selection changes, through C10/C20
+  editor choice shall preview as soon as its audio is ready after each selection change, through C10/C20
   at the independently configured ringtone volume. Preview shall wait for media readiness and
   hardware readiness, respect ringtone mute independently of call mute and stop after ten seconds or earlier at file
   end, selection change, cancellation, leaving the editor, incoming call or shutdown.
   Preview shall work without USB power switching; incoming calls take priority.
+  Windows acceptance shall preview through the desktop sound output with the
+  same independent volume, mute, replacement and ten-second limit.
   The saved choice shall ring incoming calls, temporarily falling back to Nokia
   if its download is unavailable. Preview errors shall show feedback without
   changing the saved choice.
@@ -52,5 +56,5 @@ text: |
 verification: |
   Inject catalog, path, PCM/hash and download errors, valid/corrupt cache files and
   reset cancellation. Control time, player outcomes, readiness and volume; check
-  debounce, routing, mute, cutoff, replacement, call priority, disabled power switching
+  immediate selection playback, routing, mute, cutoff, replacement, call priority, disabled power switching
   and cleanup. Exercise both wrapping boundaries and a one-choice catalog. Render supported languages/layouts. Check actual C10/C20 output separately.

@@ -1,7 +1,7 @@
 # @test T-LLT-083
 # @requirements LLR-TERM-AUDIO-009, LLR-TERM-CONFIG-021
 # @environment portable
-# @plan Exercise left/right wrap across both ringtone boundaries and a one-choice catalog without changing configuration, while speaker-volume boundaries remain clamped. Validate catalog IDs, names, paths, membership and normalized PCM hashes/limits. Exercise cache download, reuse, corruption, retry and reset cancellation with disposable files. Control player time, C20 readiness/volume and process outcomes to assert preview debounce, ten-second cutoff, selection replacement, incoming-call priority, mute and cleanup. Drive the real settings controller and verify cancellation, incoming-call interruption and requested file routing with substituted playback.
+# @plan Exercise left/right wrap across both ringtone boundaries and a one-choice catalog without changing configuration, while speaker-volume boundaries remain clamped. Validate catalog IDs, names, paths, membership and normalized PCM hashes/limits. Exercise cache download, reuse, corruption, retry and reset cancellation with disposable files. Control player time, C20 readiness/volume and process outcomes to assert immediate preview, ten-second cutoff, selection replacement, incoming-call priority, mute and cleanup. Drive the real settings controller and verify cancellation, incoming-call interruption and requested file routing with substituted playback.
 # @pass All named assertions pass without playing sound or contacting a live server; actual speaker audibility remains hardware verification.
 import hashlib
 from pathlib import Path
@@ -141,17 +141,40 @@ class RingtoneTests(unittest.TestCase):
         self.assertEqual(popen.call_args.args[0][3],'default:C20')
         self.assertEqual(power.ringtone_preview_status,'playing')
 
-    def test_setting_preview_debounce_cancel_and_call_interruption(self):
+    def test_setting_preview_immediate_cancel_and_call_interruption(self):
         c=test_local_settings.LocalSettingsTests().controller();c.generation=1;c.settings_open=True;c.settings_draft=SettingsDraft()
         c.usb_power=Mock(enabled=True,ringtone_preview_status='playing');c.engine=None
         c.settings_draft.row=FIELDS.index('ringtone');c.settings_draft.open(c.model.config)
-        c.tick_ringtone(100);c.tick_ringtone(100.39);c.usb_power.preview_tone.assert_not_called()
-        c.tick_ringtone(100.4);c.usb_power.preview_tone.assert_called_once_with(DEFAULT_SOUND)
+        c.tick_ringtone(100);c.usb_power.preview_tone.assert_called_once_with(DEFAULT_SOUND)
         c.tick_ringtone(101);self.assertEqual(c.usb_power.preview_tone.call_count,1)
         c.settings_button('red');c.tick_ringtone(102)
         self.assertIsNone(c.ringtone_preview_token);self.assertEqual(c.ringtone_preview_state,'')
         c.settings_draft.open(c.model.config);c.tick_ringtone(103);c.model.state=State.RINGING;c.tick_ringtone(104)
-        self.assertIsNone(c.ringtone_preview_token);self.assertEqual(c.usb_power.preview_tone.call_count,1)
+        self.assertIsNone(c.ringtone_preview_token);self.assertEqual(c.usb_power.preview_tone.call_count,2)
+
+    @patch('zmala_terminal.windows.platform_services.play_sound')
+    @patch('zmala_terminal.windows.platform_services.threading.Timer')
+    def test_windows_preview_replaces_stops_and_obeys_mute(self, timer, play):
+        from zmala_terminal.windows.platform_services import DesktopPower
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'tone.wav'; path.write_bytes(sound())
+            power = DesktopPower(folder)
+            try:
+                power.preview_tone(path)
+                self.assertEqual(power.ringtone_preview_status,'playing')
+                self.assertAlmostEqual(timer.call_args.args[0],.1)
+                old = power.preview_generation
+                power.preview_tone(path); before=play.call_count
+                power.finish_preview(old); self.assertEqual(play.call_count,before)
+                power.finish_preview(power.preview_generation); play.assert_called_with(None)
+                self.assertEqual(power.ringtone_preview_status,'')
+                power.ringtone_volume=0; before=play.call_count; power.preview_tone(path)
+                self.assertEqual(play.call_count,before); self.assertEqual(power.ringtone_preview_status,'muted')
+                power.ringtone_volume=50; power.preview_tone(path); power.update(False,None,ringing=True)
+                self.assertEqual(power.ringtone_preview_status,'')
+                power.preview_tone(path); self.assertEqual(power.ringtone_preview_status,'')
+            finally:
+                power.close()
 
     def test_sdk_ringtone_is_reapplied_to_a_recreated_core(self):
         for platform in ('linux','win32'):

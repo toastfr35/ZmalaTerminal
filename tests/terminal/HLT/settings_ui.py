@@ -6,7 +6,7 @@
 # Render the exit confirmation in every supported language at both sizes; verify bounded question/buttons, red returns to the same selection and green exits without modifying configuration.
 # Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-card portrait/framing previews, five-card language/ringtone carousels and the persistent corner logo.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
-# Render the ringtone editor and exercise its debounced preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
+# Render the ringtone editor and exercise its immediate preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Real Tk settings navigation/layout without SIP, camera or enrollment side effects."""
@@ -170,9 +170,7 @@ try:
     assert app.settings_canvas.find_withtag('settings-choice-0')
     assert app.settings_canvas.find_withtag('settings-choice-1')
     assert len(app.settings_canvas.find_withtag('settings-choice')) == 6  # Five cards plus selected outline.
-    app.tick_ringtone(1000); app.tick_ringtone(1000.39)
-    app.usb_power.preview_tone.assert_not_called()
-    app.tick_ringtone(1000.4); app.root.update()
+    app.tick_ringtone(1000); app.root.update()
     app.usb_power.preview_tone.assert_called_once()
     assert app.settings_canvas.find_withtag('ringtone-preview')
     app.press('left'); app.root.update()
