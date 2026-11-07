@@ -1,4 +1,4 @@
-"""Play uploaded GIF portraits once after the selected carousel card settles.
+"""Prepare uploaded GIF portraits early and play only the settled selected card.
 
 Static portrait rendering remains the fallback during navigation and calls. All Tk objects
 are created on the UI thread, in small batches, and retained under a 64 MiB cap.
@@ -15,6 +15,7 @@ import logging
 from PIL import Image
 
 LIMIT = 64 * 1024 * 1024
+PRELOAD_LIMIT = 48 * 1024 * 1024
 
 
 # @llr LLR-TERM-UI-026
@@ -49,6 +50,10 @@ class PortraitAnimation:
         self.completed = 0
         self.error_count = 0
         self.cache = OrderedDict()
+        self.preloaded = OrderedDict()
+        self.preload_targets = ()
+        self.preload_attempted = set()
+        self.preload_retry_at = 0
         self.results = queue.Queue()
         self.loading = None
         self.build = None
@@ -87,17 +92,40 @@ class PortraitAnimation:
         except queue.Empty:
             return
         self.loading = None
-        if key != self.key:
-            return  # Navigation invalidates a late preparation result.
+        if key != self.key and key not in self.preload_targets:
+            return  # The contact or its display size changed while decoding.
         if error:
             self.failures.add(key)
             logging.warning("Animated portrait unavailable: %s", error)
             return
+        if key == self.key:
+            self.start_build(key, *result)
+            return
         pngs, durations = result
+        needed = sum(map(len, pngs))
+        if needed <= PRELOAD_LIMIT:
+            while self.preloaded and sum(value[2] for value in self.preloaded.values()) + needed > PRELOAD_LIMIT:
+                self.preloaded.popitem(last=False)
+            self.preloaded[key] = (pngs, durations, needed)
+        self.preload_attempted.add(key)
+
+    def start_build(self, key, pngs, durations):
         needed = len(pngs) * key[1] * key[1] * 4
         while self.cache and sum(v[2] for v in self.cache.values()) + needed > LIMIT:
             self.cache.popitem(last=False)
         self.build = (key, pngs, durations, [], needed)
+        self.preload_attempted.add(key)
+
+    def preload(self, now):
+        if self.loading or self.build or now < self.preload_retry_at:
+            return
+        for key in self.preload_targets:
+            if key not in self.preload_attempted and key not in self.cache:
+                self.request(key)
+                if self.loading:
+                    return
+        # Some files may still be downloading. Avoid probing every Tk tick.
+        self.preload_retry_at = now + 1
 
     def build_images(self):
         if not self.build:
@@ -130,6 +158,7 @@ class PortraitAnimation:
         self.visible_photo = None
         self.build = None
         self.cache.clear()
+        self.preloaded.clear()
 
     def tick(self):
         app = self.app
@@ -150,7 +179,9 @@ class PortraitAnimation:
                 and selected["id"] == target[0]
             )
             photo = selected.get("photo", "") if selected else ""
-            key = (photo, target[1]) if eligible and photo.endswith(".gif") else None
+            key = None
+            if eligible and photo.endswith(".gif") and app.avatar.find_withtag("portrait-preview-target"):
+                key = (photo, target[1])
             if key != self.key:
                 self.key = key
                 self.armed = True
@@ -158,14 +189,32 @@ class PortraitAnimation:
                 self.frame = -1
                 self.visible_photo = None
                 self.painted_item = None
-            if app.model.state != State.HOME:
+            if app.model.state != State.HOME or app.setup_stage:
                 self.cache.clear()
-                self.build = None  # Calls retain no animation image cache.
+                self.preloaded.clear()
+                self.preload_targets = ()
+                self.preload_attempted.clear()
+                self.build = None
+            elif eligible:
+                targets = tuple(dict.fromkeys(
+                    (person["photo"], target[1]) for person in (selected, *app.model.contacts)
+                    if person.get("photo", "").endswith(".gif")
+                ))
+                if targets != self.preload_targets:
+                    self.preload_targets = targets
+                    self.preload_attempted.intersection_update(targets)
+                    for obsolete in self.preloaded.keys() - set(targets):
+                        del self.preloaded[obsolete]
+                    self.preload_retry_at = 0
             self.prepare()
             self.build_images()
             if key:
                 if key not in self.cache:
-                    self.request(key)
+                    if key in self.preloaded:
+                        pngs, durations, _ = self.preloaded.pop(key)
+                        self.start_build(key, pngs, durations)
+                    else:
+                        self.request(key)
                 else:
                     self.cache.move_to_end(key)
                     photos, durations, _ = self.cache[key]
@@ -192,6 +241,8 @@ class PortraitAnimation:
                     elif self.visible_photo:
                         # A presence refresh may redraw the card; keep the final still frame.
                         self.paint(self.visible_photo)
+            if eligible:
+                self.preload(time.monotonic())
         except Exception as e:
             self.error_count += 1
             logging.warning("Animated portrait playback stopped: %s", type(e).__name__)
