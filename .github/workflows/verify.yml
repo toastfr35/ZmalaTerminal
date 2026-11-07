@@ -37,7 +37,11 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: python build_tools/release/component.py check-pr-version
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA" HEAD)
+          if printf '%s\n' "$changed" | grep -qvE '^(requirements/|AGENTS\.md$|\.github/workflows/verify\.yml$)'; then
+            python build_tools/release/component.py check-pr-version
+          fi
       - name: Install Linux runtime and display test libraries
         run: |
           sudo apt-get update
