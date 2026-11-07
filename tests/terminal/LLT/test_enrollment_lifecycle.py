@@ -81,7 +81,7 @@ class EnrollmentLifecycleTests(unittest.TestCase):
         f.start_scanner(); f.start_wifi_cleanup.assert_called_once(); f.make_scanner.assert_not_called()
         f.enrollment.value={}; f.usb_media_ready=Mock(return_value=False); f.start_scanner(); f.make_scanner.assert_not_called()
         f.usb_media_ready.return_value=True; f.start_scanner(); self.assertIs(f.scanner,f.make_scanner.return_value)
-        f.iterate_scanner(); f.scanner.iterate.assert_called_once()
+        f.iterate_scanner(); f.scanner.iterate.assert_called_once_with(scanning=True)
 
 
 if __name__=='__main__': unittest.main()

@@ -1,7 +1,7 @@
 # @test T-HLT-007
 # @requirements HLR-TERM-SETUP-020, HLR-TERM-UI-012
 # @environment native-display
-# @plan Start the real QR worker with a synthetic green image inside a red-header window; resize repeatedly, assert camera pixels stay in the viewport and the header remains unobscured, then verify worker termination.
+# @plan Check a native preview stays withdrawn before its first frame. Start the real QR worker with a synthetic green image inside a red-header window; resize repeatedly, assert camera pixels stay in the viewport and the header remains unobscured, then verify worker termination.
 # Measure the mint guide pixels inside the letterboxed preview at every size; require a centred square with visible corners and an unchanged camera centre.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
@@ -17,6 +17,7 @@ from PIL import Image, ImageGrab
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from zmala_terminal.common.qr_scanner import QRScanner
 from zmala_terminal.common import qr_scanner
+from zmala_terminal.linux.qr import NativeQRScanner
 
 root = tk.Tk()
 root.geometry('900x620+100+60')
@@ -29,6 +30,14 @@ try:
     with tempfile.TemporaryDirectory() as directory, patch.object(qr_scanner, 'journal_logging', return_value=True):
         picture = Path(directory) / 'camera.png'
         Image.new('RGB', (640, 480), '#00ff00').save(picture)
+        before = ImageGrab.grab()
+        native = NativeQRScanner(lambda value: None, frame.winfo_id(), camera='StaticImage: Static picture')
+        try:
+            native.iterate()
+            assert native.root.state() == 'withdrawn'
+            assert ImageGrab.grab().tobytes() == before.tobytes(), 'An empty preview obscured the setup screen'
+        finally:
+            native.close()
         for _ in range(3):
             scanner = QRScanner(lambda value: None, frame.winfo_id(), 'qr-embedding-test',
                                 camera='StaticImage: Static picture', static_picture=picture)

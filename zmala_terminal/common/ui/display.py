@@ -96,7 +96,6 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.ringing_decline.grid(row=0, column=1, padx=(12, 0), sticky='nsew')
         self.ringing_controls.grid_remove()
         self.video = tk.Frame(self.body, bg=BG, highlightthickness=0)
-        self.video_border = (0, None)
         # Keep the native rendering surface mapped behind this child panel so
         # incoming video can start without rebuilding the media stream.
         self.missing_video = tk.Frame(self.video, bg=BG)

@@ -375,7 +375,7 @@ Each asynchronous completion is checked against the current setup generation.
 | USB readiness | C20 detected; charger is power-only and cannot itself be detected |
 | Pairing | A unique advertising Presenter+ with HID service; BlueZ pairing alone is insufficient |
 | Button verification | Distinct physical left/right/green/red/middle press and release sequence, saved against pairing identity |
-| Wi-Fi QR | Actual join succeeds, followed by an unskippable ten-second confirmation; existing-link is a development mode |
+| Wi-Fi QR | Actual join succeeds, followed by an unskippable five-second confirmation. The camera stays ready for the server QR with its preview hidden during confirmation. Existing-link is a development mode. |
 | Server QR | URL, device ID and token decode; authenticated, validated configuration succeeds before committing enrollment |
 | Optional TV checks (Settings) | Independent power/input outcomes and TV binding persist before enabling automatic TV actions; power-only success does not authorize active-source announcements |
 

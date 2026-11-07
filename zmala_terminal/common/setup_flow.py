@@ -6,7 +6,6 @@ import time
 from zmala_terminal.common.model import State, TerminalModel
 from zmala_terminal.common.provisioning import parse_wifi, parse_server
 from zmala_terminal.common.wifi import connect_wifi, forget_wifi
-from zmala_terminal.common.theme import RED, ACCENT, GREEN
 from zmala_terminal.common.setup_feedback import MESSAGES, WifiSetupError
 
 
@@ -20,7 +19,7 @@ class ProvisioningFlow:
         if not self.scanner:
             return
         try:
-            self.scanner.iterate()
+            self.scanner.iterate(scanning=self.setup_stage != 'wifi_ready')
         except Exception:
             logging.exception('Camera QR worker failed; keeping the setup screen open')
             self.stop_scanner()
@@ -40,18 +39,8 @@ class ProvisioningFlow:
                 self.render()
             elif max(0, math.ceil(self.setup_continue_at - now)) != self.setup_confirmation_seconds:
                 self.draw_wifi_confirmation()
-        if self.setup_stage in ('wifi', 'server'):
-            color = RED if now < self.setup_error_until else ACCENT if self.setup_busy else GREEN
-            border = (3, color)
-            # Touching the native preview border every frame causes camera flicker.
-            if border != self.video_border:
-                self.video.configure(highlightthickness=3, highlightbackground=color)
-                self.video_border = border
-            if not self.scanner and not self.setup_busy and now > self.setup_error_until:
-                self.start_scanner()
-        elif self.video_border[0] != 0:
-            self.video.configure(highlightthickness=0)
-            self.video_border = (0, None)
+        if self.setup_stage in ('wifi', 'server') and not self.scanner and not self.setup_busy and now > self.setup_error_until:
+            self.start_scanner()
 
     # @llr LLR-TERM-SETUP-027
     def start_scanner(self):
@@ -189,10 +178,10 @@ class ProvisioningFlow:
             self.enrollment.cleanup_done()
         elif kind == 'wifi':
             self.enrollment.set_wifi(result)
-            self.stop_scanner()
+            # Keep the camera warm while the confirmation screen hides its preview.
             self.setup_stage = 'wifi_ready'
             # @llr LLR-TERM-SETUP-029
-            self.setup_continue_at = time.monotonic() + 10
+            self.setup_continue_at = time.monotonic() + 5
             self.setup_confirmation_seconds = None
             self.last_qr = ('', 0)
         elif kind == 'server':

@@ -1,7 +1,7 @@
 # @test T-LLT-060
 # @requirements LLR-TERM-SETUP-027, LLR-TERM-SETUP-028
 # @environment portable
-# @plan Stub child processes, job ownership, file descriptors and worker threads while executing the real QR parent/worker protocol. Send valid, malformed and wrong-shaped JSON; only string QR events may reach the UI thread. Check worker crash diagnostics, spawn/assignment cleanup, static-image restrictions, stop/EOF controls and scanner/output cleanup on worker failures.
+# @plan Stub child processes, job ownership, file descriptors and worker threads while executing the real QR parent/worker protocol. Send valid, malformed and wrong-shaped JSON; only string QR events may reach the UI thread. Check that pausing drains queued QR values and resuming sends a single command. Check worker crash diagnostics, spawn/assignment cleanup, static-image restrictions, stop/EOF controls and scanner/output cleanup on worker failures.
 # @pass No raw SDK output reaches the decoded-message pipe, malformed messages do not terminate its reader, and all acquired process/scanner/log resources are closed without starting a real child or camera.
 import io
 import sys
@@ -43,11 +43,31 @@ class QRProtocolTests(unittest.TestCase):
                 if failed=='assign':
                     popen.return_value.kill.assert_called_once(); popen.return_value.wait.assert_called_once_with(timeout=5)
 
+    def test_pause_discards_queued_codes_and_resumes_without_restarting_worker(self):
+        scanner = qr_scanner.QRScanner.__new__(qr_scanner.QRScanner)
+        scanner.closed, scanner.scanning = False, True
+        scanner.on_qr = Mock()
+        scanner.process = Mock()
+        scanner.process.poll.return_value = None
+        scanner.messages = qr_scanner.queue.Queue()
+        scanner.messages.put('queued while leaving Wi-Fi')
+        scanner.iterate(scanning=False)
+        scanner.messages.put('in flight while pausing')
+        scanner.iterate(scanning=False)
+        scanner.on_qr.assert_not_called()
+        scanner.iterate()
+        scanner.messages.put('server code')
+        scanner.iterate()
+        scanner.on_qr.assert_called_once_with('server code')
+        self.assertEqual([entry.args[0] for entry in scanner.process.stdin.write.call_args_list],
+                         [b'pause\n', b'scan\n'])
+
     def run_worker(self, image=False, camera='StaticImage: Static picture', failure=None, control=None):
         stopped=threading.Event(); output=Mock(); scanner=Mock(); values=[]; worker=[]
         def create(callback,*args):
             values.append((callback,args)); return scanner
-        def iterate():
+        def iterate(*, scanning):
+            self.assertTrue(scanning)
             values[0][0]('café'); stopped.set()
             if failure: raise failure
         scanner.iterate.side_effect=iterate
@@ -58,7 +78,7 @@ class QRProtocolTests(unittest.TestCase):
         with patch.dict(sys.modules,{'zmala_terminal.common.native_qr':SimpleNamespace(NativeQRScanner=create)}), \
                 patch.object(sys,'argv',args), patch.object(qr_worker.os,'dup',return_value=7), \
                 patch.object(qr_worker.os,'dup2') as dup, patch.object(qr_worker.os,'fdopen',return_value=output), \
-                patch.object(qr_worker.threading,'Event',return_value=stopped), patch.object(qr_worker.threading,'Thread',side_effect=thread), \
+                patch.object(qr_worker.threading,'Event',side_effect=[stopped, threading.Event()]), patch.object(qr_worker.threading,'Thread',side_effect=thread), \
                 patch.object(qr_worker.time,'sleep'), patch.object(sys,'stdin',SimpleNamespace(buffer=io.BytesIO(control or b''))):
             try: qr_worker.run()
             except (RuntimeError,ValueError):

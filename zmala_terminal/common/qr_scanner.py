@@ -14,6 +14,7 @@ from zmala_terminal.common.paths import ROOT
 class QRScanner:
     def __init__(self, on_qr, video_window=0, profile='terminal', camera=None, static_picture=None):
         self.on_qr, self.messages, self.closed = on_qr, queue.Queue(), False
+        self.scanning = True
         self.job = ProcessJob()
         self.error_log = None if journal_logging() else (ROOT / 'data' / 'qr-camera-error.log').open('ab', buffering=0)
         arguments = [sys.executable, '-m', 'zmala_terminal.common.qr_worker', '--window', str(video_window), '--profile', profile]
@@ -47,15 +48,21 @@ class QRScanner:
                 except (ValueError, TypeError):
                     pass
 
-    def iterate(self):
+    def iterate(self, *, scanning=True):
         """Deliver worker events on the UI thread; reader threads only enqueue decoded text."""
         if self.closed:
             return
         if self.process.poll() is not None:
             location = 'journalctl -u zmalacall-terminal' if self.error_log is None else str(self.error_log.name)
             raise RuntimeError('Camera worker exited; see ' + location)
+        if scanning != self.scanning:
+            self.process.stdin.write(b'scan\n' if scanning else b'pause\n')
+            self.process.stdin.flush()
+            self.scanning = scanning
         while not self.messages.empty():
-            self.on_qr(self.messages.get_nowait())
+            value = self.messages.get_nowait()
+            if scanning:
+                self.on_qr(value)
 
     def close(self):
         """Request graceful camera shutdown, then close the process job to reclaim remaining descendants."""

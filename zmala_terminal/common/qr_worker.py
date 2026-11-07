@@ -19,10 +19,17 @@ def run():
     os.dup2(2, 1)
     from zmala_terminal.common.native_qr import NativeQRScanner
     stopped = threading.Event()
+    paused = threading.Event()
+
     def controls():
         for line in sys.stdin.buffer:
-            if line.strip() == b'stop':
+            command = line.strip()
+            if command == b'stop':
                 break
+            if command == b'pause':
+                paused.set()
+            elif command == b'scan':
+                paused.clear()
         stopped.set()
     threading.Thread(target=controls, daemon=True).start()
     def qr(value):
@@ -34,7 +41,7 @@ def run():
                 raise ValueError('A test image requires the static camera')
             scanner.set_static_picture(args.image)
         while not stopped.is_set():
-            scanner.iterate()
+            scanner.iterate(scanning=not paused.is_set())
             time.sleep(.02)
     finally:
         scanner.close()

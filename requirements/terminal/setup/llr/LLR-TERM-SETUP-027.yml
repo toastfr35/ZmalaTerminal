@@ -37,8 +37,9 @@ reviewed: null
 scope: Core
 text: |
   QR capture shall use a separate process and an unmirrored preview within the setup
-  viewport. The Wi-Fi and server QR previews shall show contrasting corner guides
-  around a centred square, scaled within the visible camera picture. The centre
+  viewport. On Linux, the embedded preview shall stay hidden until the first camera
+  frame is ready to display. The Wi-Fi and server QR previews shall show contrasting
+  corner guides around a centred square, scaled within the visible camera picture. The centre
   shall remain unobscured. Guides shall affect only the displayed preview; QR
   detection shall continue to use the full, unmodified camera frame.
   Upon an accepted decoder notification, the positioning guides shall turn amber
@@ -47,6 +48,7 @@ text: |
   Capture failure shall show an error and delay retry for five seconds.
   Cancellation shall release the camera before the call engine starts.
 verification: |
+  Delay the first frame and check that no preview window obscures the setup screen.
   Inject capture errors, malformed worker output and cancellation. Resize the viewport
   and check preview bounds and worker termination.
   Check guide visibility on light and dark images, centred square bounds after

@@ -1,7 +1,7 @@
 # @test T-LLT-046
 # @requirements LLR-TERM-SETUP-027, LLR-TERM-SETUP-029, LLR-TERM-NET-004
 # @environment portable
-# @plan Inject QR workers, monotonic time and NetworkManager D-Bus into setup; assert camera failure feedback and five-second retry, scanner release before engine activation, ten-second successful Wi-Fi confirmation and private owned-profile cleanup on cancellation. Inject NetworkManager command and D-Bus failures, pre-cancelled work and unavailable cleanup; verify private diagnostics, owned-profile deletion and successful join metadata.
+# @plan Inject QR workers, monotonic time and NetworkManager D-Bus into setup; assert camera failure feedback and five-second retry, scanner release before engine activation, five-second successful Wi-Fi confirmation with QR detection paused and private owned-profile cleanup on cancellation. Inject NetworkManager command and D-Bus failures, pre-cancelled work and unavailable cleanup; verify private diagnostics, owned-profile deletion and successful join metadata.
 # @pass All ownership, timing and credential-boundary assertions must pass without accessing a camera or changing network profiles.
 
 from zmala_terminal.common.callbacks import CallbackController
@@ -65,8 +65,6 @@ class SetupOwnershipTests(unittest.TestCase):
         f.setup_stage = 'wifi'
         f.setup_busy = False
         f.needs_c20 = f.needs_pairing = Mock(return_value=False)
-        f.video = Mock()
-        f.video_border = (0, None)
         f.root = Mock()
         f.draw_wifi_confirmation = Mock()
         f.make_scanner = Mock()
@@ -103,13 +101,19 @@ class SetupOwnershipTests(unittest.TestCase):
             f.enrollment.set_wifi.assert_not_called()
             old = f.scanner
             f.setup_result(1, 'wifi', {'linux_uuid': 'owned'})
-        old.close.assert_called_once()
+        old.close.assert_not_called()
         self.assertEqual(f.setup_stage, 'wifi_ready')
-        self.assertEqual(f.setup_continue_at, 110)
-        f.update_setup_display(109.99)
+        self.assertEqual(f.setup_continue_at, 105)
+        f.update_setup_display(104.99)
+        f.iterate_scanner()
+        old.iterate.assert_called_once_with(scanning=False)
         self.assertEqual(f.setup_stage, 'wifi_ready')
-        f.update_setup_display(110)
+        f.update_setup_display(105)
+        f.iterate_scanner()
         self.assertEqual(f.setup_stage, 'server')
+        self.assertIs(f.scanner, old)
+        old.iterate.assert_called_with(scanning=True)
+        f.make_scanner.assert_not_called()
 
     def test_server_acceptance_releases_camera_before_native_engine(self):
         f = self.flow()
