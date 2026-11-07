@@ -25,8 +25,9 @@ reviewed: null
 scope: Core
 text: |
   Settings shall hide the normal status icons and show the assigned terminal ID
-  in small text at the bottom. The carousel shall include all
-  local settings, followed by TV setup and finally reset.
+  in small text at the bottom. The carousel order shall be language, automatic
+  answer, automatic framing, ringtone, ringtone volume, button sounds volume,
+  portraits shown, return to TV, TV setup, and reset to factory defaults.
 verification: |
   Render Settings at supported sizes. Check the identifier, absence of status
   icons, five setting icons and the order of TV setup and reset.

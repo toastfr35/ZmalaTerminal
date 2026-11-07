@@ -464,11 +464,14 @@ After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
 The label renderer reduces the font to fit each settings region. Current values
 appear below the coloured carousel pictograms. Language uses the saved language's
-flag; the language editor reuses the flags with native names. Numerical settings
-(volumes, delays and portrait count) use a stepped bar with a large draft value
-and labelled endpoints. Other settings with two choices use two boxes; longer
-choice lists use a carousel. Ringtone selection always uses a carousel, even
-with only two tones. The highlighted box/card is the draft selection.
+flag; the language editor reuses the flags with native names. Language and
+ringtone editors show five cards with the draft centred, repeating short lists
+as needed. Portrait count uses two cards with miniature contact-screen previews
+of three and five portraits. Automatic framing uses matching cartoon room views
+before and after reframing, labelled No/Yes. Volumes and delays use a stepped bar
+with a large draft value and labelled endpoints. The highlighted box/card is
+the draft selection. Control captions use initial capitals, including Select,
+Accept and Cancel in English.
 Delay bar ticks represent the supported choices, including Never, rather than
 a continuous time scale. None of these previews saves until green is pressed.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps
@@ -480,9 +483,9 @@ inside the small-window layout.
 | Language | 16 native labels in alphabetical order, wrapping at both ends |
 | Automatic answer | Never, 10 seconds, 30 seconds, 1, 2, 5 or 10 minutes |
 | Automatic framing | On/off; Pi C10/C20 only |
+| Ringtone | Nokia (default) and the private server library |
 | Ringtone volume | 0–100%, in 5% steps; incoming/outgoing tones and previews |
 | Button sounds volume | 0–100%, in 5% steps; idle navigation feedback |
-| Ringtone | Nokia (default) and the private server library |
 | Portraits | Three/five; short contact lists retain three positions |
 | Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |

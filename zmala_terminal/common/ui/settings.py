@@ -95,8 +95,8 @@ class SettingsView:
         draft = self.settings_draft
         if draft.busy:
             return
-        back = self.text('cancel') if draft.editing else self.settings_text('exit')
-        labels = [('‹ › ' + self.text('select'), PANEL),
+        back = self.text('cancel').capitalize() if draft.editing else self.settings_text('exit')
+        labels = [('‹ › ' + self.text('select').capitalize(), PANEL),
                   ('✓ ' + self.settings_text('accept' if draft.editing else 'open'), BUTTON_GREEN),
                   ('× ' + back, BUTTON_RED)]
         margin, gap = 40, 16
@@ -177,8 +177,7 @@ class SettingsView:
         key = draft.key
         self.settings_label(self.settings_text(key), width/2, 132, width-100, 32,
                             bold=True, anchor='center', max_height=88)
-        if key in ('auto_answer', 'tv_idle_seconds', 'ringtone_volume',
-                   'action_sound_volume', 'carousel_portraits'):
+        if key in ('auto_answer', 'tv_idle_seconds', 'ringtone_volume', 'action_sound_volume'):
             self.draw_numeric_setting(width, height)
         elif key != 'ringtone' and len(draft.options) == 2:
             self.draw_setting_choices(width, height, two_boxes=True)
@@ -196,17 +195,16 @@ class SettingsView:
     def draw_setting_choices(self, width, height, two_boxes=False):
         draft = self.settings_draft
         key = draft.key
-        # A two-tone carousel has the other tone on both sides of the centre.
-        # The selected tone stays centred as left/right wraps between them.
-        count = 2 if two_boxes else 1 if len(draft.options) == 1 else 3
-        offsets = list(range(count)) if two_boxes else ([0] if count == 1 else [-1, 0, 1])
-        gap, available = 24, min(1080, width-144)
+        # Short cyclic lists may repeat; only the central card is highlighted.
+        count = 2 if two_boxes else 5
+        offsets = list(range(count)) if two_boxes else [-2, -1, 0, 1, 2]
+        gap, available = (24, min(1080, width-144)) if two_boxes else (14, width-112)
         card_width = (available-gap*(count-1))/count
         left = (width-available)/2
         for slot, offset in enumerate(offsets):
             index = offset if two_boxes else (draft.index+offset) % len(draft.options)
             value = draft.options[index]
-            selected = index == draft.index
+            selected = index == draft.index if two_boxes else offset == 0
             x = left+slot*(card_width+gap)
             y = 202 if selected or two_boxes else 220
             card_height = height-214-y
@@ -214,15 +212,18 @@ class SettingsView:
             tags = ('settings-editor', 'settings-choice', 'settings-choice-'+str(index))
             self.settings_panel(x, y, card_width, card_height, fill,
                                 ACCENT if selected else None, tags=tags)
-            if key == 'auto_framing':
-                self.settings_label('✓' if value else '×', x+card_width/2, y+card_height*.3,
-                                    card_width-30, 54, '#78ddb5' if value else MUTED,
-                                    fill, True, anchor='center', max_height=90)
+            if key in ('auto_framing', 'carousel_portraits'):
+                name = f'framing-{int(value)}' if key == 'auto_framing' else f'portraits-{value}'
+                size = min(card_width-32, card_height*.58*16/9)
+                picture = self.text_renderer.portrait(artwork_path(name), int(size), fill)
+                self.settings_images.append(picture)
+                self.settings_canvas.create_image(x+card_width/2, y+card_height*.36,
+                                                  image=picture, tags=('settings-choice-preview', name))
             else:
                 self.settings_icon(key, x+card_width/2, y+card_height*.29,
-                                   min(112, card_height*.45), fill, value)
-            self.settings_label(self.settings_value(key, value), x+card_width/2, y+card_height*.71,
-                                card_width-28, 30, FG if selected else MUTED, fill,
+                                   min(112, card_width*.72, card_height*.45), fill, value)
+            self.settings_label(self.settings_value(key, value), x+card_width/2, y+card_height*(.81 if two_boxes else .71),
+                                card_width-24, 30 if two_boxes else min(26, int(card_width*.14)), FG if selected else MUTED, fill,
                                 selected, anchor='center', max_height=card_height*.38,
                                 language=value if key == 'language' else None,
                                 tags='settings-draft-value' if selected else 'settings-choice-value')

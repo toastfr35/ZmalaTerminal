@@ -35,11 +35,15 @@ text: |
   the carousel shall ask before exiting: green exits, red retains the selected
   card, and arrows have no effect. Each page shall show its own full-width hints.
   The language card shall show the saved language's flag. Language choices
-  shall reuse those flags alongside native names. Numerical settings shall use
-  a stepped bar with the draft value and endpoints; other settings with exactly
-  two choices shall show two boxes, and longer choice lists shall use a wrapping
-  carousel. Ringtone selection shall always use a carousel, including a library
-  with only two tones. The selected choice shall be visibly highlighted. The Zmala logo
+  shall reuse those flags alongside native names. Language and ringtone choices
+  shall use five-card wrapping carousels with the draft centred, even when a
+  short ringtone list repeats. Portrait count shall use two cards showing
+  miniature contact-screen previews of three and five portraits. Automatic
+  framing shall use two cards showing matched cartoon examples before and after
+  reframing within the 2x zoom limit, labelled No and Yes in the selected language. Volumes and delays
+  shall use a stepped bar with the draft value and endpoints. The selected choice
+  shall be visibly highlighted. Control captions shall start with a capital
+  letter in scripts with letter case. The Zmala logo
   shall remain visible at the top left throughout Settings without a mismatched
   background rectangle.
 verification: |

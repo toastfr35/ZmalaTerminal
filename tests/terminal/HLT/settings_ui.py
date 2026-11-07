@@ -4,7 +4,7 @@
 # @plan Render settings on the real Tk UI and drive selection/draft transitions; assert five visible setting cards and focused editors show remote controls and cancellation preserves configuration.
 # At both sizes, render French short values with the installed Pango fonts and assert their final images retain the full text without ellipsis and stay inside their cards.
 # Render the exit confirmation in every supported language at both sizes; verify bounded question/buttons, red returns to the same selection and green exits without modifying configuration.
-# Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-choice boxes, longer choice carousels and the persistent corner logo.
+# Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-card portrait/framing previews, five-card language/ringtone carousels and the persistent corner logo.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
 # Render the ringtone editor and exercise its debounced preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
@@ -119,6 +119,7 @@ try:
         saved_language = app.model.config['language']
         app.press('green')
         assert set(LANGUAGE_FLAGS) == set(LANGUAGES)
+        assert len(app.settings_canvas.find_withtag('settings-choice')) == 6
         for _ in LANGUAGES:
             candidate = app.settings_draft.options[app.settings_draft.index]
             assert artwork_path('language', candidate).is_file()
@@ -127,7 +128,7 @@ try:
             app.press('right'); app.root.update()
         app.press('red'); app.root.update()
         assert app.settings_canvas.find_withtag('settings-flag-'+saved_language)
-        for key in ('ringtone_volume','action_sound_volume','auto_answer','tv_idle_seconds','carousel_portraits'):
+        for key in ('ringtone_volume','action_sound_volume','auto_answer','tv_idle_seconds'):
             app.settings_draft.row = FIELDS.index(key); app.press('green')
             for direction, expected in (('left',0), ('right',len(app.settings_draft.options)-1)):
                 for _ in range(len(app.settings_draft.options)+1):
@@ -143,6 +144,11 @@ try:
         app.settings_draft.row = FIELDS.index('auto_framing'); app.press('green')
         for index in (0,1):
             assert app.settings_canvas.find_withtag('settings-choice-'+str(index))
+        assert not app.settings_canvas.find_withtag('settings-bar')
+        assert len(app.settings_canvas.find_withtag('settings-choice-preview')) == 2
+        app.press('red')
+        app.settings_draft.row = FIELDS.index('carousel_portraits'); app.press('green')
+        assert len(app.settings_canvas.find_withtag('settings-choice-preview')) == 2
         assert not app.settings_canvas.find_withtag('settings-bar')
         app.press('red')
     app.settings_draft.editing = False
@@ -163,7 +169,7 @@ try:
     app.press('green')
     assert app.settings_canvas.find_withtag('settings-choice-0')
     assert app.settings_canvas.find_withtag('settings-choice-1')
-    assert len(app.settings_canvas.find_withtag('settings-choice')) == 4  # Three cards plus selected outline.
+    assert len(app.settings_canvas.find_withtag('settings-choice')) == 6  # Five cards plus selected outline.
     app.tick_ringtone(1000); app.tick_ringtone(1000.39)
     app.usb_power.preview_tone.assert_not_called()
     app.tick_ringtone(1000.4); app.root.update()

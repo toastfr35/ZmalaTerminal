@@ -14,3 +14,15 @@ commit `fe15c16e7463d0c66d6c5730e9d0e832438d98e1`, under the included
 the carousel and language editor use the same asset. Native language names
 always accompany flags. English uses GB; Portuguese PT; Arabic SA; Urdu PK;
 Hindi IN; Bengali BD; simplified Chinese CN.
+
+`portraits-3.png` and `portraits-5.png` are miniature exports of the real contact
+card renderer using five fictional contacts and drawn silhouette portraits.
+Regenerate with `tests/support/terminal/run_display.py` and
+`tests/support/terminal/render_portrait_choices.py`. These previews contain no
+personal contacts or photographs. The captions below them show the selectable
+counts, independently of the sample names in the miniature UI.
+
+`framing-0.png` and `framing-1.png` are a matched pair of cartoon illustrations
+generated with the built-in ImageGen tool, then exported at 640×360 with Sharp.
+See `framing-prompts.md` for the complete prompt sequence. The illustrations are
+examples; no camera is used on the Settings page.

@@ -89,7 +89,7 @@ class LocalSettingsTests(unittest.TestCase):
         self.assertEqual(json.dumps(c), original)
         draft.index = 0
         self.assertEqual(draft.change(c), {'auto_answer': False, 'auto_answer_seconds': 10})
-        draft.row = 3; draft.open(c); draft.index = 20; draft.move(1)
+        draft.row = FIELDS.index('ringtone_volume'); draft.open(c); draft.index = 20; draft.move(1)
         self.assertEqual(draft.options[draft.index], 100)
 
     def test_speaker_volume_choices_use_five_percent_steps_and_preserve_saved_value(self):
