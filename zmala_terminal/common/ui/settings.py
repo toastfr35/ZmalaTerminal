@@ -89,7 +89,7 @@ class SettingsView:
         """Distinct outlined symbols, independent of emoji/font availability."""
         c = self.settings_canvas
         def points(values):
-            return [origin+size*value for index,value in enumerate(values) for origin in [x if index%2==0 else y]]
+            return [(x if index%2 == 0 else y)+size*value for index,value in enumerate(values)]
         def line(*values):
             c.create_line(*points(values), fill=color, width=3, capstyle='round', joinstyle='round', tags='settings-icon')
         def oval(*values):

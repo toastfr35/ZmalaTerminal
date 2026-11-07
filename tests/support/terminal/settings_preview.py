@@ -20,6 +20,9 @@ class MemoryConfiguration:
                           configuration_version=self.value['configuration_version']+1)
         return self.value
 
+    def deactivate(self, erase=False):
+        pass  # The fixture owns no network workers or persistent credentials.
+
 
 class Preview(Terminal):
     def restore_enrollment(self, *args):
