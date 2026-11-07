@@ -13,6 +13,10 @@ references:
   type: file
 - path: zmala_terminal/linux/tv_plugins/api.py
   type: file
+- path: zmala_terminal/common/tv_profiles.py
+  type: file
+- path: zmala_terminal/linux/tv_plugins/cec/driver.py
+  type: file
 - path: zmala_terminal/linux/tv_plugins/samsung/driver.py
   type: file
 - path: zmala_terminal/linux/tv_control.py
@@ -25,6 +29,10 @@ reviewed: null
 scope: Core
 text: |
   TV model integrations shall reside in separate bundled plugin directories and
+  declare their brand and model family in the bundled registry. The selector
+  shall list only registered profiles. Brand artwork availability shall not
+  advertise a driver or qualification. A generic HDMI-CEC profile shall use
+  standard controller CEC operations without a vendor network fallback. Plugins
   expose one TVDriver class with get_model, get_capabilities, get_power_status,
   set_power_on, set_power_off, get_current_input and set_current_input methods.
   Capabilities shall identify supported optional methods independently of setup
@@ -56,6 +64,8 @@ verification: |
   wake sends no command and cancellation during the power query prevents wake.
   Verify guarded network wake, changed/unknown state during authentication, and
   CEC fallback without a blind network toggle.
+  Verify nonempty brand/model metadata, available and generic artwork, profile
+  persistence, unknown-profile rejection and the CEC-only profile's capabilities.
   Exercise normal call wake with successful, unavailable and cancelled drivers;
   assert no redundant CEC wake after success or cancellation and no unqualified
   source selection. Verify guarded restoration receives ambiguous CEC results.

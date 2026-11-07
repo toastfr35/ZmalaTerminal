@@ -765,8 +765,12 @@ options. Existing installations receive the command on their next installer upda
 `tv_plugins/api.py` defines the seven-method contract: `get_model`,
 `get_capabilities`, `get_power_status`, `set_power_on`, `set_power_off`,
 `get_current_input` and `set_current_input`. Each future model/family has its own
-folder and an explicit entry in the bundled registry. Configuration cannot load
-arbitrary modules. `TVControl(driver='samsung')` selects the existing integration.
+folder and a `DriverInfo(module, brand, model_family)` entry in the bundled registry.
+Configuration cannot load arbitrary modules. Settings lists Samsung Smart TV and
+Other TV / HDMI-CEC, the two bundled control profiles. The latter uses standard
+CEC with no vendor network fallback. Brand artwork is ready for Samsung, Sony,
+LG, Toshiba, Panasonic, Philips, Sharp, TCL, Hisense and Vizio; adding artwork
+does not advertise an unimplemented driver. Unknown brands use the TV pictogram.
 
 Capabilities contain supported optional method names, independently of the
 wizard's user-confirmed power/source results. Unsupported methods raise
@@ -816,7 +820,9 @@ before a network toggle. The real-call test plan and measured results are in
 
 ### Installation TV checks
 
-TV checks are optional: open Settings > TV setup. Enrollment and
+TV checks are optional: open Settings > TV setup, choose a model in the carousel,
+then answer “Do you want to test the TV controls?”. No saves the profile without
+testing; red on the carousel cancels its draft. Enrollment and
 startup go straight to ordinary use. Saved capabilities are checked against the
 TV identity in the background; incomplete checks stay disabled without opening
 a wizard. Opening TV setup pauses maintenance and ordinary call/idle TV actions.
@@ -831,7 +837,10 @@ does not return within 30 seconds. Green confirms success; red offers recovery/r
 or manual operation. CEC acknowledgements alone do not count as a pass.
 
 `/var/lib/zmalacall/<profile>/tv-check.json` stores attempts, performed/results/
-skips, completion, EDID hash and HDMI address. Save failures block completion.
+skips, completion, EDID hash, HDMI address and driver profile. The separate
+`tv-profile.json` stores the selected bundled driver. Switching profiles disables
+old qualifications; legacy records retain their Samsung interpretation. Save
+failures block completion. Factory reset clears both files.
 Interrupted tests never resume automatically at startup. Open TV setup again to
 resume them; no power command runs until the user starts a test.
 A changed TV/route invalidates previous results on startup; reset clears them.
@@ -1575,7 +1584,7 @@ Ringtone, outgoing ringback and button feedback keep their independent old curve
 for `Terminal.make_platform_services()`. The application still owns shutdown
 ordering. Windows now receives explicit desktop substitutes for these Pi-only services;
 they perform no hardware I/O and leave ringing to the Windows call engine.
-The desktop also skips Pi-only TV setup even if a pairing environment variable
+The desktop uses labelled TV simulation even if a pairing environment variable
 is inherited. Other device construction remains to be migrated. Tests replace the factory
 without patching hardware classes in the UI module.
 
@@ -1584,7 +1593,7 @@ reverse order before propagating the startup error. Normal shutdown remains owne
 by the application.
 
 The same platform boundary selects remote input, feedback audio, pairing/camera
-status and TV-check transport. Windows uses explicit inactive substitutes; these
+status and TV-check transport. Windows uses desktop substitutes and TV simulation; these
 factories do not import Pi adapters on the desktop. Fan, USB-power and television
 interfaces are structural protocols, while the application retains shutdown ownership.
 
@@ -1705,6 +1714,13 @@ Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
 The fixture opens Settings immediately. Saves are acknowledged in memory and
 reset when the window closes. Verify five visible setting icons and saved values, each editor's
 accept/cancel return to the same card, exit confirmation and the seven-second
-Escape hold from Home. The TV setup entry explains that TV control requires
-the Pi. The display HLT exercises the guided pages with substituted hardware.
-Windows does not qualify physical CEC, audio previews or native call media.
+Escape hold from Home. TV setup offers the real model selector and test question,
+then simulates standby/wake and input changes, labelled Windows TV simulation.
+The user still confirms each outcome. No CEC or network TV commands are sent.
+Ringtone selection previews audio through the Windows sound device; each new
+selection stops the previous sample. To use a local acceptance library, set
+`ZMALA_PREVIEW_RINGTONE_LIBRARY` to a directory containing `manifest.json`
+(rows with `sha256`, `name`, `file`) and its WAV files. The recovered acceptance
+catalog uses “Melody” for the previously misnamed ringtone. The library is local
+test data, not a change to a live Server catalog.
+Windows does not qualify physical CEC, Pi audio or native call media.

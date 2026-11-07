@@ -1,6 +1,11 @@
 """Localized installation TV-check copy (English fallback, like diagnostic help)."""
 MESSAGES = {
 'en': {
+'models': 'Choose your TV model', 'other': 'Other TV', 'cancel': 'Cancel',
+'test_controls': 'Do you want to test the TV controls?',
+'profile_save_error': 'The TV selection could not be saved.\nPlease try again.',
+'simulation': 'Windows TV simulation',
+'sim_standby': 'TV in standby', 'sim_broadcast': 'TV programme', 'sim_terminal': 'Zmala HDMI input',
 'title': 'TV controls', 'probe': 'Checking the HDMI connection…',
 'power_ready': 'I will switch the TV off for a few seconds, then back on.\nAre you ready?',
 'power_running': 'Switching the TV off, then back on…\nPlease wait.',
@@ -29,6 +34,11 @@ MESSAGES = {
 'error': 'The TV did not confirm the command. Please judge what you actually saw.',
 },
 'fr': {
+'models': 'Choisissez votre modèle de téléviseur', 'other': 'Autre TV', 'cancel': 'Annuler',
+'test_controls': 'Voulez-vous tester les commandes du téléviseur ?',
+'profile_save_error': 'Impossible d’enregistrer le téléviseur choisi.\nVeuillez réessayer.',
+'simulation': 'Simulation TV sous Windows',
+'sim_standby': 'Téléviseur en veille', 'sim_broadcast': 'Programme TV', 'sim_terminal': 'Entrée HDMI Zmala',
 'title': 'Commandes du téléviseur', 'probe': 'Vérification de la connexion HDMI…',
 'power_ready': 'Je vais éteindre le téléviseur quelques secondes, puis le rallumer.\nÊtes-vous prêt ?',
 'power_running': 'Extinction puis allumage du téléviseur…\nVeuillez patienter.',

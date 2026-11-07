@@ -33,6 +33,10 @@ references:
   type: file
 - path: zmala_terminal/linux/tv_check.py
   type: file
+- path: zmala_terminal/common/tv_profiles.py
+  type: file
+- path: zmala_terminal/common/platform_services.py
+  type: file
 reviewed: null
 scope: Core
 text: |
@@ -42,11 +46,18 @@ text: |
   shall validate saved TV identity in the background and enable only completed,
   user-passed capabilities. Opening TV setup shall allow checks to be repeated,
   suspend maintenance and ordinary call/idle TV actions, and completion shall
-  return to the same settings card and resume maintenance. Unsupported
-  desktop TV control shall show an explanatory message without running commands.
+  return to the same settings card and resume maintenance. TV setup shall first
+  present a carousel of bundled model profiles with brand artwork. Selecting a
+  profile shall ask whether to test the TV controls. Declining shall save the
+  profile without issuing TV commands; cancelling the carousel shall discard
+  its draft. Changing profile shall disable qualifications from another profile.
+  Windows shall simulate standby and input changes using the same user-confirmed
+  flow, visibly labelled as simulation, without hardware or network commands.
 verification: |
   Verify enrollment and cached startup apply configuration without opening TV
   setup. Open/reopen it from Settings, complete or skip checks, and verify the
   return page, language, maintenance lifetime and independent capability gates.
   Exercise background restoration with completed, incomplete and changed-TV
   results. Record physical CEC checks separately from Windows UI acceptance.
+  Verify carousel cancellation, selection without testing, failed saves, changed
+  profiles and cancellable Windows simulation. No test starts before consent.

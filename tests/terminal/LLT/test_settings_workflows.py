@@ -120,7 +120,7 @@ class SettingsWorkflowTests(unittest.TestCase):
                 v.settings_draft.row=row; v.settings_canvas.reset_mock(); v.draw_settings()
                 values=[call for call in v.settings_canvas.create_image.call_args_list
                         if 'settings-value' in call.kwargs.get('tags',()) and key in call.kwargs['tags']]
-                if key in ('reset','tv_setup'):
+                if key == 'reset':
                     self.assertFalse(values)
                 else:
                     self.assertEqual(len(values),1)

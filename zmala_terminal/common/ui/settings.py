@@ -25,7 +25,11 @@ class SettingsView:
         self.settings_signature = None
 
     def settings_value(self, key, value):
-        if key in ('reset', 'tv_setup'):
+        if key == 'tv_setup':
+            from zmala_terminal.common.tv_profiles import DRIVERS
+            profile = DRIVERS[getattr(self, 'tv_profile_saved', 'samsung')]
+            return profile.model_family if profile.brand == 'Generic' else profile.brand
+        if key == 'reset':
             return ''
         if key == 'language':
             return LANGUAGES[value]['native']

@@ -10,7 +10,7 @@ from zmala_terminal.linux.tv_plugins.samsung.driver import save_config
 
 
 class TVCheck:
-    def __init__(self, path, transport, restart=False):
+    def __init__(self, path, transport, restart=False, profile='samsung'):
         self.path, self.transport = Path(path), transport
         self.cancel = threading.Event()
         self.messages = queue.Queue()
@@ -22,6 +22,7 @@ class TVCheck:
         self.busy = False
         self.save_pending = None
         self.restart = restart
+        self.profile = profile
 
     def launch(self, operation, *args):
         self.busy = True
@@ -59,8 +60,9 @@ class TVCheck:
             # That is not evidence of a new television. Keep completed checks
             # so restarting the terminal does not block SIP behind setup.
             same_tv = saved.get('identity') == value or (value is None and saved.get('complete') is True)
-            self.record = saved if valid and saved.get('version') == 1 and same_tv and not error else {
-                'version': 1, 'identity': value, 'power': {'status': 'pending', 'attempts': 0},
+            same_profile = saved.get('profile', 'samsung') == self.profile
+            self.record = saved if valid and saved.get('version') == 1 and same_tv and same_profile and not error else {
+                'version': 1, 'profile': self.profile, 'identity': value, 'power': {'status': 'pending', 'attempts': 0},
                 'source': {'status': 'pending', 'attempts': 0}, 'complete': False}
             self.transport.resume_network(self.record.get('network_paired', False))
             if self.restart and self.record.get('complete'):
@@ -124,7 +126,10 @@ class TVCheck:
         self.record[kind].update(status='passed' if passed else 'failed', confirmed_at=time.time(), performed=True)
         self.persist(self.begin_source if kind == 'power' and passed else
                      self.finish if kind == 'source' and passed else
-                     lambda: self.set_page('retry_power' if kind == 'power' else 'samsung'))
+                     lambda: self.set_page('retry_power' if kind == 'power' else self.source_help()))
+
+    def source_help(self):
+        return 'samsung' if self.profile == 'samsung' else 'sony'
 
     def begin_source(self):
         self.page = 'source_ready'
@@ -164,7 +169,7 @@ class TVCheck:
             self.result('source', yes)
         elif self.page == 'source_timeout':
             self.record['source'].update(status='failed', performed=False)
-            self.persist(lambda: self.set_page('samsung'))
+            self.persist(lambda: self.set_page(self.source_help()))
         elif self.page == 'samsung':
             self.page = 'samsung_help' if yes else 'sony'
         elif self.page == 'sony':

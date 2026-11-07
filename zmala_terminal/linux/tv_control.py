@@ -17,7 +17,7 @@ import threading
 import time
 
 from zmala_terminal.common.tv_session import ViewingSession
-from zmala_terminal.linux.tv_plugins import load_driver
+from zmala_terminal.linux.tv_plugins import DRIVERS, load_driver
 from zmala_terminal.linux.cec_device import select_device
 from zmala_terminal.linux.cec_observer import SOURCE_MAX_AGE
 
@@ -113,6 +113,13 @@ class TVControl:
         self._cancel = threading.Event()
         self._cancel.set()
         self._started = None
+
+    def select_driver(self, name):
+        if name not in DRIVERS:
+            raise ValueError('Unknown TV driver')
+        self.pause_for_setup()
+        self._driver_name = name
+        self._network_enabled = False
 
     # @llr LLR-TERM-TV-026
     def _control_allowed(self, off):

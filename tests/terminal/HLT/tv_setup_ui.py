@@ -1,7 +1,7 @@
 # @test T-HLT-017
 # @requirements HLR-TERM-TV-017
 # @environment display
-# @plan Render TV-check prompts using the real UI with controlled state transitions; assert localized controls and current test outcome. Physical TV power/input behavior requires a separate device run.
+# @plan Render the model carousel, test consent, save failure and TV-check prompts using the real UI with controlled state transitions; assert localized controls and current test outcome. Physical TV power/input behavior requires a separate device run.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Exercise every TV wizard page at kiosk sizes without touching TV/network."""
@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory() as folder:
     app.tv_check = TVCheck(Path(folder)/'tv-check.json', Mock())
     app.tv_check.record = {'power': {'status': 'passed'}, 'source': {'status': 'failed'}}
     app.tv_check.candidates = [{'host': '192.168.1.123', 'name': 'Living room Samsung television'}]
-    pages = ['probe', 'power_ready', 'power_running', 'power_confirm', 'retry_power',
+    pages = ['models', 'test_controls', 'profile_save_error', 'probe', 'power_ready', 'power_running', 'power_confirm', 'retry_power',
              'source_ready', 'source_wait', 'source_confirm', 'source_timeout', 'samsung',
              'sony', 'sony_help', 'samsung_help', 'discover', 'choose_tv', 'pair', 'paired',
              'no_tv', 'retry_source', 'unavailable', 'save_error', 'summary']
@@ -53,6 +53,7 @@ with tempfile.TemporaryDirectory() as folder:
                 app.language = language
                 app.font_family = font_family(language, app.available_fonts)
                 for page in pages:
+                    app.tv_profile_page = page if page in ('models', 'test_controls', 'profile_save_error') else None
                     app.tv_check.page = page
                     app.tv_check.busy = page in ('probe', 'power_running', 'source_wait', 'discover', 'pair')
                     app.render()
@@ -64,6 +65,7 @@ with tempfile.TemporaryDirectory() as folder:
                         assert box and 0 <= box[0] and box[2] <= width and 0 <= box[1] and box[3] <= height, (language, page, box)
         # Save a local rendering for visual inspection; no live camera involved.
         from PIL import Image, ImageTk
+        app.tv_profile_page = 'models'
         app.tv_check.page = 'source_ready'
         app.language = 'fr'
         app.root.geometry('1280x720+30+30')
@@ -72,7 +74,7 @@ with tempfile.TemporaryDirectory() as folder:
         app.root.update()
         output = Path(tempfile.gettempdir()) / 'tv-check-layout.png'
         output.parent.mkdir(parents=True, exist_ok=True)
-        rendered = Image.new('RGB', (app.root.winfo_width(), app.root.winfo_height()), '#0d1420')
+        rendered = Image.new('RGB', (app.root.winfo_width(), app.root.winfo_height()), app.tv_check_page['bg'])
         pictures = {str(photo): photo for photo in app.tv_check_images}
         for item in app.tv_check_page.find_all():
             photo = pictures[app.tv_check_page.itemcget(item, 'image')]

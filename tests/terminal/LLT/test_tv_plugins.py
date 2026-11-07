@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from zmala_terminal.linux.tv_control import TVControl
-from zmala_terminal.linux.tv_plugins import load_driver
+from zmala_terminal.linux.tv_plugins import DRIVERS, load_driver
 from zmala_terminal.linux.tv_plugins.api import TVDriver as BaseTVDriver
 from zmala_terminal.linux.tv_plugins.samsung import driver as samsung
 
@@ -34,6 +34,16 @@ class TVPluginTests(unittest.TestCase):
         return load_driver('samsung', {'config_file': self.path, **config})
 
     def test_registry_contract_and_construction_do_not_access_tv(self):
+        from zmala_terminal.common.tv_profiles import BRANDS, brand_artwork, read_profile, write_profile
+        for info in DRIVERS.values():
+            self.assertTrue(info.brand.strip()); self.assertTrue(info.model_family.strip())
+        for brand in BRANDS + ('Unknown brand',):
+            self.assertTrue(brand_artwork(brand).is_file(), brand)
+        self.assertEqual(read_profile(self.path), 'samsung')
+        write_profile(self.path, 'cec'); self.assertEqual(read_profile(self.path), 'cec')
+        with self.assertRaises(ValueError): write_profile(self.path, 'arbitrary.module')
+        self.assertEqual(load_driver('cec', {}).get_capabilities(), set())
+        samsung.save_config(self.path, self.saved)
         with patch.object(samsung, 'connect') as connect, patch.object(samsung.http.client, 'HTTPConnection') as http:
             driver = self.driver()
             self.assertIsInstance(driver, BaseTVDriver)

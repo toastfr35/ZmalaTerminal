@@ -102,6 +102,7 @@ class ProvisioningFlow:
             self.tv_check.close()
             self.tv_check = None
         (self.enrollment.path.parent / 'tv-check.json').unlink(missing_ok=True)
+        (self.enrollment.path.parent / 'tv-profile.json').unlink(missing_ok=True)
         self.setup_feedback = False
         self.missed_calls_store.clear()
         self.model = TerminalModel()

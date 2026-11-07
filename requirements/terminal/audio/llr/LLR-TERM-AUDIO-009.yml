@@ -29,8 +29,6 @@ references:
   type: file
 - path: zmala_terminal/linux/sound_levels.py
   type: file
-- path: zmala_terminal/windows/platform_services.py
-  type: file
 reviewed: null
 scope: Core
 text: |

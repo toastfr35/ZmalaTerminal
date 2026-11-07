@@ -24,9 +24,17 @@ class DesktopFan:
 
 
 class DesktopTelevision:
-    supports_setup = False
+    supports_setup = True
+    simulated = True
+    simulation_scene = None
     power_enabled = True
     source_enabled = True
+
+    def select_driver(self, name):
+        from zmala_terminal.linux.tv_plugins import DRIVERS
+        if name not in DRIVERS:
+            raise ValueError('Unknown TV driver')
+        self._driver_name = name
 
     def handle_button(self, on_visible, preserve_restore=False):
         return False  # The desktop already shows the UI; do not consume the press.
@@ -50,6 +58,44 @@ class DesktopTelevision:
         return True
 
     def close(self):
+        pass
+
+
+# @llr LLR-TERM-TV-019
+class SimulatedTVTransport:
+    """Exercise the real wizard without sending CEC or network commands."""
+    def __init__(self, television):
+        self.tv = television
+
+    def probe(self, cancel):
+        return {'address': '2.0.0.0', 'display': 'windows-simulated-tv'}
+
+    def resume_network(self, enabled):
+        pass
+
+    def sequence(self, cancel, scenes):
+        try:
+            for scene in scenes:
+                self.tv.simulation_scene = scene
+                if cancel.wait(1.5):
+                    return False
+            return True
+        finally:
+            self.tv.simulation_scene = None
+
+    def power(self, cancel):
+        return self.sequence(cancel, ('standby', 'terminal'))
+
+    def source(self, cancel):
+        return self.sequence(cancel, ('broadcast', 'terminal', 'broadcast', 'terminal'))
+
+    def discover(self, cancel):
+        return [{'name': 'Simulated Samsung TV', 'host': '192.0.2.10'}]
+
+    def pair(self, cancel, host):
+        return True
+
+    def confirm_source(self):
         pass
 
 
