@@ -194,7 +194,7 @@ class LocalSettingsTests(unittest.TestCase):
         messages = json.loads((Path(__file__).resolve().parents[3]/'zmala_terminal/common/shared/settings-messages.json').read_text(encoding='utf-8'))
         self.assertEqual(set(messages), set(LANGUAGES))
         for values in messages.values():
-            self.assertEqual(len(values), 17)
+            self.assertEqual(len(values), 18)
             self.assertTrue(all(isinstance(v, str) and v.strip() for v in values))
 
     def test_native_language_alphabet_order_and_both_wrap_boundaries(self):

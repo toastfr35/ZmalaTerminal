@@ -83,7 +83,7 @@ try:
             app.font_family = font_family(language, app.available_fonts)
             for row,key in enumerate(FIELDS):
                 app.settings_draft.row = row
-                for editing in ((False,) if key in ('reset','tv_setup') else (False,True)):
+                for editing in ((False,) if key in ('reset','tv_setup','updates') else (False,True)):
                     if editing:
                         app.settings_draft.open(app.model.config)
                     else:

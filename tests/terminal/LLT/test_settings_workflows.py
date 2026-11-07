@@ -97,7 +97,7 @@ class SettingsWorkflowTests(unittest.TestCase):
     def test_settings_render_five_cards_and_each_field_with_three_controls(self):
         v=self.view(); c=v.settings_canvas
         for row,key in enumerate(FIELDS):
-            for editing in ([False] if key in ('reset','tv_setup') else [False,True]):
+            for editing in ([False] if key in ('reset','tv_setup','updates') else [False,True]):
                 v.settings_draft=SettingsDraft(); d=v.settings_draft; d.row=row
                 if editing: d.open(v.model.config)
                 v.settings_signature=None; c.reset_mock(); v.draw_settings()
@@ -120,7 +120,7 @@ class SettingsWorkflowTests(unittest.TestCase):
                 v.settings_draft.row=row; v.settings_canvas.reset_mock(); v.draw_settings()
                 values=[call for call in v.settings_canvas.create_image.call_args_list
                         if 'settings-value' in call.kwargs.get('tags',()) and key in call.kwargs['tags']]
-                if key == 'reset':
+                if key in ('reset', 'updates'):
                     self.assertFalse(values)
                 else:
                     self.assertEqual(len(values),1)

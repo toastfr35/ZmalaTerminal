@@ -29,7 +29,7 @@ class ReportingTests(unittest.TestCase):
             key.write_text(json.dumps({'test': 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='}))
             (root/'terminal.json').write_text(json.dumps({'server_url': 'https://family.example', 'device_token': 'fixture-token-123456789'}))
             (root/'terminal.json').chmod(0o600)
-            runtime = Mock(phase='checking')
+            runtime = Mock(phase='checking', request=root/'state.json', status=root/'status.json')
             with patch('zmala_terminal.linux.update_service.trusted_json', side_effect=lambda path, *args: json.loads(Path(path).read_text())):
                 service = UpdateService({'keys': str(key), 'data': temporary}, tx, runtime)
                 transport = Mock()

@@ -13,7 +13,8 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULES = ('update_transaction', 'update_package', 'update_supervisor', 'update_runtime',
-           'update_download', 'update_prepare', 'update_service', 'update_screen', 'update_snapshot', 'update_server')
+           'update_download', 'update_prepare', 'update_service', 'update_screen', 'update_snapshot', 'update_server',
+           'update_mailbox')
 
 
 def command(*args):

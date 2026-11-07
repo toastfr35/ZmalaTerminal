@@ -30,6 +30,7 @@ class Runtime:
         self.phase = 'idle'
         self.language = 'en'
         self.preserve_sleep = False
+        self.immediate = False
         self.baseline_restarts = None
         self.request.parent.mkdir(parents=True, exist_ok=True)
 
@@ -51,7 +52,8 @@ class Runtime:
     def publish(self):
         temporary = self.request.with_suffix('.next')
         value = {'phase': self.phase, 'language': self.language, 'nonce': self.nonce,
-                 'preserve_sleep': self.preserve_sleep, 'heartbeat': self.clock()}
+                 'preserve_sleep': self.preserve_sleep, 'heartbeat': self.clock(),
+                 'immediate': self.immediate and self.phase == 'request'}
         temporary.write_text(json.dumps(value), encoding='utf-8')
         temporary.chmod(0o644)
         os.replace(temporary, self.request)

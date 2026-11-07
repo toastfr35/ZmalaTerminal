@@ -162,6 +162,7 @@ class ManagementPumpTests(unittest.TestCase):
 
     def test_tick_orders_ui_work_schedules_animation_and_stops_when_closed(self):
         loop=self.loop(); loop.update_timers=Mock(); loop.configuration.photos.changed.return_value=True
+        loop.tick_settings_updates=Mock()
         motion=Mock(); motion.progress.return_value=.5; motion.next_frame_delay.return_value=17; loop.carousel_motion=motion
         with patch.object(management.time,'monotonic',return_value=100): loop.tick()
         loop.engine.iterate.assert_called_once(); loop.render.assert_called_once(); loop.draw_avatar.assert_called_once_with(loop.model.selected)

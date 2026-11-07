@@ -493,6 +493,7 @@ inside the small-window layout.
 | Portraits | Three/five; short contact lists retain three positions |
 | Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |
+| Updates | Check now and choose whether to apply the offered version |
 | Reset to factory defaults | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
@@ -1648,6 +1649,12 @@ application before terminal startup. The updater downloads compatible signed
 releases, prepares them in a dedicated unprivileged sandbox, and activates after
 safe inactivity. It never invokes an OS installer or package manager. The stable
 updater in a new installation reads [Terminal releases](https://github.com/toastfr35/ZmalaTerminal/releases).
+It checks once per day at local midnight, with a catch-up check after a missed
+day. Settings > Updates checks immediately. Green confirms the specific offered
+release and requests activation as soon as the normal safety guards permit it.
+Confirmation waives the inactivity timer. Calls and setup still take precedence.
+Existing standalone installations need a trusted package installer run to gain
+the new privileged command endpoint. Appliance images use their own host updater.
 Existing installations that still use the ZmalaCall feed require a package-level
 upgrade to install the new stable updater. Back up enrollment and settings before
 any package-level migration.

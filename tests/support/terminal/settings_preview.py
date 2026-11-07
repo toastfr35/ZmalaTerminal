@@ -68,6 +68,7 @@ class Preview(Terminal):
         self.tick_settings_access(time.monotonic())
         self.tick_ringtone(time.monotonic())
         self.tick_tv_setup()
+        self.tick_settings_updates()
         try:
             while True:
                 kind, args = self.messages.get_nowait()

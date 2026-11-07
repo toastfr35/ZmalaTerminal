@@ -11,7 +11,18 @@ from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GRE
 MESSAGES = json.loads((Path(__file__).resolve().parents[1] / 'shared/settings-messages.json').read_text(encoding='utf-8'))
 KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume',
         'carousel_portraits', 'never', 'open', 'accept', 'exit', 'current', 'tv_idle_seconds', 'ringtone', 'action_sound_volume',
-        'tv_setup', 'tv_unavailable', 'reset')
+        'tv_setup', 'tv_unavailable', 'reset', 'updates')
+
+UPDATE_MESSAGES = {
+    'en': {'checking': 'Checking for updates…', 'current': 'Your software is up to date.',
+           'available': 'Version {version} is available.\nApply the update now?',
+           'submitting': 'Requesting the update…', 'unavailable': 'Update service unavailable.',
+           'error': 'Could not complete the update request.', 'apply': 'Apply update', 'back': 'Back'},
+    'fr': {'checking': 'Recherche de mises à jour…', 'current': 'Le logiciel est à jour.',
+           'available': 'La version {version} est disponible.\nAppliquer la mise à jour maintenant ?',
+           'submitting': 'Demande de mise à jour…', 'unavailable': 'Service de mise à jour indisponible.',
+           'error': 'Impossible de traiter la demande de mise à jour.', 'apply': 'Appliquer', 'back': 'Retour'},
+}
 
 
 class SettingsView:
@@ -29,7 +40,7 @@ class SettingsView:
             from zmala_terminal.common.tv_profiles import DRIVERS
             profile = DRIVERS[getattr(self, 'tv_profile_saved', 'samsung')]
             return profile.model_family if profile.brand == 'Generic' else profile.brand
-        if key == 'reset':
+        if key in ('reset', 'updates'):
             return ''
         if key == 'language':
             return LANGUAGES[value]['native']
@@ -118,9 +129,10 @@ class SettingsView:
         c, config = self.settings_canvas, self.model.config
         width, height = max(900, c.winfo_width()), max(620, c.winfo_height())
         draft = self.settings_draft
+        update_signature = (draft.updates.state, draft.updates.version) if draft.updates else None
         signature = (width, height, self.language, self.settings_open, int(self.settings_hold.progress*100),
                      draft.row, draft.editing, draft.index,
-                     draft.busy, draft.error, draft.confirm_exit, getattr(self, 'ringtone_preview_state', ''),
+                     draft.busy, draft.error, draft.confirm_exit, update_signature, getattr(self, 'ringtone_preview_state', ''),
                      tuple(SettingsDraft.value(config, key) for key in FIELDS),
                      tuple((item['id'], item.get('name', '')) for item in config.get('ringtones', [])))
         if signature == self.settings_signature:
@@ -144,6 +156,9 @@ class SettingsView:
             return
         self.settings_label(self.settings_text('settings'), width/2, 48, width-180, 28,
                             MUTED, anchor='center', max_height=60, tags='settings-title')
+        if draft.updates:
+            self.draw_update_menu(width, height, draft.updates)
+            return
         if draft.editing:
             self.draw_setting_editor(width, height)
         else:
@@ -175,6 +190,23 @@ class SettingsView:
             self.settings_label(message, width/2, height-115, width-100, 18,
                                 MUTED if draft.busy else RED, anchor='center', max_height=42)
         self.settings_hints(width, height)
+
+    def draw_update_menu(self, width, height, menu):
+        messages = UPDATE_MESSAGES.get(self.language, UPDATE_MESSAGES['en'])
+        self.settings_label(self.settings_text('updates'), width/2, 132, width-100, 32,
+                            bold=True, anchor='center', max_height=88)
+        self.settings_icon('updates', width/2, height*.34, 96, BG)
+        self.settings_label(messages[menu.state].format(version=menu.version), width/2, height*.56,
+                            width-150, 28, anchor='center', max_height=height*.24)
+        actions = [(messages['back'], BUTTON_RED)]
+        if menu.state == 'available':
+            actions.insert(0, (messages['apply'], BUTTON_GREEN))
+        card_width = min(320, width*.34)
+        for index, (label, color) in enumerate(actions):
+            center = width/2 + (index-(len(actions)-1)/2)*(card_width+24)
+            self.settings_panel(center-card_width/2, height-86, card_width, 48, color)
+            self.settings_label(label, center, height-62, card_width-20, 20, FG, color,
+                                True, anchor='center', max_height=40)
 
     def draw_setting_editor(self, width, height):
         draft, config = self.settings_draft, self.model.config
