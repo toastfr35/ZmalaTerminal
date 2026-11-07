@@ -78,11 +78,11 @@
     ],
     [
       "Wählen und speichern",
-      "Links/rechts wählt Anrufe, Ton oder Terminal. Grün öffnet die Kategorie. Einstellung wählen, dann Grün drücken. TV einrichten ist unter Terminal."
+      "Links/rechts wählt eine Einstellung. Fünf Symbole zeigen darunter die aktuellen Werte. Grün öffnet; links/rechts ändert. Grün speichert und geht zurück; Rot verwirft und geht zurück."
     ],
     [
       "Verlassen",
-      "Links/rechts ändert den Wert. Grün speichert und geht zurück; Rot verwirft und geht zurück. Rot verlässt die Kategorie. Im Karussell: Rot, dann Grün zum Beenden."
+      "TV einrichten ist ebenfalls im Karussell. Zum Verlassen Rot drücken, dann Grün zum Beenden oder Rot zum Bleiben."
     ]
   ],
   "help": "Bei aktivierter TV-Steuerung zeigt der erste Tastendruck eventuell nur Zmala. Sonst den HDMI-Eingang mit der TV-Fernbedienung wählen. Reagiert die Fernbedienung nicht, Schalter hinten prüfen und laden. Bei Speicher- oder Anruffehlern Ihre helfende Person fragen.",

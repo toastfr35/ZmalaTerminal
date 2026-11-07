@@ -1,5 +1,5 @@
 # @test T-LLT-064
-# @requirements LLR-TERM-NET-005, LLR-TERM-COM-007, LLR-TERM-COM-008, LLR-TERM-CALL-012, LLR-TERM-POWER-013, LLR-TERM-MAINT-018
+# @requirements LLR-TERM-NET-005, LLR-TERM-COM-007, LLR-TERM-COM-008, LLR-TERM-CALL-012, LLR-TERM-POWER-013, LLR-TERM-MAINT-018, LLR-TERM-TV-019
 # @environment portable
 # @plan Exercise the real UI queue and timer pump with a configured model, virtual clock and recording UI/device boundaries. Verify captured-generation polling, diagnostics/peripheral publication with unknown values, power/wake states and detached snapshots, worker-failure recovery, rejected stale button/results, USB readiness activity, deferred auto-answer, timer-driven redraw and rescheduling after a tick exception. Verify completed carousel motion and closed terminals do not keep animating.
 # @pass Assertions pass without real threads, Tk windows, network or devices; these tests verify scheduling and boundary contracts, not hardware timing.
@@ -15,6 +15,18 @@ from tests.terminal.LLT.test_terminal import config
 
 
 class ManagementPumpTests(unittest.TestCase):
+    def test_timer_does_not_restart_maintenance_during_tv_setup(self):
+        loop = self.loop()
+        loop.update_client = Mock(locked=False)
+        loop.maintenance = None
+        loop.make_maintenance = Mock()
+        loop.setup_stage = 'tv'
+        loop.update_timers(100)
+        loop.make_maintenance.assert_not_called()
+        loop.setup_stage = None
+        loop.update_timers(100.1)
+        loop.make_maintenance.assert_called_once_with(loop.configuration)
+
     def test_queued_report_is_detached_from_nested_diagnostics(self):
         loop = self.loop()
         loop.diagnostics = {'video': {'frames': 12}}

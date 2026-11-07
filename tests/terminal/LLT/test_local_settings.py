@@ -164,7 +164,7 @@ class LocalSettingsTests(unittest.TestCase):
     def test_reset_requires_opening_settings_entry_then_separate_confirmation(self):
         from zmala_terminal.common.main import Terminal
         app = self.controller()
-        app.settings_open = True; app.settings_draft = SettingsDraft(); app.settings_draft.category = 2; app.settings_draft.open_category(); app.settings_draft.row = FIELDS.index('reset')
+        app.settings_open = True; app.settings_draft = SettingsDraft(); app.settings_draft.row = FIELDS.index('reset')
         app.factory_reset = Mock()
         app.press('green')
         self.assertEqual(app.setup_stage, 'reset')
@@ -194,7 +194,7 @@ class LocalSettingsTests(unittest.TestCase):
         messages = json.loads((Path(__file__).resolve().parents[3]/'zmala_terminal/common/shared/settings-messages.json').read_text(encoding='utf-8'))
         self.assertEqual(set(messages), set(LANGUAGES))
         for values in messages.values():
-            self.assertEqual(len(values), 19)
+            self.assertEqual(len(values), 16)
             self.assertTrue(all(isinstance(v, str) and v.strip() for v in values))
 
     def test_native_language_alphabet_order_and_both_wrap_boundaries(self):

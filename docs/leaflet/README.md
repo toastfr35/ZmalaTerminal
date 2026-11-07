@@ -76,7 +76,7 @@ included in the ZIP.
 
 ## Impact and verification
 
-The leaflet follows the three-category settings workflow and optional TV setup.
+The leaflet follows the five-card settings carousel and optional TV setup.
 Runtime, `@llr` anchors, Doorstop records and verification plans are updated together. Content was checked against the setup flow,
 settings/input controllers and these existing requirements:
 

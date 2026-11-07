@@ -51,7 +51,8 @@ reads a Wi-Fi code and a server code. The server code supplies the terminal
 identity and access credentials.
 
 Setup shows an error when an operation fails. It continues only when that step
-has completed. TV tests follow server registration and use the selected language.
+has completed. Enrollment then goes to the contact screen. Optional TV tests
+are available under Settings > Terminal and use the selected language.
 The user can reset the terminal from Settings after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
 
@@ -83,9 +84,13 @@ All terminal volume UI uses 5% steps. Settings has separate Ringtone volume and 
 
 The ringtone editor wraps at both ends: left on the first choice selects the last, and right on the last selects the first, without saving.
 
-Red on the settings category carousel asks whether to exit: green confirms; red keeps the selected category. Red within a category returns to the carousel. Red within an editor discards the draft and returns to its category. Neither exit answer changes saved configuration.
+Settings shows all local settings in one carousel with five visible icon cards.
+The selected card is centred; current values appear below the icons. Left/right
+moves between settings and green opens the selected setting directly. In the
+individual editor, left/right changes the draft, green saves and returns to the
+same card, and red discards and returns. Red on the carousel asks whether to exit:
+green confirms; red stays on the same card. Neither exit answer changes values.
 
-Settings opens three icon cards: Calls, Sound and Terminal. Left/right rotates the centred selection; green opens the category. Category pages show a short list with labels and saved values. Green opens one focused editor with a large value; left/right changes it, green saves and returns, and red cancels and returns.
 
 The server supplies the main terminal configuration. The local Settings page lets
 the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count
@@ -355,7 +360,8 @@ Polling and settings responses share these checks through `Configuration`.
 ## Onboarding and reset state
 
 `setup_flow.py` coordinates USB readiness, pairing/button verification, Wi-Fi QR,
-server QR and post-enrollment TV checks. `provisioning.py` persists accepted
+and server QR enrollment. `ui/tv_setup.py` owns the optional TV checks opened
+from Settings. `provisioning.py` persists accepted
 identity and owns reset cleanup; `qr_scanner.py` owns a separate camera process.
 The Linux preview releases partially acquired decoder, window and X11 resources
 if embedding or capture initialization fails; closing it is idempotent. The parent
@@ -371,7 +377,7 @@ Each asynchronous completion is checked against the current setup generation.
 | Button verification | Distinct physical left/right/green/red/middle press and release sequence, saved against pairing identity |
 | Wi-Fi QR | Actual join succeeds, followed by an unskippable ten-second confirmation; existing-link is a development mode |
 | Server QR | URL, device ID and token decode; authenticated, validated configuration succeeds before committing enrollment |
-| TV checks | Independent power/input outcomes and TV binding persist before normal use; power-only success does not authorize active-source announcements |
+| Optional TV checks (Settings) | Independent power/input outcomes and TV binding persist before enabling automatic TV actions; power-only success does not authorize active-source announcements |
 
 Before enrollment, prompts use English. Enrollment applies the selected language;
 detailed diagnostic catalogs use English fallback where a translation is absent.
@@ -449,14 +455,14 @@ button, focus loss, disconnect or an incoming call cancels the settings hold.
 The Presenter green sticker covers the microphone button; red covers Teams.
 Middle is Pointer. Remote motion is ignored for volume. While the overlay is open, physical buttons do not navigate contacts, dial, hang up or open Settings. Internal timeouts and permission revocations still cancel calls. `input_control.py` routes physical input (including delayed TV checks) through `physical_press`; logical `press` remains available to the call/timer controllers. Call/state changes and setup/focus changes dismiss the overlay; an existing call continues.
 
-Settings has a three-category icon carousel, short category lists and individual
+Settings has a five-card icon carousel containing all settings, and individual
 editor pages. Each page has full-width control hints. Status icons are hidden,
 and the terminal serial appears at the bottom. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
-The label renderer reduces the font to fit each settings region. Category values
-have their own column; the editor devotes a large central panel to the draft.
+The label renderer reduces the font to fit each settings region. Current values
+appear below the carousel icons; the editor has a large central draft panel.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps
 combining marks with their preceding character. This also keeps the button hints
 inside the small-window layout.
@@ -471,7 +477,7 @@ inside the small-window layout.
 | Ringtone | Nokia (default) and the private server library |
 | Portraits | Three/five; short contact lists retain three positions |
 | Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
-| TV setup | Guided TV power and input checks, opened explicitly from Terminal |
+| TV setup | Guided TV power and input checks, opened explicitly from the carousel |
 | Reset | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
@@ -796,11 +802,11 @@ before a network toggle. The real-call test plan and measured results are in
 
 ### Installation TV checks
 
-TV checks are optional: open Settings > Terminal > TV setup. Enrollment and
+TV checks are optional: open Settings > TV setup. Enrollment and
 startup go straight to ordinary use. Saved capabilities are checked against the
 TV identity in the background; incomplete checks stay disabled without opening
 a wizard. Opening TV setup pauses maintenance and ordinary call/idle TV actions.
-The completed wizard returns to the Terminal category. Reopening completed checks
+The completed wizard returns to the same TV setup card. Reopening completed checks
 allows retesting while keeping attempt counts; incomplete checks resume at a prompt.
 Green starts the standby/wake test; a three-second off interval follows a bounded
 standby-report wait. The user confirms whether the picture went off and returned.
@@ -1683,8 +1689,8 @@ python tests/support/terminal/run_display.py tests/support/terminal/settings_pre
 
 Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
 The fixture opens Settings immediately. Saves are acknowledged in memory and
-reset when the window closes. Verify all three category icons, each editor's
-accept/cancel return, category back, exit confirmation and the seven-second
+reset when the window closes. Verify five visible setting icons and saved values, each editor's
+accept/cancel return to the same card, exit confirmation and the seven-second
 Escape hold from Home. The TV setup entry explains that TV control requires
 the Pi. The display HLT exercises the guided pages with substituted hardware.
 Windows does not qualify physical CEC, audio previews or native call media.

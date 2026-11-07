@@ -2,7 +2,7 @@ active: true
 area: Configuration
 derived: false
 header: |
-  Settings categories and focused editors
+  Settings carousel and focused editors
 level: 30.0
 links:
 - HLR-TERM-CONFIG-016: tF6jWzImg7gepg3fagqe56SUaj2ierhVysKpWA6YeEU=
@@ -24,17 +24,16 @@ references:
 reviewed: null
 scope: Core
 text: |
-  Settings shall open a carousel of exactly three icon categories: Calls, Sound
-  and Terminal. Left/right shall rotate categories and green shall open the
-  selected category. Within a category, left/right shall select an entry and
+  Settings shall present all settings and actions in one wrapping carousel with
+  five visible icon cards. The selected card shall be centred, and each setting's
+  current value shall appear below its icon. Left/right shall select a card;
   green shall open its individual page. In an editor, left/right shall change
-  only the draft; green shall accept and return to the category after acknowledgement;
-  red shall discard and return without saving. Red on a category shall return
-  to the carousel. Red on the carousel shall ask before exiting: green exits,
-  red retains the selected category, and arrows have no effect. Each page shall
-  show its own full-width button hints.
+  only the draft; green shall accept and return to the same carousel selection
+  after acknowledgement; red shall discard and return without saving. Red on
+  the carousel shall ask before exiting: green exits, red retains the selected
+  card, and arrows have no effect. Each page shall show its own full-width hints.
 verification: |
-  Navigate all three categories and every setting. Verify category and option
-  wrap/clamp behavior, green acknowledgement, red cancellation and return paths.
-  Exercise both exit answers and ignored arrows. Render all supported languages
-  at 900x620 and 1280x720 and check icons, labels, values and controls stay bounded.
+  Navigate every setting and both carousel wrap boundaries. Verify five visible
+  icon cards with saved values, green acknowledgement, red cancellation and the
+  selected card on return. Exercise both exit answers and ignored arrows. Render
+  every language at 900x620 and 1280x720; check icons, values and controls fit.

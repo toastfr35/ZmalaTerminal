@@ -2,12 +2,6 @@
 from zmala_terminal.common.localization import LANGUAGES
 
 FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone_volume', 'action_sound_volume', 'ringtone', 'carousel_portraits', 'tv_idle_seconds', 'tv_setup', 'reset')
-CATEGORIES = ('calls', 'sound', 'terminal')
-CATEGORY_FIELDS = {
-    'calls': ('auto_answer', 'auto_framing'),
-    'sound': ('ringtone_volume', 'action_sound_volume', 'ringtone'),
-    'terminal': ('language', 'carousel_portraits', 'tv_idle_seconds', 'tv_setup', 'reset'),
-}
 TV_IDLE_DELAYS = (30, 60, 120, 300, 600, 1200, 1800, 0)
 ANSWER_DELAYS = (0, 10, 30, 60, 120, 300, 600)
 
@@ -41,8 +35,6 @@ class SettingsHold:
 
 class SettingsDraft:
     def __init__(self):
-        self.category = 0
-        self.category_open = False
         self.row = 0
         self.editing = False
         self.confirm_exit = False
@@ -55,14 +47,6 @@ class SettingsDraft:
     @property
     def key(self):
         return FIELDS[self.row]
-
-    @property
-    def category_key(self):
-        return CATEGORIES[self.category]
-
-    def open_category(self):
-        self.category_open = True
-        self.row = FIELDS.index(CATEGORY_FIELDS[self.category_key][0])
 
     @staticmethod
     def value(config, key):
@@ -105,11 +89,8 @@ class SettingsDraft:
         if self.editing:
             self.index = ((self.index+direction) % len(self.options) if self.key in ('ringtone', 'language')
                           else max(0, min(len(self.options)-1, self.index+direction)))
-        elif self.category_open:
-            fields = CATEGORY_FIELDS[self.category_key]
-            self.row = FIELDS.index(fields[(fields.index(self.key)+direction) % len(fields)])
         else:
-            self.category = (self.category+direction) % len(CATEGORIES)
+            self.row = (self.row+direction) % len(FIELDS)
         self.error = False
 
     def change(self, config):

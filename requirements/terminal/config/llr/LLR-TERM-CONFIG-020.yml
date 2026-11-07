@@ -25,8 +25,8 @@ reviewed: null
 scope: Core
 text: |
   Settings shall hide the normal status icons and show the assigned terminal ID
-  in small text at the bottom. The Terminal category shall contain language,
-  portrait count, return-to-TV delay, TV setup and finally reset.
+  in small text at the bottom. The carousel shall include all
+  local settings, followed by TV setup and finally reset.
 verification: |
   Render Settings at supported sizes. Check the identifier, absence of status
-  icons, three category icons and the order of entries within Terminal.
+  icons, five setting icons and the order of TV setup and reset.

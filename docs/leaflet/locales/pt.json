@@ -78,11 +78,11 @@
     ],
     [
       "Escolha e guarde",
-      "Esquerda/direita escolhe Chamadas, Som ou Terminal. Verde abre a categoria. Escolha um ajuste e prima verde. Configurar TV está em Terminal."
+      "Esquerda/direita escolhe um ajuste. Cinco ícones mostram os valores atuais por baixo. Verde abre; esquerda/direita altera. Verde guarda e volta; vermelho cancela e volta."
     ],
     [
       "Saia",
-      "Esquerda/direita altera o valor. Verde guarda e volta; vermelho cancela e volta. Vermelho sai da categoria. No carrossel, vermelho e depois verde sai dos ajustes."
+      "Configurar TV também está no carrossel. Para sair, prima vermelho e depois verde para sair ou vermelho para ficar."
     ]
   ],
   "help": "Com controlo TV ativo, a primeira pressão pode apenas mostrar o Zmala. Caso contrário, escolha a entrada HDMI com o comando TV. Se o comando não responder, verifique o interruptor traseiro e carregue-o. Peça ajuda se falhar uma chamada ou gravação.",

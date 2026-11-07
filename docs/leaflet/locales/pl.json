@@ -78,11 +78,11 @@
     ],
     [
       "Wybierz i zapisz",
-      "Lewo/prawo wybiera Połączenia, Dźwięk lub Terminal. Zielony otwiera kategorię. Wybierz ustawienie i naciśnij zielony. Konfiguracja TV jest w Terminal."
+      "Lewo/prawo wybiera ustawienie. Pięć ikon pokazuje bieżące wartości poniżej. Zielony otwiera; lewo/prawo zmienia. Zielony zapisuje i wraca; czerwony anuluje i wraca."
     ],
     [
       "Wyjdź",
-      "Lewo/prawo zmienia wartość. Zielony zapisuje i wraca; czerwony anuluje i wraca. Czerwony opuszcza kategorię. W karuzeli czerwony, potem zielony zamyka ustawienia."
+      "Konfiguracja TV też jest w karuzeli. Aby wyjść, naciśnij czerwony, potem zielony, by wyjść, lub czerwony, by zostać."
     ]
   ],
   "help": "Przy włączonym sterowaniu TV pierwsze naciśnięcie może tylko pokazać Zmala. W innym razie wybierz wejście HDMI pilotem TV. Gdy pilot nie reaguje, sprawdź przełącznik z tyłu i naładuj go. Poproś o pomoc przy błędzie zapisu lub połączenia.",

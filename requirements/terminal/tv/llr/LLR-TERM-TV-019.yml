@@ -9,6 +9,10 @@ links:
 normative: true
 ref: ''
 references:
+- path: zmala_terminal/common/management.py
+  type: file
+- path: tests/terminal/LLT/test_management_loop.py
+  type: file
 - path: zmala_terminal/common/main.py
   type: file
 - path: zmala_terminal/common/setup_flow.py
@@ -32,13 +36,13 @@ references:
 reviewed: null
 scope: Core
 text: |
-  TV checks shall be opened explicitly from Settings, in the Terminal category,
+  TV checks shall be opened explicitly from the TV setup card in Settings,
   using the selected language. Enrollment, cached startup and configuration polls
   shall not open the wizard or block ordinary use on unfinished checks. Startup
   shall validate saved TV identity in the background and enable only completed,
   user-passed capabilities. Opening TV setup shall allow checks to be repeated,
   suspend maintenance and ordinary call/idle TV actions, and completion shall
-  return to the same settings category and resume maintenance. Unsupported
+  return to the same settings card and resume maintenance. Unsupported
   desktop TV control shall show an explanatory message without running commands.
 verification: |
   Verify enrollment and cached startup apply configuration without opening TV
