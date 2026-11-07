@@ -107,15 +107,10 @@ def _compact_server_fields(text):
 
 # @llr LLR-TERM-SETUP-030
 def parse_server(text):
-    """Accept a bounded enrollment document with a plain HTTP(S) base URL and device credentials."""
-    if not isinstance(text, str) or len(text) > 4096:
+    """Decode a compact server QR into a bounded HTTP(S) origin and credentials."""
+    if not isinstance(text, str) or len(text) > 4096 or not text.startswith('ZMS1:'):
         raise ValueError('Invalid server QR code')
-    if text.startswith('ZMS1:'):
-        value = _compact_server_fields(text[5:])
-    else:
-        value = json.loads(text)
-        if not isinstance(value, dict) or value.get('type') != 'family-call-server' or type(value.get('version')) is not int or value['version'] != 1:
-            raise ValueError('Not a Zmala server QR code')
+    value = _compact_server_fields(text[5:])
     url = value.get('server_url')
     if not isinstance(url, str) or len(url) > 512:
         raise ValueError('Invalid server address')

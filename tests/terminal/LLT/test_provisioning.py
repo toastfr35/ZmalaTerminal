@@ -14,6 +14,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from zmala_terminal.common.provisioning import Enrollment, parse_wifi, parse_server
 from zmala_terminal.common.configuration import Configuration
+from tests.support.terminal.compact_qr import compact_qr
 
 
 class ProvisioningTests(unittest.TestCase):
@@ -45,10 +46,8 @@ class ProvisioningTests(unittest.TestCase):
         for packed in [b'\0\0', b'\4\1x', b'\0\33x', b'\0\4x']:
             with self.assertRaises(ValueError):
                 parse_wifi('FAMILY-WIFI:1:'+base64.urlsafe_b64encode(packed).decode().rstrip('='))
-        good = {'type':'family-call-server', 'version':1, 'server_url':'http://unit',
-                'device_id':'term', 'device_token':'a'*40}
-        for text in [None, 'x'*4097, json.dumps(good | {'server_url':None}),
-                     json.dumps(good | {'server_url':'http://unit:0'})]:
+        for text in [None, 'x'*4097, compact_qr('', 'term', 'a'*40),
+                     compact_qr('unit:0', 'term', 'a'*40)]:
             with self.assertRaises(ValueError):
                 parse_server(text)
         with tempfile.TemporaryDirectory() as directory:
@@ -122,11 +121,15 @@ class ProvisioningTests(unittest.TestCase):
         for bad in ['not wifi', 'WIFI:T:WPA;S:One;P:short;;', 'WIFI:T:WEP;S:One;;', 'WIFI:S:One;S:Two;;', 'WIFI:S:One', 'WIFI:T:nopass;S:One;P:secret;;']:
             with self.assertRaises(ValueError):
                 parse_wifi(bad)
-        bootstrap = {'type': 'family-call-server', 'version': 1, 'server_url': 'http://127.0.0.1:8080/', 'device_id': 'terminal-1', 'device_token': 'a'*40}
-        self.assertEqual(parse_server(json.dumps(bootstrap))['server_url'], 'http://127.0.0.1:8080')
-        for bad in [{'version': True}, {'type': 'wifi'}, {'server_url': 'file:///tmp/a'}, {'server_url': 'http://user:pass@host'}, {'device_token': 'short'}, {'device_id': '../escape'}]:
+        self.assertEqual(parse_server(compact_qr('127.0.0.1:8080', 'terminal-1', 'a'*40))['server_url'],
+                         'http://127.0.0.1:8080')
+        for bad in ('ZMS2:000', '{"type":"family-call-server","version":1}',
+                    compact_qr('unit/path', 'term', 'a'*40),
+                    compact_qr('user:pass@host', 'term', 'a'*40),
+                    compact_qr('unit', 'term', 'short'),
+                    compact_qr('unit', '../escape', 'a'*40)):
             with self.assertRaises(ValueError):
-                parse_server(json.dumps(bootstrap | bad))
+                parse_server(bad)
 
     def test_reset_blocks_stale_configuration_writes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -413,9 +413,8 @@ but the button test repeats. Only application-owned Wi-Fi profiles are removed.
 A secret-free cleanup record survives failures/reboot; cleanup retries block new
 Wi-Fi enrollment. Other profiles and server accounts are unaffected.
 
-The Terminal accepts the standard JSON server QR and the optional compact
-Base45 server QR from the Server's Setup menu. Both supply the same server
-origin and private enrollment credentials.
+The Terminal reads the compact Base45 server QR from the Server's Setup menu
+to obtain the server origin and private enrollment credentials.
 
 The device ID is supplied by the server QR and is independent of hostname or
 hardware serial. New physical hardware needs its own Bluetooth and Samsung
