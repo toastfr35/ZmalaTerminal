@@ -37,3 +37,9 @@ npm --prefix zmala_server ci --ignore-scripts in that checkout. Set
 ZMALA_TEST_SERVER_ROOT to its checkout path and run
 xvfb-run -a make test-hlt-display from this repository. The service uses
 temporary account state and an ephemeral loopback port.
+
+
+The Docker NAT and secure-network HLTs run in the separate Zmala image-builder
+checkout. Prepare the lab as documented there, then set ZMALA_IMAGE_BUILDER_ROOT
+before invoking either HLT wrapper. These cases use synthetic media and run
+separately from the display and portable suites.
