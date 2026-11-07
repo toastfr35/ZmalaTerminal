@@ -73,7 +73,7 @@ with http_server_fixture() as server:
         def __init__(self, *args, **kwargs):
             pass
 
-        def iterate(self):
+        def iterate(self, *, scanning=True):
             pass
 
         def close(self):
@@ -108,12 +108,13 @@ with http_server_fixture() as server:
         with patch.object(app.root, 'after', return_value=None), patch.object(app.video, 'configure', wraps=app.video.configure) as repaint:
             for _ in range(50):
                 app.tick()
-            assert repaint.call_count == 1, 'Stable camera frame is being repainted continuously'
+            repaint.assert_not_called()
+        scanner = app.scanner
         app.qr_found('not a wifi code')
         assert app.setup_stage == 'wifi' and not app.setup_busy
         app.qr_found('WIFI:T:WPA;S:Test;P:test12345;;')
         wait(lambda: app.setup_stage == 'wifi_ready')
-        assert app.scanner is None and app.setup_continue_at - time.monotonic() > 9.5
+        assert scanner is not None and app.scanner is scanner and app.setup_continue_at - time.monotonic() > 4.5
         assert app.title.cget('text') == app.text('wifi_connected')
         assert app.name.cget('text') == app.text('server_qr_next')
         assert not app.video.winfo_ismapped(), 'Camera preview must be hidden during confirmation'
@@ -130,7 +131,7 @@ with http_server_fixture() as server:
         app.language = 'en'
         app.font_family = font_family('en', app.available_fonts)
         wait(lambda: app.setup_stage == 'server', 12)
-        assert app.scanner is not None and app.setup_continue_at is None
+        assert app.scanner is scanner and app.setup_continue_at is None
         assert app.title.cget('text') == 'Scan the server QR code'
         app.qr_found(server_qr)
         wait(lambda: app.setup_stage is None)
@@ -197,7 +198,7 @@ with http_server_fixture() as server:
         app.close()
         app = main.Terminal(profile='onboard-verification')
         assert app.setup_stage == 'wifi', 'Reset did not survive reopening with a legacy bootstrap present'
-        print('Stable camera repaint, 10-second Wi-Fi confirmation, 95 confirmation/reset translations, QR setup, console, idle-only gesture and persistent reset passed.')
+        print('Stable camera repaint, five-second Wi-Fi confirmation, 95 confirmation/reset translations, QR setup, console, idle-only gesture and persistent reset passed.')
     finally:
         if app:
             app.close()

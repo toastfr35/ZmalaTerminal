@@ -36,9 +36,11 @@ references:
 reviewed: null
 scope: Core
 text: |
-  Normal setup shall complete a Wi-Fi join before showing a ten-second success page.
-  It shall not skip that page. Ethernet connectivity alone shall not complete this
-  stage.
+  Normal setup shall complete a Wi-Fi join before showing a five-second success page.
+  It shall show the page for the full interval. While the page is visible, an active
+  camera shall stay open with its preview hidden and QR notifications paused. Server QR
+  scanning shall resume once the server prompt appears. Ethernet connectivity alone
+  shall not complete this stage.
   Failed joins shall remain at the Wi-Fi stage and show an actionable explanation
   for recognized missing-network, authentication, permission, adapter, address and
   timeout failures. Unknown failures shall use a generic retry message. Authentication
@@ -48,6 +50,7 @@ text: |
   feedback with progress; stale-generation results shall not overwrite current feedback.
 verification: |
   Supply Ethernet alone, a failed Wi-Fi join and a successful join. Check that server
-  enrollment follows the full success interval.
+  enrollment follows the full success interval. Check that the camera stays open,
+  its preview is hidden and a QR code is not accepted during the countdown.
   Inject each recognized failure and an unknown/private error; check safe visible
   explanations, retained stage, cleanup, fresh progress and stale-result rejection.

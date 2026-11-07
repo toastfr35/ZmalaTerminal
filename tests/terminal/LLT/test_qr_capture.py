@@ -1,7 +1,7 @@
 # @test T-LLT-058
 # @requirements LLR-TERM-SETUP-027, LLR-TERM-SETUP-028
 # @environment portable
-# @plan Stub V4L2, X11, ZBar and Tk at their API boundaries while executing the real Linux QR capture/decoder. Check 640x480/15fps requests, wrapper embedding and bounded preview, independent frame/decode throttles, repeated-code suppression and exact UTF-8 symbol bounds. Inject missing camera/display/tree, invalid image/UTF-8 and capture/decode failures; assert acquired resources are released on startup failure and close.
+# @plan Stub V4L2, X11, ZBar and Tk at their API boundaries while executing the real Linux QR capture/decoder. Check 640x480/15fps requests, hidden wrapper embedding and first-frame reveal, independent frame/decode throttles, repeated-code suppression and exact UTF-8 symbol bounds. Inject missing camera/display/tree, invalid image/UTF-8 and capture/decode failures; assert acquired resources are released on startup failure and close.
 # Check display-only positioning guides on real light/dark images at portrait/landscape sizes; assert centred square bounds, four corners, a clear centre and unchanged original image/decoder input.
 # Check detected guides turn amber in the decoded frame, remain amber for 1.5 seconds, then return to mint without changing decode cadence or exposing QR contents.
 # @pass Decode and cleanup assertions pass without a camera/display or native libraries. Pixel quality and real USB/X11 interoperability remain system tests.
@@ -26,6 +26,7 @@ class QRNativeTests(unittest.TestCase):
 
     def widgets(self):
         root=Mock(); root.winfo_id.return_value=21
+        root.state.return_value = 'withdrawn'
         for patcher in (patch.object(self.qr.tk,'Tk',return_value=root),patch.object(self.qr.tk,'Label'),
                         patch.object(self.qr,'QRDecoder'),patch.object(self.qr.ImageTk,'PhotoImage'),
                         patch.object(self.qr,'scan_guides',side_effect=lambda image, detected=False: image),
@@ -55,12 +56,15 @@ class QRNativeTests(unittest.TestCase):
         self.cv.VideoCapture.assert_called_once_with('/dev/video2',1)
         self.cv.VideoCapture.return_value.set.assert_has_calls([call(2,640),call(3,480),call(4,15)])
         x.XReparentWindow.assert_called_once_with(1,22,101,0,0); x.XFree.assert_called_once()
+        root.withdraw.assert_called_once()
+        root.deiconify.assert_not_called()
         scanner.capture.read.return_value=(True,object()); scanner.decoder.decode.return_value=[]
         with patch.object(self.qr.time,'monotonic',return_value=1): scanner.iterate()
         root.geometry.assert_called_with('320x180+0+0')
         self.qr.Image.fromarray.return_value.thumbnail.assert_called_once_with((320,180),self.qr.Image.Resampling.BILINEAR)
         scanner.decoder.decode.assert_called_once_with(scanner.capture.read.return_value[1])
         self.qr.scan_guides.assert_called_once_with(self.qr.Image.fromarray.return_value,False)
+        root.deiconify.assert_called_once()
         scanner.close(); x.XCloseDisplay.assert_called_once_with(1)
         self.cv.VideoCapture.return_value.release.assert_called_once()
 
@@ -92,6 +96,7 @@ class QRNativeTests(unittest.TestCase):
         self.widgets(); callback=Mock(); scanner=self.qr.NativeQRScanner(callback,camera='StaticImage: Static picture')
         self.cv.VideoCapture.assert_not_called()
         scanner.iterate(); scanner.decoder.decode.assert_not_called()
+        scanner.root.deiconify.assert_not_called()
         scanner.next_frame=0
         scanner.set_static_picture('qr.png'); scanner.decoder.decode.return_value=['code']
         for now in (1,1.05,1.2,1.41,4.5):
@@ -103,6 +108,20 @@ class QRNativeTests(unittest.TestCase):
         callback.assert_called_with('new-code')
         self.cv.imread.return_value=None
         with self.assertRaisesRegex(RuntimeError,'unavailable'): scanner.set_static_picture('missing')
+        scanner.close()
+
+    def test_pause_keeps_capturing_and_resumes_detection_of_same_code(self):
+        self.widgets()
+        callback = Mock()
+        scanner = self.qr.NativeQRScanner(callback)
+        scanner.capture.read.return_value = True, object()
+        scanner.decoder.decode.return_value = ['same code']
+        for now, scanning in ((1, True), (2, False), (3, True)):
+            with patch.object(self.qr.time, 'monotonic', return_value=now):
+                scanner.iterate(scanning=scanning)
+        self.assertEqual(scanner.capture.read.call_count, 3)
+        self.assertEqual(scanner.decoder.decode.call_count, 2)
+        self.assertEqual(callback.call_args_list, [call('same code'), call('same code')])
         scanner.close()
 
     def test_detected_guides_change_immediately_and_expire(self):

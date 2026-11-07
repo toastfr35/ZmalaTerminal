@@ -90,12 +90,14 @@ class NativeQRScanner:
         try:
             self.decoder = QRDecoder()
             self.root = tk.Tk()
+            self.root.withdraw()
             self.root.overrideredirect(True)
             self.root.configure(bg='#0d121c')
             self.label = tk.Label(self.root, bg='#0d121c', borderwidth=0)
             self.label.pack(fill='both', expand=True)
             self.root.geometry('640x480')
-            self.root.update()
+            # Realize the wrapper without mapping it, so it can be embedded invisibly.
+            self.root.update_idletasks()
             if video_window:
                 self._embed(video_window)
             if camera != 'StaticImage: Static picture':
@@ -146,7 +148,7 @@ class NativeQRScanner:
         if self.picture is None:
             raise RuntimeError('The QR test image is unavailable')
 
-    def iterate(self):
+    def iterate(self, *, scanning=True):
         self.root.update()
         now = time.monotonic()
         if now < self.next_frame:
@@ -168,7 +170,10 @@ class NativeQRScanner:
             width, height = max(1, w.value), max(1, h.value)
             self.root.geometry(f'{width}x{height}+0+0')
         # @llr LLR-TERM-SETUP-027
-        if now >= self.next_decode:
+        if not scanning:
+            self.last_qr = ('', 0)
+            self.detected_until = 0
+        elif now >= self.next_decode:
             self.next_decode = now + .4
             for value in self.decoder.decode(frame):
                 if value != self.last_qr[0] or now - self.last_qr[1] >= 3:
@@ -179,6 +184,9 @@ class NativeQRScanner:
         image.thumbnail((width, height), Image.Resampling.BILINEAR)
         self.photo = ImageTk.PhotoImage(scan_guides(image, now < self.detected_until), master=self.root)
         self.label.configure(image=self.photo)
+        if self.root.state() == 'withdrawn':
+            self.root.update_idletasks()
+            self.root.deiconify()
 
     def close(self):
         if self.capture is not None:

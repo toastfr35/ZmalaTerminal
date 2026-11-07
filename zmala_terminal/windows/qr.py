@@ -10,6 +10,7 @@ class NativeQRScanner(Engine):
     def __init__(self, on_qr, video_window=0, profile='terminal', camera=None):
         self.preview = None
         self.next_search = None
+        self.scanning = True
         super().__init__({'terminal_settings': {'camera': camera} if camera else {}},
                          lambda *args: None, lambda *args: None, video_window, profile)
         for name, result, arguments in [
@@ -24,7 +25,7 @@ class NativeQRScanner(Engine):
             raise RuntimeError('This Liblinphone runtime has no QR decoder')
         def decoded(user, source, event, data):
             # MS_QRCODE_READER_QRCODE_FOUND includes a 255-byte text buffer.
-            if event == self.qr_event_id and data:
+            if self.scanning and event == self.qr_event_id and data:
                 value = C.string_at(data, 255).split(b'\0', 1)[0]
                 try:
                     text = value.decode('utf-8')
@@ -70,9 +71,13 @@ class NativeQRScanner(Engine):
             raise RuntimeError('The static QR test image is unavailable')
         self.preview = self.preview_bridge.zmala_qr_start(*self.preview_arguments)
 
-    def iterate(self):
+    def iterate(self, *, scanning=True):
+        if scanning and not self.scanning and self.preview:
+            self.next_search = None
+            self.preview_bridge.zmala_qr_reset_search(self.preview)
+        self.scanning = scanning
         super().iterate()
-        if self.preview and self.next_search is not None and time.monotonic() >= self.next_search:
+        if scanning and self.preview and self.next_search is not None and time.monotonic() >= self.next_search:
             self.next_search = None
             self.preview_bridge.zmala_qr_reset_search(self.preview)
 
