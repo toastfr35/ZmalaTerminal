@@ -27,3 +27,13 @@ A test begins with standalone `@test`, `@requirements`, `@environment`,
 `@plan` and `@pass` comments. Link LLT directly to an LLR and HLT directly to
 an HLR. State inputs, procedure and expected assertions. Refer to the test from
 each Doorstop item. An inventory or a plan does not record an execution.
+
+
+## Cross-component tests
+
+The display provisioning test uses the real HTTP test service from a separate
+ZmalaServer checkout. Prepare the server revision pinned in Verify by running
+npm --prefix zmala_server ci --ignore-scripts in that checkout. Set
+ZMALA_TEST_SERVER_ROOT to its checkout path and run
+xvfb-run -a make test-hlt-display from this repository. The service uses
+temporary account state and an ephemeral loopback port.

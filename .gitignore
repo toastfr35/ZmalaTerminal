@@ -58,3 +58,6 @@ zmala_terminal/linux/turn-runtime/
 # Firebase application configuration and server credentials remain local.
 /zmala_phone/app/google-services.json
 **/*service-account*.json
+
+# Separate server checkout for cross-component fixtures.
+/.peer/

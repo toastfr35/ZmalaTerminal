@@ -49,7 +49,16 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - run: sudo apt-get install -y fonts-noto-core fonts-noto-cjk
+      - uses: actions/checkout@v4
+        with:
+          repository: toastfr35/ZmalaServer
+          ref: 54c9fdc72110e90fc6d402d6a339b49fb7e3efbf
+          path: .peer/ZmalaServer
+          persist-credentials: false
+      - run: npm --prefix .peer/ZmalaServer/zmala_server ci --ignore-scripts
       - run: xvfb-run -a make lint test-llt test-hlt test-hlt-display test-adhoc package leaflets
+        env:
+          ZMALA_TEST_SERVER_ROOT: .peer/ZmalaServer
       - name: Native Pi SDK checks
         run: |
           docker run --rm -v "$PWD:/work" -w /work debian:trixie-slim sh -ec '
