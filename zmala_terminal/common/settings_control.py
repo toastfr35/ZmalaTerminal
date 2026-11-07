@@ -43,7 +43,7 @@ class SettingsControl:
         if token != getattr(self, 'ringtone_preview_token', None):
             power.stop_preview()
             self.ringtone_preview_token = token
-            self.ringtone_preview_due = now+.4
+            self.ringtone_preview_due = now
             self.ringtone_preview_started = False
         state = ''
         if token:
@@ -153,7 +153,9 @@ class SettingsControl:
             else:
                 draft.confirm_exit = True
         elif button == 'green':
-            if draft.key == 'reset':
+            if draft.key == 'tv_setup':
+                draft.error = not self.begin_tv_setup(self.model.config)
+            elif draft.key == 'reset':
                 self.settings_open = False
                 self.setup_stage = 'reset'
                 self.settings_hold.clear()

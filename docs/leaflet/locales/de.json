@@ -58,11 +58,11 @@
       "Die gewünschte Person in die Mitte holen."
     ],
     [
-      "Grün",
+      "Grün (oben)",
       "Drücken, Person prüfen, loslassen und erneut drücken, um anzurufen. Bei eingehendem Anruf mit Grün antworten."
     ],
     [
-      "Rot",
+      "Rot (unten)",
       "Abbrechen, ablehnen oder auflegen. Bei automatischer Annahme lehnt Rot vor Ende des Countdowns ab."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Wählen und speichern",
-      "Links/rechts wählt die Einstellung, Grün öffnet sie. Links/rechts ändert den Wert, Grün speichert, Rot verwirft. Optionen: Sprache, automatische Annahme, Bildausschnitt, Klingelton, Lautstärken, Porträts und Rückkehr zum TV."
+      "Links/rechts wählt eine Einstellung. Fünf Symbole zeigen darunter die aktuellen Werte. Grün öffnet; links/rechts ändert. Grün speichert und geht zurück; Rot verwirft und geht zurück."
     ],
     [
       "Verlassen",
-      "Drücken Sie in der Einstellungsliste Rot, dann Grün zum Verlassen oder Rot zum Bleiben."
+      "TV einrichten ist ebenfalls im Karussell. Zum Verlassen Rot drücken, dann Grün zum Beenden oder Rot zum Bleiben."
     ]
   ],
   "help": "Bei aktivierter TV-Steuerung zeigt der erste Tastendruck eventuell nur Zmala. Sonst den HDMI-Eingang mit der TV-Fernbedienung wählen. Reagiert die Fernbedienung nicht, Schalter hinten prüfen und laden. Bei Speicher- oder Anruffehlern Ihre helfende Person fragen.",

@@ -2,7 +2,7 @@ active: true
 area: Configuration
 derived: false
 header: |
-  Settings list and editor
+  Settings carousel and focused editors
 level: 30.0
 links:
 - HLR-TERM-CONFIG-016: tF6jWzImg7gepg3fagqe56SUaj2ierhVysKpWA6YeEU=
@@ -21,15 +21,37 @@ references:
   type: file
 - path: zmala_terminal/common/ui/settings.py
   type: file
+- path: zmala_terminal/common/settings_artwork.py
+  type: file
 reviewed: null
 scope: Core
 text: |
-  Arrows shall select a setting. Green shall open its editor. Red on the list shall ask
-  for confirmation before leaving Settings: green shall exit and red shall return
-  to the same list selection without changing configuration. Arrows on the exit
-  confirmation shall have no effect. In the editor, arrows shall change the draft,
-  green shall accept it and red shall discard it. Only the active pane shall show button hints.
+  Settings shall present all settings and actions in one wrapping carousel with
+  five visible icon cards. The selected card shall be centred, and each setting's
+  current value shall appear below its icon. Left/right shall select a card;
+  green shall open its individual page. In an editor, left/right shall change
+  only the draft; green shall accept and return to the same carousel selection
+  after acknowledgement; red shall discard and return without saving. Red on
+  the carousel shall ask before exiting: green exits, red retains the selected
+  card, and arrows have no effect. Each page shall show its own full-width hints.
+  The language card shall show the saved language's flag. Language choices
+  shall reuse those flags alongside native names. Language and ringtone choices
+  shall use wrapping carousels with at most five cards and no repeated items.
+  Lists shorter than five shall show each item once in a centred group; longer
+  lists shall centre the selected draft. Portrait count shall use two cards showing
+  miniature contact-screen previews of three and five portraits. Automatic
+  framing shall use two cards showing matched cartoon examples before and after
+  reframing within the 2x zoom limit, labelled No and Yes in the selected language. Volumes and delays
+  shall use a stepped bar with the draft value and endpoints. The selected choice
+  shall be visibly highlighted. Control captions shall start with a capital
+  letter in scripts with letter case. The Zmala logo
+  shall remain visible at the top left throughout Settings without a mismatched
+  background rectangle.
 verification: |
-  Navigate both panes and cancel drafts. Check saved values and hints for the active
-  pane. Exercise both exit answers and ignored arrows; check configuration and list
-  selection are preserved until confirmed.
+  Navigate every setting and both carousel wrap boundaries. Verify five visible
+  icon cards with saved values, green acknowledgement, red cancellation and the
+  selected card on return. Exercise both exit answers and ignored arrows. Render
+  every language at 900x620 and 1280x720; check icons, values and controls fit.
+  Verify all language flags, draft/cancel flag changes, two-choice boxes,
+  numerical bars at both endpoints, and the persistent corner logo.
+  Verify one to four choices appear once each and navigation still wraps.

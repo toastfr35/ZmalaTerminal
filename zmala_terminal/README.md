@@ -21,3 +21,8 @@ Run from the repository root after installing the development dependencies:
 make test
 make requirements
 ```
+
+Windows adapters were restored from `toastfr35/ZmalaCall` commit
+`0731446f8cd6fcbafb93bbda104a2c3a6765b5fb` after the component split.
+The shared settings UI can be accepted without the native SDK using the
+[isolated Windows fixture](../docs/terminal.md#windows-settings-acceptance).

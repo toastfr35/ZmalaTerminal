@@ -16,9 +16,6 @@ class ConfigurationControl:
             return
         if self.setup_stage:
             return
-        if not getattr(self, 'tv_setup_checked', True) and self.begin_tv_setup(config):
-            self.render()
-            return
         update = classify_update(self.engine.config if self.engine else None, config,
             self.model.contact['id'] if self.model.contact else None)
         self.callbacks.requests = config.get('callbacks', [])

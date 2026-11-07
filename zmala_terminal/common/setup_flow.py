@@ -96,10 +96,16 @@ class ProvisioningFlow:
         self.enrollment.reset(wifi, language=self.language)
         self.remote_test.reset()
         self.tv_setup_checked = False
+        self.tv_check_restore = False
+        self.tv_control.power_enabled = self.tv_control.source_enabled = False
         if self.tv_check:
             self.tv_check.close()
             self.tv_check = None
         (self.enrollment.path.parent / 'tv-check.json').unlink(missing_ok=True)
+        (self.enrollment.path.parent / 'tv-profile.json').unlink(missing_ok=True)
+        self.tv_profile_saved = 'samsung'
+        self.tv_profile_page = None
+        self.tv_control.select_driver('samsung')
         self.setup_feedback = False
         self.missed_calls_store.clear()
         self.model = TerminalModel()
@@ -198,9 +204,8 @@ class ProvisioningFlow:
             self.setup_stage = None
             self.server_seen = time.monotonic()
             self.last_poll = 0
-            if not self.begin_tv_setup(config):
-                self.apply_config(config)
-                self.maintenance = self.make_maintenance(candidate)
+            self.apply_config(config)
+            self.maintenance = self.make_maintenance(candidate)
         elif kind == 'error':
             self.setup_error_until = time.monotonic() + 3
             if result == 'server':

@@ -58,11 +58,11 @@
       "Wybierz osobę widoczną pośrodku."
     ],
     [
-      "Zielony",
+      "Zielony (u góry)",
       "Naciśnij, sprawdź osobę, zwolnij i naciśnij ponownie, aby zadzwonić. Przy połączeniu przychodzącym zielony odbiera."
     ],
     [
-      "Czerwony",
+      "Czerwony (na dole)",
       "Anuluj, odrzuć lub zakończ rozmowę. Przy automatycznym odbieraniu czerwony odrzuca przed końcem odliczania."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Wybierz i zapisz",
-      "Lewy/prawy wybiera ustawienie, zielony je otwiera. Lewy/prawy zmienia wartość, zielony zapisuje, czerwony odrzuca. Opcje: język, automatyczny odbiór, kadrowanie, dzwonek, głośności, portrety i powrót do TV."
+      "Lewo/prawo wybiera ustawienie. Pięć ikon pokazuje bieżące wartości poniżej. Zielony otwiera; lewo/prawo zmienia. Zielony zapisuje i wraca; czerwony anuluje i wraca."
     ],
     [
       "Wyjdź",
-      "Na liście ustawień naciśnij czerwony, potem zielony, aby wyjść, lub czerwony, aby zostać."
+      "Konfiguracja TV też jest w karuzeli. Aby wyjść, naciśnij czerwony, potem zielony, by wyjść, lub czerwony, by zostać."
     ]
   ],
   "help": "Przy włączonym sterowaniu TV pierwsze naciśnięcie może tylko pokazać Zmala. W innym razie wybierz wejście HDMI pilotem TV. Gdy pilot nie reaguje, sprawdź przełącznik z tyłu i naładuj go. Poproś o pomoc przy błędzie zapisu lub połączenia.",

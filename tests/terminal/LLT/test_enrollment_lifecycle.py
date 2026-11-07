@@ -18,12 +18,15 @@ class EnrollmentLifecycleTests(unittest.TestCase):
     def flow(self):
         f=test_setup_ownership.SetupOwnershipTests().flow(); f.profile='fixture'; f.wifi_mode='connect'; f.last_qr=('',0)
         f.messages=queue.Queue(); f.setup_cancelled=threading.Event(); f.setup_error_until=0
+        f.tv_control=Mock(power_enabled=True,source_enabled=True)
         return f
 
     def test_reset_cancels_generation_before_teardown_and_starts_empty_model(self):
         f=self.flow()
         with tempfile.TemporaryDirectory() as directory:
             f.enrollment.path=Path(directory)/'enrollment.json'; check=Path(directory)/'tv-check.json'; check.write_text('{}')
+            profile=Path(directory)/'tv-profile.json'; profile.write_text('{"driver":"cec"}')
+            f.tv_profile_saved='cec'
             untouched=Path(directory)/'other-profile.json'; untouched.write_text('keep')
             f.model=TerminalModel(); f.maintenance=Mock(); f.configuration=Mock(); f.engine=Mock(); f.tv_check=Mock(); f.remote_test=Mock()
             f.missed_calls_store=Mock(); f.settings_hold=Mock(); f.settings_open=True; f.callbacks.seen={'old'}; f.callbacks.serial=5; f.language='fr'
@@ -36,6 +39,10 @@ class EnrollmentLifecycleTests(unittest.TestCase):
             f.engine.close.side_effect=lambda:closed('engine'); f.scanner.close.side_effect=lambda:closed('scanner')
             f.tv_check.close.side_effect=lambda:closed('tv-check'); f.start_scanner=Mock()
             f.factory_reset()
+            self.assertFalse(profile.exists()); self.assertEqual(f.tv_profile_saved,'samsung')
+            f.tv_control.select_driver.assert_called_once_with('samsung')
+            self.assertFalse(f.tv_control.power_enabled)
+            self.assertFalse(f.tv_control.source_enabled)
             self.assertEqual(events,['maintenance','configuration','engine','scanner','tv-check'])
             resources[1].deactivate.assert_called_once_with(erase=True); f.enrollment.reset.assert_called_once_with({'linux_uuid':'owned'},language='fr')
             self.assertFalse(f.setup_cancelled.is_set()); self.assertEqual(f.model.state,State.HOME); self.assertIsNone(f.model.config)

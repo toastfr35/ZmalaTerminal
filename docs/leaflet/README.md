@@ -54,6 +54,14 @@ captions or instruction text. The official wordmark is the branding exception.
 Numbered port markers are HTML text placed outside the SVG. Physical port
 layout and remote buttons are never mirrored for RTL languages.
 
+## Monochrome artwork
+
+The print editions use black text on white paper, vector outline equipment and
+a text-free line-art cover. Button details show the selected button's position
+on the remote; translated captions also say top/bottom for green/red. Connector
+numbers remain outside the diagram. Color is never needed to interpret the
+printed illustrations. The official wordmark is reused with grayscale styling.
+
 ## Print
 
 Use the `-A4.pdf` file. Print actual size on **one A4 sheet**, landscape,
@@ -68,8 +76,8 @@ included in the ZIP.
 
 ## Impact and verification
 
-The leaflet describes existing behavior. Runtime code, `@llr` anchors and normative
-Doorstop records are unchanged. Content was checked against the setup flow,
+The leaflet follows the five-card settings carousel and optional TV setup.
+Runtime, `@llr` anchors, Doorstop records and verification plans are updated together. Content was checked against the setup flow,
 settings/input controllers and these existing requirements:
 
 - `HLR-TERM-SETUP-019`, `HLR-TERM-SETUP-020`; `LLR-TERM-SETUP-025` through
@@ -79,8 +87,7 @@ settings/input controllers and these existing requirements:
 - `HLR-TERM-CONFIG-016`, `HLR-TERM-CONFIG-017` and the associated settings LLRs.
 - The connections and user workflows in [the terminal guide](../terminal.md).
 
-No requirement links, test plans or verification outcomes are changed. The new
-regression checks belong in `tests/adhoc/test_terminal_leaflet.py` because they
+Publishing regression checks belong in `tests/adhoc/test_terminal_leaflet.py` because they
 verify publishing tooling, not product behavior. Run them with:
 
 ```sh

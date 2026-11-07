@@ -51,7 +51,8 @@ reads a Wi-Fi code and a server code. The server code supplies the terminal
 identity and access credentials.
 
 Setup shows an error when an operation fails. It continues only when that step
-has completed. TV tests follow server registration and use the selected language.
+has completed. Enrollment then goes to the contact screen. Optional TV tests
+are available on the TV setup card in Settings and use the selected language.
 The user can reset the terminal from Settings after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
 
@@ -83,9 +84,13 @@ All terminal volume UI uses 5% steps. Settings has separate Ringtone volume and 
 
 The ringtone editor wraps at both ends: left on the first choice selects the last, and right on the last selects the first, without saving.
 
-Red on the Settings list asks whether to exit: green confirms; red keeps the same list selection. Red within an editor only discards that draft. Neither exit answer changes saved configuration.
+Settings shows all local settings in one carousel with five visible icon cards.
+The selected card is centred; current values appear below the icons. Left/right
+moves between settings and green opens the selected setting directly. In the
+individual editor, left/right changes the draft, green saves and returns to the
+same card, and red discards and returns. Red on the carousel asks whether to exit:
+green confirms; red stays on the same card. Neither exit answer changes values.
 
-The nine-row Settings menu scrolls a seven-row window to keep the selected row visible. Each row reserves a text line for its label and saved value at both supported sizes.
 
 The server supplies the main terminal configuration. The local Settings page lets
 the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count
@@ -355,7 +360,8 @@ Polling and settings responses share these checks through `Configuration`.
 ## Onboarding and reset state
 
 `setup_flow.py` coordinates USB readiness, pairing/button verification, Wi-Fi QR,
-server QR and post-enrollment TV checks. `provisioning.py` persists accepted
+and server QR enrollment. `ui/tv_setup.py` owns the optional TV checks opened
+from Settings. `provisioning.py` persists accepted
 identity and owns reset cleanup; `qr_scanner.py` owns a separate camera process.
 The Linux preview releases partially acquired decoder, window and X11 resources
 if embedding or capture initialization fails; closing it is idempotent. The parent
@@ -371,7 +377,7 @@ Each asynchronous completion is checked against the current setup generation.
 | Button verification | Distinct physical left/right/green/red/middle press and release sequence, saved against pairing identity |
 | Wi-Fi QR | Actual join succeeds, followed by an unskippable ten-second confirmation; existing-link is a development mode |
 | Server QR | URL, device ID and token decode; authenticated, validated configuration succeeds before committing enrollment |
-| TV checks | Independent power/input outcomes and TV binding persist before normal use; power-only success does not authorize active-source announcements |
+| Optional TV checks (Settings) | Independent power/input outcomes and TV binding persist before enabling automatic TV actions; power-only success does not authorize active-source announcements |
 
 Before enrollment, prompts use English. Enrollment applies the selected language;
 detailed diagnostic catalogs use English fallback where a translation is absent.
@@ -452,13 +458,26 @@ button, focus loss, disconnect or an incoming call cancels the settings hold.
 The Presenter green sticker covers the microphone button; red covers Teams.
 Middle is Pointer. Remote motion is ignored for volume. While the overlay is open, physical buttons do not navigate contacts, dial, hang up or open Settings. Internal timeouts and permission revocations still cancel calls. `input_control.py` routes physical input (including delayed TV checks) through `physical_press`; logical `press` remains available to the call/timer controllers. Call/state changes and setup/focus changes dismiss the overlay; an existing call continues.
 
-Settings has a list and editor; only the active side shows button hints, status
-icons are hidden, and the terminal serial appears at the bottom. Confirmed edits
+Settings has a five-card icon carousel containing all settings, and individual
+editor pages. Each page has full-width control hints. Status icons are hidden,
+the transparent Zmala logo remains at the top left, and the terminal serial
+appears at the bottom. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
-The label renderer reduces the font to fit each settings region. Saved values
-can use the lower half of the row so short labels fit with the installed fonts.
+The label renderer reduces the font to fit each settings region. Current values
+appear below the coloured carousel pictograms. Language uses the saved language's
+flag; the language editor reuses the flags with native names. Language and
+ringtone editors show up to five unique cards. Lists with fewer than five choices
+show each item once in a centred group; longer lists centre the draft selection.
+The TV-model carousel follows the same rule. Portrait count uses two cards with miniature contact-screen previews
+of three and five portraits. Automatic framing uses matching cartoon room views
+before and after reframing, labelled No/Yes. Volumes and delays use a stepped bar
+with a large draft value and labelled endpoints. The highlighted box/card is
+the draft selection. Control captions use initial capitals, including Select,
+Accept and Cancel in English.
+Delay bar ticks represent the supported choices, including Never, rather than
+a continuous time scale. None of these previews saves until green is pressed.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps
 combining marks with their preceding character. This also keeps the button hints
 inside the small-window layout.
@@ -468,15 +487,16 @@ inside the small-window layout.
 | Language | 16 native labels in alphabetical order, wrapping at both ends |
 | Automatic answer | Never, 10 seconds, 30 seconds, 1, 2, 5 or 10 minutes |
 | Automatic framing | On/off; Pi C10/C20 only |
+| Ringtone | Nokia (default) and the private server library |
 | Ringtone volume | 0–100%, in 5% steps; incoming/outgoing tones and previews |
 | Button sounds volume | 0–100%, in 5% steps; idle navigation feedback |
-| Ringtone | Nokia (default) and the private server library |
 | Portraits | Three/five; short contact lists retain three positions |
-| Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
-| Reset | Confirmed local reset and re-enrollment |
+| Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
+| TV setup | Guided TV power and input checks, opened explicitly from the carousel |
+| Reset to factory defaults | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
-Preview starts after 400 ms without another selection and plays for at most ten
+Preview starts as soon as the highlighted audio is ready and plays for at most ten
 seconds through the C20 at Ringtone volume. The Ringtone volume editor also previews the selected tone. It waits for a waking C20;
 zero volume remains silent. Green saves the choice after server acknowledgement;
 red cancels it. Leaving the editor or receiving a call stops preview immediately.
@@ -746,8 +766,12 @@ options. Existing installations receive the command on their next installer upda
 `tv_plugins/api.py` defines the seven-method contract: `get_model`,
 `get_capabilities`, `get_power_status`, `set_power_on`, `set_power_off`,
 `get_current_input` and `set_current_input`. Each future model/family has its own
-folder and an explicit entry in the bundled registry. Configuration cannot load
-arbitrary modules. `TVControl(driver='samsung')` selects the existing integration.
+folder and a `DriverInfo(module, brand, model_family)` entry in the bundled registry.
+Configuration cannot load arbitrary modules. Settings lists Samsung Smart TV and
+Other TV / HDMI-CEC, the two bundled control profiles. The latter uses standard
+CEC with no vendor network fallback. Brand artwork is ready for Samsung, Sony,
+LG, Toshiba, Panasonic, Philips, Sharp, TCL, Hisense and Vizio; adding artwork
+does not advertise an unimplemented driver. Unknown brands use the TV pictogram.
 
 Capabilities contain supported optional method names, independently of the
 wizard's user-confirmed power/source results. Unsupported methods raise
@@ -797,7 +821,14 @@ before a network toggle. The real-call test plan and measured results are in
 
 ### Installation TV checks
 
-After server enrollment the wizard pauses media startup and idle restoration.
+TV checks are optional: open Settings > TV setup, choose a model in the carousel,
+then answer “Do you want to test the TV controls?”. No saves the profile without
+testing; red on the carousel cancels its draft. Enrollment and
+startup go straight to ordinary use. Saved capabilities are checked against the
+TV identity in the background; incomplete checks stay disabled without opening
+a wizard. Opening TV setup pauses maintenance and ordinary call/idle TV actions.
+The completed wizard returns to the same TV setup card. Reopening completed checks
+allows retesting while keeping attempt counts; incomplete checks resume at a prompt.
 Green starts the standby/wake test; a three-second off interval follows a bounded
 standby-report wait. The user confirms whether the picture went off and returned.
 For input testing, switch to another channel/input with the TV remote. The wizard
@@ -807,8 +838,12 @@ does not return within 30 seconds. Green confirms success; red offers recovery/r
 or manual operation. CEC acknowledgements alone do not count as a pass.
 
 `/var/lib/zmalacall/<profile>/tv-check.json` stores attempts, performed/results/
-skips, completion, EDID hash and HDMI address. Save failures block completion.
-Interrupted tests resume at a prompt, not another automatic power command.
+skips, completion, EDID hash, HDMI address and driver profile. The separate
+`tv-profile.json` stores the selected bundled driver. Switching profiles disables
+old qualifications; legacy records retain their Samsung interpretation. Save
+failures block completion. Factory reset clears both files.
+Interrupted tests never resume automatically at startup. Open TV setup again to
+resume them; no power command runs until the user starts a test.
 A changed TV/route invalidates previous results on startup; reset clears them.
 Failed/skipped features are disabled independently; keep the TV remote available.
 The saved `network_paired` flag separately enables the paired network fallback.
@@ -1550,7 +1585,7 @@ Ringtone, outgoing ringback and button feedback keep their independent old curve
 for `Terminal.make_platform_services()`. The application still owns shutdown
 ordering. Windows now receives explicit desktop substitutes for these Pi-only services;
 they perform no hardware I/O and leave ringing to the Windows call engine.
-The desktop also skips Pi-only TV setup even if a pairing environment variable
+The desktop uses labelled TV simulation even if a pairing environment variable
 is inherited. Other device construction remains to be migrated. Tests replace the factory
 without patching hardware classes in the UI module.
 
@@ -1559,7 +1594,7 @@ reverse order before propagating the startup error. Normal shutdown remains owne
 by the application.
 
 The same platform boundary selects remote input, feedback audio, pairing/camera
-status and TV-check transport. Windows uses explicit inactive substitutes; these
+status and TV-check transport. Windows uses desktop substitutes and TV simulation; these
 factories do not import Pi adapters on the desktop. Fan, USB-power and television
 interfaces are structural protocols, while the application retains shutdown ownership.
 
@@ -1664,3 +1699,29 @@ Qualification procedures and the initial checkpoint are in
 executed hardware evidence is recorded in
 [issue #131](https://github.com/toastfr35/ZmalaCall/issues/131).
 Process-death recovery passes do not constitute physical SD power-loss evidence.
+
+### Windows settings acceptance
+
+The Windows adapters recovered from `toastfr35/ZmalaCall` support the shared Tk
+UI. Use an isolated fixture without the native call SDK or live server:
+
+```powershell
+$env:TEMP = 'W:/git/zmala/tmp/terminal-settings'
+$env:TMP = $env:TEMP
+python tests/support/terminal/run_display.py tests/support/terminal/settings_preview.py
+```
+
+Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
+The fixture opens Settings immediately. Saves are acknowledged in memory and
+reset when the window closes. Verify five visible setting icons and saved values, each editor's
+accept/cancel return to the same card, exit confirmation and the seven-second
+Escape hold from Home. TV setup offers the real model selector and test question,
+then simulates standby/wake and input changes, labelled Windows TV simulation.
+The user still confirms each outcome. No CEC or network TV commands are sent.
+Ringtone selection previews audio through the Windows sound device; each new
+selection stops the previous sample. To use a local acceptance library, set
+`ZMALA_PREVIEW_RINGTONE_LIBRARY` to a directory containing `manifest.json`
+(rows with `sha256`, `name`, `file`) and its WAV files. The recovered acceptance
+catalog uses “Melody” for the previously misnamed ringtone. The library is local
+test data, not a change to a live Server catalog.
+Windows does not qualify physical CEC, Pi audio or native call media.

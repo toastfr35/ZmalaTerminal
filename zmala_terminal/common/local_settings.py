@@ -1,7 +1,7 @@
 """Settings drafts and the deliberate red-button hold; no native I/O."""
 from zmala_terminal.common.localization import LANGUAGES
 
-FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone_volume', 'action_sound_volume', 'ringtone', 'carousel_portraits', 'tv_idle_seconds', 'reset')
+FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone', 'ringtone_volume', 'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', 'tv_setup', 'reset')
 TV_IDLE_DELAYS = (30, 60, 120, 300, 600, 1200, 1800, 0)
 ANSWER_DELAYS = (0, 10, 30, 60, 120, 300, 600)
 
@@ -59,8 +59,8 @@ class SettingsDraft:
 
     # @llr LLR-TERM-CONFIG-021, LLR-TERM-AUDIO-009
     def open(self, config):
-        if self.key == 'reset':
-            raise ValueError('Reset uses its own confirmation page')
+        if self.key in ('reset', 'tv_setup'):
+            raise ValueError('Actions use their own pages')
         self.editing, self.error = True, False
         key, value = self.key, self.value(config, self.key)
         self.options = (list(LANGUAGES) if key == 'language'

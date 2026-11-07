@@ -122,9 +122,10 @@ def create_camera_status():
     return C20Status()
 
 
+# @llr LLR-TERM-TV-019
 def create_tv_check_transport(television):
-    # Called only after the television capability check; desktop setup skips it.
     if sys.platform == 'win32':
-        raise RuntimeError('TV installation checks are not supported on Windows')
+        from zmala_terminal.windows.platform_services import SimulatedTVTransport
+        return SimulatedTVTransport(television)
     from zmala_terminal.linux.tv_check import CheckTransport
     return CheckTransport(television)

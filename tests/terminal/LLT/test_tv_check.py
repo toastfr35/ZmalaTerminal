@@ -1,7 +1,7 @@
 # @test T-LLT-035
 # @requirements LLR-TERM-TV-019, LLR-TERM-TV-020, LLR-TERM-TV-021, LLR-TERM-TV-022, LLR-TERM-TV-023, LLR-TERM-TV-024
 # @environment portable
-# @plan Run the setup state machine against fake TV responses and saved attempts; assert consent before switching, independent user-confirmed outcomes, alternate-input sequence and restart-safe TV binding. Run queued setup work with controlled threads, late cancellation and failures; verify persisted-state recovery and retry/brand/skip choices.
+# @plan Run the setup state machine against fake TV responses and saved attempts; assert consent before switching, independent user-confirmed outcomes, alternate-input sequence and restart-safe TV/profile binding. Run queued setup work with controlled threads, late cancellation and failures; verify persisted-state recovery and retry/brand/skip choices. Exercise the Windows simulation sequence, cancellation and explicit user confirmation without TV I/O.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Isolated tests: no commands reach a real television."""
@@ -22,6 +22,75 @@ IDENTITY = {'address': '2.0.0.0', 'display': 'test-edid'}
 
 
 class CheckTests(unittest.TestCase):
+    def test_changed_profile_invalidates_completed_checks_and_network_pairing(self):
+        self.path.write_text(json.dumps({'version': 1, 'identity': IDENTITY,
+            'power': {'status': 'passed', 'attempts': 1},
+            'source': {'status': 'passed', 'attempts': 1}, 'complete': True,
+            'network_paired': True}))
+        check = TVCheck(self.path, self.transport, profile='cec')
+        check.messages.put(('probe', IDENTITY, False)); check.poll()
+        self.assertEqual(check.page, 'power_ready')
+        self.assertFalse(check.record['complete'])
+        self.assertEqual(check.record['profile'], 'cec')
+        self.transport.resume_network.assert_called_with(False)
+        check.record['source']['status']='running'; check.result('source', False)
+        self.assertEqual(check.page, 'sony')  # Generic CEC help cannot initiate Samsung pairing.
+
+    def test_windows_simulation_uses_same_confirmation_flow_and_is_cancellable(self):
+        from zmala_terminal.common.platform_services import create_tv_check_transport
+        from zmala_terminal.windows.platform_services import DesktopTelevision, SimulatedTVTransport
+        television = DesktopTelevision()
+        with patch('zmala_terminal.common.platform_services.sys.platform', 'win32'):
+            transport = create_tv_check_transport(television)
+        self.assertIsInstance(transport, SimulatedTVTransport)
+        scenes=[]
+        cancel=Mock()
+        cancel.wait.side_effect=lambda seconds: scenes.append(television.simulation_scene) or False
+        self.assertTrue(transport.power(cancel))
+        self.assertEqual(scenes, ['standby','terminal']); scenes.clear()
+        self.assertTrue(transport.source(cancel))
+        self.assertEqual(scenes, ['broadcast','terminal','broadcast','terminal'])
+        self.assertIsNone(television.simulation_scene)
+        cancel.wait.side_effect=None; cancel.wait.return_value=True
+        self.assertFalse(transport.source(cancel)); self.assertIsNone(television.simulation_scene)
+        check=TVCheck(self.path,transport)
+        check.messages.put(('probe',transport.probe(cancel),False)); check.poll()
+        check.launch=Mock(); check.button('green')
+        check.messages.put(('power',True,False)); check.poll()
+        self.assertEqual(check.page,'power_confirm')
+        self.assertNotEqual(check.record['power']['status'],'passed')
+
+    def test_explicit_restart_retests_completed_capabilities_without_auto_commands(self):
+        self.path.write_text(json.dumps({'version': 1, 'identity': IDENTITY,
+            'power': {'status': 'passed', 'attempts': 1},
+            'source': {'status': 'skipped', 'attempts': 0}, 'complete': True}))
+        check = TVCheck(self.path, self.transport, restart=True)
+        check.messages.put(('probe', IDENTITY, False))
+        check.launch = Mock()
+        check.poll()
+        self.assertEqual(check.page, 'power_ready')
+        self.assertFalse(check.record['complete'])
+        self.assertEqual(check.record['power']['status'], 'pending')
+        self.assertEqual(check.record['power']['attempts'], 1)
+        self.assertEqual(check.record['source']['status'], 'pending')
+        check.launch.assert_not_called()
+        check.button('green')
+        check.launch.assert_called_once_with('power')
+        self.assertFalse(json.loads(self.path.read_text())['complete'])
+
+    def test_explicit_open_resumes_incomplete_checks_without_losing_attempts(self):
+        self.path.write_text(json.dumps({'version': 1, 'identity': IDENTITY,
+            'power': {'status': 'passed', 'attempts': 2},
+            'source': {'status': 'running', 'attempts': 1}, 'complete': False}))
+        check = TVCheck(self.path, self.transport, restart=True)
+        check.messages.put(('probe', IDENTITY, False))
+        check.launch = Mock()
+        check.poll()
+        self.assertEqual(check.page, 'source_ready')
+        self.assertEqual(check.record['power']['attempts'], 2)
+        self.assertEqual(check.record['source']['attempts'], 1)
+        check.launch.assert_not_called()
+
     def test_worker_delivers_one_outcome_and_cancelled_check_ignores_late_results(self):
         import zmala_terminal.common.tv_check as module
         check = TVCheck('unused', Mock())

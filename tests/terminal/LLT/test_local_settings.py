@@ -89,7 +89,7 @@ class LocalSettingsTests(unittest.TestCase):
         self.assertEqual(json.dumps(c), original)
         draft.index = 0
         self.assertEqual(draft.change(c), {'auto_answer': False, 'auto_answer_seconds': 10})
-        draft.row = 3; draft.open(c); draft.index = 20; draft.move(1)
+        draft.row = FIELDS.index('ringtone_volume'); draft.open(c); draft.index = 20; draft.move(1)
         self.assertEqual(draft.options[draft.index], 100)
 
     def test_speaker_volume_choices_use_five_percent_steps_and_preserve_saved_value(self):
@@ -194,7 +194,7 @@ class LocalSettingsTests(unittest.TestCase):
         messages = json.loads((Path(__file__).resolve().parents[3]/'zmala_terminal/common/shared/settings-messages.json').read_text(encoding='utf-8'))
         self.assertEqual(set(messages), set(LANGUAGES))
         for values in messages.values():
-            self.assertEqual(len(values), 14)
+            self.assertEqual(len(values), 17)
             self.assertTrue(all(isinstance(v, str) and v.strip() for v in values))
 
     def test_native_language_alphabet_order_and_both_wrap_boundaries(self):

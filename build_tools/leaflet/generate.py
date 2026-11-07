@@ -71,7 +71,7 @@ def render_html(code, info, copy):
 <section class="page cover"><main>
 {picture('official-logo.png', 'brand')}
 <h1>{esc(copy['title'])}</h1>
-{picture('overview.png', 'hero')}
+{picture('overview-print.svg', 'hero')}
 <p class="blurb">{esc(copy['blurb'])}</p>
 <p>{esc(copy['scope'])}</p>
 <p class="ready">{esc(copy['ready'])}</p>

@@ -27,8 +27,12 @@ reviewed: null
 scope: Core
 text: |
   The terminal shall save attempt counts, separate outcomes and TV identity and
-  physical-address bindings. Failed saving shall leave setup pending. Interrupted
-  setup shall resume. An incompatible binding change shall invalidate results. Missing
+  physical-address and driver-profile bindings. Legacy records without a profile
+  shall retain their Samsung interpretation. A profile change shall invalidate
+  results and network pairing enablement. Failed saving shall leave setup pending. Interrupted
+  setup shall resume at a prompt only when explicitly reopened from Settings.
+  Reopening completed checks shall allow retesting while retaining attempt counts.
+  An incompatible binding change shall invalidate results. Missing
   EDID during standby shall not alone identify a different TV.
 verification: |
   Fail saving, restart mid-test and vary identity and address. Check retained

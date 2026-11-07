@@ -1,7 +1,7 @@
 # @test T-LLT-071
 # @requirements LLR-TERM-SETUP-032, LLR-TERM-CONFIG-019, LLR-TERM-CONFIG-020, LLR-TERM-CONFIG-021, LLR-TERM-CONFIG-022
 # @environment portable
-# @plan Exercise settings navigation, acknowledged writes and timeout reconciliation with real drafts and recording HTTP/Tk boundaries. Verify busy and cancelled drafts, captured enrollment generation, both Settings-exit answers and ignored confirmation arrows, keyboard repeat release coalescing and stale-result rejection. Draw every setting with controlled image metrics; check serial footer, hint placement only on the active side, localized values, hold progress, busy feedback and bounded font size. With eight rows at both supported sizes and 22-pixel minimum text images, assert short saved values are rendered without ellipsis.
+# @plan Exercise settings navigation, acknowledged writes and timeout reconciliation with real drafts and recording HTTP/Tk boundaries. Verify busy and cancelled drafts, captured enrollment generation, both Settings-exit answers and ignored confirmation arrows, keyboard repeat release coalescing and stale-result rejection. Draw every setting with controlled image metrics; check serial footer, five setting cards and full-width page controls, localized values, hold progress, busy feedback and bounded font size. With every carousel position at both supported sizes and 22-pixel minimum text images, assert short saved values are rendered without ellipsis.
 # @pass Every navigation, request, state and drawing assertion passes without a display or server; no mocked pixel output is claimed as physical readability evidence.
 import queue
 from types import SimpleNamespace
@@ -21,30 +21,40 @@ class SettingsWorkflowTests(unittest.TestCase):
         return c
 
     def test_navigation_draft_cancel_accept_and_busy_guard(self):
-        c=self.controller(); d=c.settings_draft; c.settings_button('right'); self.assertEqual(d.row,1)
-        c.settings_button('left'); self.assertEqual(d.row,0); c.settings_button('green'); self.assertTrue(d.editing)
-        d.error=True; c.settings_button('red'); self.assertFalse(d.editing); self.assertFalse(d.error); self.assertTrue(c.settings_open)
+        c=self.controller(); d=c.settings_draft
+        c.settings_button('left'); self.assertEqual(d.key,'reset')
+        c.settings_button('right'); self.assertEqual(d.key,'language')
+        c.settings_button('right'); self.assertEqual(d.key,'auto_answer')
+        c.settings_button('green'); self.assertTrue(d.editing)
+        before=dict(c.model.config); c.settings_button('right'); c.settings_button('red')
+        self.assertEqual(c.model.config,before); self.assertFalse(d.editing)
+        self.assertEqual(d.key,'auto_answer')
         c.settings_button('green'); c.save_local_setting=Mock(); c.settings_button('green'); c.save_local_setting.assert_called_once()
         d.busy=True; c.render.reset_mock(); c.settings_button('red'); self.assertTrue(c.settings_open); c.render.assert_not_called()
-        d.busy=False; d.editing=False; c.settings_button('red'); self.assertTrue(c.settings_open); self.assertTrue(d.confirm_exit)
+        d.busy=False; d.editing=False; c.settings_button('red'); self.assertTrue(d.confirm_exit)
         c.settings_button('green'); self.assertFalse(c.settings_open)
 
-    def test_exit_requires_confirmation_and_preserves_list_and_configuration(self):
-        c = self.controller(); d = c.settings_draft; d.row = FIELDS.index('ringtone')
-        before = dict(c.model.config)
-        c.settings_button('red')
+    def test_all_settings_are_reachable_and_tv_action_uses_no_server_write(self):
+        c=self.controller(); d=c.settings_draft; visited=[]
+        for _ in FIELDS:
+            visited.append(d.key); c.settings_button('right')
+        self.assertEqual(tuple(visited),FIELDS); self.assertEqual(d.key,FIELDS[0])
+        d.row=FIELDS.index('tv_setup'); c.begin_tv_setup=Mock(return_value=True)
+        c.settings_button('green'); c.begin_tv_setup.assert_called_once_with(c.model.config)
+        c.configuration.update_settings.assert_not_called(); self.assertFalse(d.editing)
+        c.begin_tv_setup.return_value=False; c.settings_button('green'); self.assertTrue(d.error)
+
+    def test_exit_requires_confirmation_and_preserves_selected_card_and_configuration(self):
+        c=self.controller(); d=c.settings_draft; d.row=FIELDS.index('ringtone')
+        before=dict(c.model.config); c.settings_button('red')
         self.assertTrue(c.settings_open); self.assertTrue(d.confirm_exit)
-        for button in ('left', 'right'):
-            c.settings_button(button)
-            self.assertEqual(d.row, FIELDS.index('ringtone')); self.assertTrue(d.confirm_exit)
-        c.settings_button('red')
-        self.assertTrue(c.settings_open); self.assertFalse(d.confirm_exit)
-        self.assertEqual(d.row, FIELDS.index('ringtone'))
+        for button in ('left','right'):
+            c.settings_button(button); self.assertEqual(d.key,'ringtone'); self.assertTrue(d.confirm_exit)
+        c.settings_button('red'); self.assertFalse(d.confirm_exit)
         c.settings_button('green'); self.assertTrue(d.editing)
-        c.settings_button('red'); self.assertFalse(d.editing); self.assertFalse(d.confirm_exit)
-        c.settings_button('red'); c.settings_button('green')
-        self.assertFalse(c.settings_open); self.assertFalse(d.confirm_exit)
-        self.assertEqual(c.model.config, before); c.configuration.update_settings.assert_not_called()
+        c.settings_button('red'); self.assertFalse(d.editing); self.assertEqual(d.key,'ringtone')
+        c.settings_button('red'); c.settings_button('green'); self.assertFalse(c.settings_open)
+        self.assertEqual(c.model.config,before); c.configuration.update_settings.assert_not_called()
 
     def test_write_reconciliation_preserves_generation_and_expected_values(self):
         for outcome in ['accepted','timeout-applied','timeout-rejected','offline']:
@@ -80,20 +90,21 @@ class SettingsWorkflowTests(unittest.TestCase):
         v=settings.SettingsView(); v.root=widget(); v.model=self.controller().model; v.language='en'; v.available_fonts=['Sans']
         v.text=lambda key:key; v.settings_open=True; v.settings_hold=SettingsHold(); v.settings_draft=SettingsDraft()
         v.text_renderer=Mock(); v.text_renderer.photo.return_value=SimpleNamespace(height=lambda:20)
-        v.icon_renderer=Mock()
+        v.icon_renderer=Mock(); v.corner_logo=Mock()
         with patch.object(settings.tk,'Canvas',side_effect=lambda *a,**kw:widget()): v.build_settings()
         return v
 
-    def test_settings_render_each_field_and_keep_hints_on_active_side(self):
+    def test_settings_render_five_cards_and_each_field_with_three_controls(self):
         v=self.view(); c=v.settings_canvas
         for row,key in enumerate(FIELDS):
-            for editing in ([False] if key=='reset' else [False,True]):
-                v.settings_draft=SettingsDraft(); v.settings_draft.row=row
-                if editing: v.settings_draft.open(v.model.config)
+            for editing in ([False] if key in ('reset','tv_setup') else [False,True]):
+                v.settings_draft=SettingsDraft(); d=v.settings_draft; d.row=row
+                if editing: d.open(v.model.config)
                 v.settings_signature=None; c.reset_mock(); v.draw_settings()
-                hints=[call.args[0] for call in c.create_image.call_args_list if call.kwargs.get('tags')=='settings-hint']
-                self.assertTrue(hints); split=int(1280*.39)
-                self.assertTrue(all(x>split for x in hints) if editing else all(x<split for x in hints))
+                cards=[call for call in c.create_image.call_args_list if 'settings-card' in call.kwargs.get('tags',())]
+                self.assertEqual(len(cards),0 if editing else 6)  # Five cards plus the selected outline.
+                hints=[call for call in c.create_image.call_args_list if call.kwargs.get('tags')=='settings-hint']
+                self.assertEqual(len(hints),3)
                 self.assertTrue(any(call.kwargs.get('tags')=='settings-serial' for call in c.create_image.call_args_list))
                 c.delete.reset_mock(); v.draw_settings(); c.delete.assert_not_called()
         v.settings_draft.busy=True; c.reset_mock(); v.draw_settings()
@@ -101,19 +112,37 @@ class SettingsWorkflowTests(unittest.TestCase):
         v.settings_draft.busy=False; v.settings_draft.error=True; v.draw_settings()
         self.assertIn('help',[call.args[0] for call in v.text_renderer.photo.call_args_list])
 
-    def test_short_saved_values_retain_full_text_in_eight_rows(self):
-        for width, height in ((900, 620), (1280, 720)):
-            v = self.view()
-            v.settings_canvas.winfo_width.return_value = width
-            v.settings_canvas.winfo_height.return_value = height
-            v.text_renderer.photo.side_effect = lambda text, family, size, *args: SimpleNamespace(
-                height=lambda: max(22, size+8), text=text)
-            v.draw_settings()
-            images = [call.kwargs['image'] for call in v.settings_canvas.create_image.call_args_list
-                      if 'settings-value' in call.kwargs.get('tags', ())]
-            for key in ('language', 'ringtone_volume', 'ringtone', 'carousel_portraits'):
-                expected = v.settings_value(key, SettingsDraft.value(v.model.config, key))
-                self.assertIn(expected, [image.text for image in images], (width, height, key))
+    def test_current_values_are_rendered_under_each_setting_icon(self):
+        for width,height in ((900,620),(1280,720)):
+            v=self.view(); v.settings_canvas.winfo_width.return_value=width; v.settings_canvas.winfo_height.return_value=height
+            v.text_renderer.photo.side_effect=lambda text,family,size,*args:SimpleNamespace(height=lambda:max(22,size+8),text=text)
+            for row,key in enumerate(FIELDS):
+                v.settings_draft.row=row; v.settings_canvas.reset_mock(); v.draw_settings()
+                values=[call for call in v.settings_canvas.create_image.call_args_list
+                        if 'settings-value' in call.kwargs.get('tags',()) and key in call.kwargs['tags']]
+                if key == 'reset':
+                    self.assertFalse(values)
+                else:
+                    self.assertEqual(len(values),1)
+                    self.assertEqual(values[0].kwargs['image'].text,v.settings_value(key,SettingsDraft.value(v.model.config,key)))
+                    self.assertGreater(values[0].args[1],height*.4)
+
+    def test_short_choice_carousels_never_repeat_items_and_still_wrap(self):
+        for count in range(1, 7):
+            v=self.view(); d=v.settings_draft; d.row=FIELDS.index('ringtone')
+            v.text_renderer.photo.side_effect=lambda text,*args:SimpleNamespace(height=lambda:24,text=text)
+            v.model.config['ringtones']=[{'id':str(index),'name':f'Tone {index}'} for index in range(count)]
+            d.open(v.model.config)
+            for selected in range(count):
+                d.index=selected; v.settings_canvas.reset_mock(); v.draw_setting_choices(1280,720)
+                labels=[call for call in v.settings_canvas.create_image.call_args_list
+                        if call.kwargs.get('tags') in ('settings-draft-value','settings-choice-value')]
+                self.assertEqual(len(labels),min(5,count))
+                self.assertEqual(sum(call.kwargs['tags']=='settings-draft-value' for call in labels),1)
+                values=[call.kwargs['image'].text for call in labels]
+                self.assertEqual(len(set(values)),len(values))
+            d.index=0; d.move(-1); self.assertEqual(d.index,count-1)
+            d.move(1); self.assertEqual(d.index,0)
 
     def test_hold_progress_bounded_labels_and_localized_values(self):
         v=self.view(); v.settings_open=False; v.settings_hold.start(100); v.settings_hold.update(103.5)
@@ -125,7 +154,7 @@ class SettingsWorkflowTests(unittest.TestCase):
         v.text_renderer.photo.reset_mock(); v.settings_label('',0,0,200); v.text_renderer.photo.assert_not_called()
         self.assertEqual(v.settings_value('auto_answer',None),'Never'); self.assertEqual(v.settings_value('tv_idle_seconds',120),'2 min')
         self.assertEqual(v.settings_value('auto_answer',10),'10 s'); self.assertEqual(v.settings_value('auto_framing',False),'no')
-        v.language='unsupported'; self.assertEqual(v.settings_text('settings'),'Settings'); self.assertEqual(v.settings_text('reset'),'reset')
+        v.language='unsupported'; self.assertEqual(v.settings_text('settings'),'Settings'); self.assertEqual(v.settings_text('reset'),'Reset to factory defaults')
         v.settings_hold.clear(); self.assertFalse(v.render_settings()); self.assertIsNone(v.settings_signature)
 
 

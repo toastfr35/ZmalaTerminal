@@ -171,10 +171,11 @@ class ManagementLoop:
         if changed and self.model.state == State.HOME:
             self.render()
 
+    # @llr LLR-TERM-TV-019
     def update_timers(self, now):
         client = getattr(self, 'update_client', None)
         if (client and not client.locked and self.configuration
-                and self.maintenance is None):
+                and self.maintenance is None and not self.setup_stage):
             self.maintenance = self.make_maintenance(self.configuration)
         self.tick_settings_access(now)
         if self.pending_config and self.model.state == State.HOME and not self.setup_stage and now >= getattr(self, 'engine_retry_at', 0):

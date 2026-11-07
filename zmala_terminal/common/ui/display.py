@@ -64,7 +64,7 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.top.grid_columnconfigure(2, minsize=self.status_width)
         self.hidden_notifications = tk.Canvas(self.top, width=64, height=56, bg=BG, highlightthickness=0)
         self.hidden_notifications.grid(row=0, column=0, sticky='w')
-        self.corner_logo = self.text_renderer.portrait(ROOT / 'common/assets/zmala-icon.png', 40, BG)
+        self.corner_logo = self.text_renderer.portrait(ROOT / 'common/assets/zmala-mark-transparent.png', 40, BG)
         self.corner_notification_state = None
         self.draw_corner_notification(0)
         self.connectivity = tk.Canvas(self.top, width=self.status_width, height=30, bg=BG, highlightthickness=0)

@@ -58,11 +58,11 @@
       "Placez la personne souhaitée au centre."
     ],
     [
-      "Vert",
+      "Vert (en haut)",
       "Appuyez pour vérifier la personne, relâchez puis appuyez à nouveau pour appeler. Pour un appel entrant, vert répond."
     ],
     [
-      "Rouge",
+      "Rouge (en bas)",
       "Annule, refuse ou termine l'appel. Si la réponse automatique est activée, rouge refuse avant la fin du compte à rebours."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Choisir et enregistrer",
-      "Gauche/droite choisit un réglage ; vert l'ouvre. Gauche/droite modifie la valeur ; vert enregistre, rouge annule. Réglages : langue, réponse automatique, cadrage, sonnerie, volumes, portraits et retour au téléviseur."
+      "Gauche/droite choisit un réglage. Cinq icônes affichent les valeurs actuelles en dessous. Vert ouvre ; gauche/droite modifie. Vert valide et revient ; rouge annule et revient."
     ],
     [
       "Quitter",
-      "Dans la liste des réglages, appuyez sur rouge, puis vert pour sortir ou rouge pour rester."
+      "Le réglage TV est aussi dans ce carrousel. Pour quitter les réglages, appuyez sur rouge, puis vert pour sortir ou rouge pour rester."
     ]
   ],
   "help": "Avec le contrôle TV activé, le premier appui peut seulement afficher Zmala. Sinon, sélectionnez son entrée HDMI avec la télécommande TV. Si la télécommande ne répond plus, vérifiez l'interrupteur au dos et rechargez-la. Demandez de l'aide en cas d'échec d'appel ou d'enregistrement.",

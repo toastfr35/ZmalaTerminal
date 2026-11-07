@@ -1,7 +1,7 @@
 # @test T-LLT-059
 # @requirements LLR-TERM-TV-019, LLR-TERM-TV-020, LLR-TERM-TV-021, LLR-TERM-TV-022, LLR-TERM-TV-023, LLR-TERM-TV-024
 # @environment portable
-# @plan Run the real TV setup view with recording canvas/text renderers and a fake TVCheck/transport. Verify enrollment-only entry, selected language, maintenance suspension, remote-only actions, independent power/source capability restoration and localized retry/help/summary controls. Exercise narrow-screen text fitting, busy/error states and redraw caching without sending TV commands.
+# @plan Run the real TV setup view with recording canvas/text renderers and a fake TVCheck/transport. Verify settings-only entry, model carousel and test consent, cancellation and save failures, profile changes without testing, nonblocking saved-capability restoration, selected language, maintenance suspension, remote-only actions, independent power/source capability restoration and localized retry/help/summary controls. Exercise narrow-screen text fitting, busy/error states and redraw caching without sending TV commands.
 # @pass Setup surfaces and button hints match each stage; completion enables only user-passed capabilities and resumes maintenance once. Pixel quality and actual CEC behavior are outside this unit test.
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,30 +13,80 @@ from tests.terminal.LLT.test_display_states import widget
 
 class TVViewTests(unittest.TestCase):
     def fixture(self):
-        v=tv_setup.TVSetupView(); v.root=widget(); v.maintenance=Mock(); v.setup_stage=None
+        v=tv_setup.TVSetupView(); v.root=widget(); v.maintenance=Mock(); v.setup_stage=None; v.settings_open=True; v.pending_config=None
         v.enrollment=SimpleNamespace(path=Path('private/enrollment.json')); v.available_fonts=set()
-        v.tv_control=Mock(); v.render=Mock(); v.apply_config=Mock(); v.make_maintenance=Mock(); v.configuration=Mock()
+        v.tv_control=Mock(simulated=False, simulation_scene=None); v.render=Mock(); v.apply_config=Mock(); v.make_maintenance=Mock(); v.configuration=Mock()
         v.text_renderer=Mock(); v.text_renderer.photo.return_value=Mock(height=lambda:30)
-        v.icon_renderer=Mock(); v.language='en'; v.font_family='Sans'
+        v.icon_renderer=Mock(); v.corner_logo=Mock(); v.language='en'; v.font_family='Sans'
         for name in ('video','confirmation','settings_canvas','remote_help'): setattr(v,name,widget())
         with patch.object(tv_setup.tk,'Canvas',return_value=widget()): v.build_tv_setup()
         return v
 
-    def test_entry_is_once_after_enrollment_and_suspends_maintenance(self):
-        v=self.fixture()
-        with patch.dict(tv_setup.os.environ,{},clear=True): self.assertFalse(v.begin_tv_setup({}))
+    def test_entry_is_only_from_settings_and_can_be_reopened(self):
+        v=self.fixture(); v.settings_open=False
+        self.assertFalse(v.begin_tv_setup({}))
+        v.settings_open=True; v.tv_control.supports_setup=False
+        self.assertFalse(v.begin_tv_setup({}))
         v=self.fixture(); old=v.maintenance
-        with patch.dict(tv_setup.os.environ,{'ZMALA_PAIRING_STATUS':'pairing.json'}), \
-                patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport') as transport:
+        with patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport') as transport, patch.object(tv_setup,'write_profile'):
             self.assertTrue(v.begin_tv_setup({'language':'fr'})); self.assertFalse(v.begin_tv_setup({}))
+            self.assertEqual(v.tv_profile_page, 'models')
+            check.assert_not_called(); transport.assert_not_called()
+            v.tv_setup_button('green')
+            self.assertEqual(v.tv_profile_page, 'test_controls'); check.assert_not_called()
+            v.tv_setup_button('green')
+            check.assert_called_once_with(Path('private/tv-check.json'),transport.return_value,restart=True,profile='samsung')
+            check.return_value.start.assert_called_once()
+            v.setup_stage=None
+            self.assertTrue(v.begin_tv_setup({'language':'fr'}))
+            v.tv_setup_button('green'); v.tv_setup_button('green')
+            self.assertEqual(check.call_count,2)
         old.stop.assert_called_once(); self.assertIsNone(v.maintenance)
         self.assertEqual(v.language,'fr'); self.assertEqual(v.setup_stage,'tv')
-        check.assert_called_once_with(Path('private/tv-check.json'),transport.return_value)
-        check.return_value.start.assert_called_once()
         check.return_value.poll.return_value=True; check.return_value.page='power_ready'
-        v.tick_tv_setup(); v.render.assert_called_once()
+        v.render.reset_mock(); v.tick_tv_setup(); v.render.assert_called_once()
         self.assertTrue(v.tv_setup_button('red')); check.return_value.button.assert_called_once_with('red')
         v.setup_stage=None; self.assertFalse(v.tv_setup_button('green'))
+
+    def test_profile_cancel_no_test_and_save_failure_never_send_tv_commands(self):
+        with patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport') as transport, patch.object(tv_setup,'write_profile') as save:
+            v=self.fixture(); v.begin_tv_setup({})
+            v.tv_setup_button('right'); v.tv_setup_button('red')
+            save.assert_not_called(); self.assertIsNone(v.setup_stage)
+            v.begin_tv_setup({}); v.tv_setup_button('right'); v.tv_setup_button('green')
+            save.side_effect=OSError('disk full')
+            v.tv_setup_button('red')
+            self.assertEqual(v.tv_profile_page,'profile_save_error')
+            v.tv_control.select_driver.assert_not_called()
+            save.side_effect=None; v.tv_setup_button('green')
+            save.assert_called_with(Path('private/tv-profile.json'),'cec')
+            v.tv_control.select_driver.assert_called_once_with('cec')
+            self.assertFalse(v.tv_control.power_enabled); self.assertFalse(v.tv_control.source_enabled)
+            self.assertIsNone(v.setup_stage)
+            check.assert_not_called(); transport.assert_not_called()
+
+    def test_declining_retest_of_unchanged_profile_preserves_capabilities(self):
+        v=self.fixture(); v.tv_control.power_enabled=True; v.tv_control.source_enabled=False
+        with patch.object(tv_setup,'write_profile'), patch.object(tv_setup,'CheckTransport') as transport:
+            v.begin_tv_setup({}); v.tv_setup_button('green'); v.tv_setup_button('red')
+            self.assertTrue(v.tv_control.power_enabled); self.assertFalse(v.tv_control.source_enabled)
+            transport.assert_not_called(); v.tv_control.select_driver.assert_not_called()
+
+    def test_background_restore_never_opens_wizard_or_resumes_incomplete_check(self):
+        for page,expected in (('done',True),('power_ready',False),('unavailable',False)):
+            v=self.fixture(); v.tv_control.supports_setup=True
+            with patch.object(Path,'is_file',return_value=True), patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport'):
+                v.restore_tv_capabilities()
+            self.assertIsNone(v.setup_stage)
+            self.assertFalse(v.tv_control.power_enabled)
+            check.return_value.poll.return_value=True; check.return_value.page=page
+            check.return_value.record={'power':{'status':'passed'},'source':{'status':'failed'}}
+            v.tick_tv_setup()
+            self.assertEqual(v.tv_control.power_enabled,expected)
+            self.assertFalse(v.tv_control.source_enabled)
+            self.assertIsNone(v.setup_stage); self.assertIsNone(v.tv_check)
+            v.apply_config.assert_not_called(); v.make_maintenance.assert_not_called()
+            v.render.assert_not_called()
 
     def test_completion_restores_only_confirmed_capabilities_and_resumes_once(self):
         for power,source in (('passed','failed'),('skipped','passed')):
@@ -47,6 +97,7 @@ class TVViewTests(unittest.TestCase):
             self.assertEqual(v.tv_control.power_enabled,power=='passed')
             self.assertEqual(v.tv_control.source_enabled,source=='passed')
             check.close.assert_called_once(); self.assertIsNone(v.tv_check); self.assertIsNone(v.setup_stage)
+            self.assertTrue(v.settings_open)
             v.apply_config.assert_called_once_with({'language':'fr'})
             v.make_maintenance.assert_called_once_with(v.configuration); self.assertEqual(v.last_button,100)
             v.tick_tv_setup(); v.make_maintenance.assert_called_once()

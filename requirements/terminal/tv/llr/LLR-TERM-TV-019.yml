@@ -2,13 +2,23 @@ active: true
 area: TV control
 derived: false
 header: |
-  TV setup ordering
+  Optional TV setup from Settings
 level: 95.0
 links:
 - HLR-TERM-TV-017: S2nqx7v0OyXsBJ4cnyWr1LqdDB9WZmvN6aEWTWFqziA=
 normative: true
 ref: ''
 references:
+- path: zmala_terminal/common/management.py
+  type: file
+- path: tests/terminal/LLT/test_management_loop.py
+  type: file
+- path: zmala_terminal/common/main.py
+  type: file
+- path: zmala_terminal/common/setup_flow.py
+  type: file
+- path: zmala_terminal/common/settings_control.py
+  type: file
 - path: tests/terminal/LLT/test_tv_check.py
   type: file
 - path: tests/terminal/LLT/test_tv_setup_view.py
@@ -23,11 +33,32 @@ references:
   type: file
 - path: zmala_terminal/linux/tv_check.py
   type: file
+- path: zmala_terminal/common/tv_profiles.py
+  type: file
+- path: zmala_terminal/common/platform_services.py
+  type: file
 reviewed: null
 scope: Core
 text: |
-  TV checks shall follow server enrollment and use the selected language. Pending
-  checks shall prevent ordinary use, native media startup and idle TV restoration.
+  TV checks shall be opened explicitly from the TV setup card in Settings,
+  using the selected language. Enrollment, cached startup and configuration polls
+  shall not open the wizard or block ordinary use on unfinished checks. Startup
+  shall validate saved TV identity in the background and enable only completed,
+  user-passed capabilities. Opening TV setup shall allow checks to be repeated,
+  suspend maintenance and ordinary call/idle TV actions, and completion shall
+  return to the same settings card and resume maintenance. TV setup shall first
+  present a carousel of bundled model profiles with brand artwork, at most five
+  visible cards and no duplicated items in short lists. Selecting a
+  profile shall ask whether to test the TV controls. Declining shall save the
+  profile without issuing TV commands; cancelling the carousel shall discard
+  its draft. Changing profile shall disable qualifications from another profile.
+  Windows shall simulate standby and input changes using the same user-confirmed
+  flow, visibly labelled as simulation, without hardware or network commands.
 verification: |
-  Complete enrollment and interrupt TV checks. Check page language and inhibited media
-  and idle actions.
+  Verify enrollment and cached startup apply configuration without opening TV
+  setup. Open/reopen it from Settings, complete or skip checks, and verify the
+  return page, language, maintenance lifetime and independent capability gates.
+  Exercise background restoration with completed, incomplete and changed-TV
+  results. Record physical CEC checks separately from Windows UI acceptance.
+  Verify carousel cancellation, selection without testing, failed saves, changed
+  profiles and cancellable Windows simulation. No test starts before consent.

@@ -58,11 +58,11 @@
       "Choose the person in the centre."
     ],
     [
-      "Green",
+      "Green (top)",
       "Press to check the person, then release and press again to call. For an incoming call, press green to answer."
     ],
     [
-      "Red",
+      "Red (bottom)",
       "Cancel, decline or end a call. If automatic answering is enabled, red declines before the countdown ends."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Choose and save",
-      "Left/right chooses a setting; green opens it. Left/right changes the value; green saves, red discards. Options include language, automatic answer, framing, ringtone, sound volumes, portraits and return to TV."
+      "Left/right chooses a setting. Five icons show current values below them. Green opens it; left/right changes it. Green saves and returns; red cancels and returns."
     ],
     [
       "Leave",
-      "Press red on the settings list, then green to exit or red to stay."
+      "TV setup is also in this carousel. To leave settings, press red, then green to exit or red to stay."
     ]
   ],
   "help": "If TV control is enabled, the first press may only show Zmala. Otherwise select its HDMI input with the TV remote. If the remote stops responding, check its rear switch and charge it. Ask your helper if saving or calling fails.",

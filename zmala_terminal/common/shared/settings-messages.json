@@ -11,9 +11,12 @@
     "Übernehmen",
     "Verlassen",
     "Aktueller Wert",
-    "Zurück zum Fernsehen",
+    "Automatisch zum Fernsehen zurückkehren",
     "Klingelton",
-    "Tastenton-Lautstärke"
+    "Tastenton-Lautstärke",
+    "TV einrichten",
+    "Die TV-Einrichtung ist am Raspberry-Pi-Terminal verfügbar.",
+    "Auf Werkseinstellungen zurücksetzen"
   ],
   "en": [
     "Settings",
@@ -27,9 +30,12 @@
     "Accept",
     "Exit",
     "Current value",
-    "Return to TV",
+    "Automatic return to TV",
     "Ringtone",
-    "Button sounds volume"
+    "Button sounds volume",
+    "TV setup",
+    "TV setup is available on the Raspberry Pi terminal.",
+    "Reset to factory defaults"
   ],
   "es": [
     "Ajustes",
@@ -43,9 +49,12 @@
     "Aceptar",
     "Salir",
     "Valor actual",
-    "Volver a la televisión",
+    "Volver automáticamente a la televisión",
     "Tono de llamada",
-    "Volumen de botones"
+    "Volumen de botones",
+    "Configurar TV",
+    "La configuración de TV está disponible en el terminal Raspberry Pi.",
+    "Restablecer los valores de fábrica"
   ],
   "fr": [
     "Réglages",
@@ -59,9 +68,12 @@
     "Accepter",
     "Quitter",
     "Valeur actuelle",
-    "Retour à la télévision",
+    "Retour automatique à la télévision",
     "Sonnerie",
-    "Volume des boutons"
+    "Volume des boutons",
+    "Réglage du téléviseur",
+    "Le réglage TV est disponible sur le terminal Raspberry Pi.",
+    "Rétablir les paramètres d’usine"
   ],
   "pl": [
     "Ustawienia",
@@ -75,9 +87,12 @@
     "Zatwierdź",
     "Wyjdź",
     "Obecna wartość",
-    "Powrót do telewizji",
+    "Automatyczny powrót do telewizji",
     "Dzwonek",
-    "Głośność przycisków"
+    "Głośność przycisków",
+    "Konfiguracja TV",
+    "Konfiguracja TV jest dostępna na terminalu Raspberry Pi.",
+    "Przywróć ustawienia fabryczne"
   ],
   "pt": [
     "Definições",
@@ -91,9 +106,12 @@
     "Aceitar",
     "Sair",
     "Valor atual",
-    "Voltar à televisão",
+    "Regresso automático à televisão",
     "Toque de chamada",
-    "Volume dos botões"
+    "Volume dos botões",
+    "Configurar TV",
+    "A configuração da TV está disponível no terminal Raspberry Pi.",
+    "Repor as definições de fábrica"
   ],
   "el": [
     "Ρυθμίσεις",
@@ -107,9 +125,12 @@
     "Αποδοχή",
     "Έξοδος",
     "Τρέχουσα τιμή",
-    "Επιστροφή στην τηλεόραση",
+    "Αυτόματη επιστροφή στην τηλεόραση",
     "Ήχος κλήσης",
-    "Ένταση ήχων κουμπιών"
+    "Ένταση ήχων κουμπιών",
+    "Ρύθμιση TV",
+    "Η ρύθμιση TV είναι διαθέσιμη στο τερματικό Raspberry Pi.",
+    "Επαναφορά εργοστασιακών ρυθμίσεων"
   ],
   "ru": [
     "Настройки",
@@ -123,9 +144,12 @@
     "Принять",
     "Выйти",
     "Текущее значение",
-    "Возврат к телевидению",
+    "Автоматический возврат к ТВ",
     "Мелодия звонка",
-    "Громкость кнопок"
+    "Громкость кнопок",
+    "Настройка ТВ",
+    "Настройка ТВ доступна на терминале Raspberry Pi.",
+    "Сбросить до заводских настроек"
   ],
   "ur": [
     "ترتیبات",
@@ -139,9 +163,12 @@
     "قبول کریں",
     "باہر نکلیں",
     "موجودہ قدر",
-    "ٹی وی پر واپس جائیں",
+    "خودکار طور پر ٹی وی پر واپسی",
     "رنگ ٹون",
-    "بٹنوں کی آواز"
+    "بٹنوں کی آواز",
+    "ٹی وی کی ترتیب",
+    "ٹی وی کی ترتیب Raspberry Pi ٹرمینل پر دستیاب ہے۔",
+    "فیکٹری کی ترتیبات بحال کریں"
   ],
   "ar": [
     "الإعدادات",
@@ -155,9 +182,12 @@
     "قبول",
     "خروج",
     "القيمة الحالية",
-    "العودة إلى التلفاز",
+    "العودة التلقائية إلى التلفاز",
     "نغمة الرنين",
-    "مستوى صوت الأزرار"
+    "مستوى صوت الأزرار",
+    "إعداد التلفاز",
+    "إعداد التلفاز متاح على طرفية Raspberry Pi.",
+    "استعادة إعدادات المصنع"
   ],
   "hi": [
     "सेटिंग्स",
@@ -171,9 +201,12 @@
     "स्वीकारें",
     "बाहर जाएँ",
     "वर्तमान मान",
-    "टीवी पर वापस जाएँ",
+    "अपने आप टीवी पर वापस जाएँ",
     "रिंगटोन",
-    "बटन की आवाज़"
+    "बटन की आवाज़",
+    "टीवी सेटअप",
+    "टीवी सेटअप Raspberry Pi टर्मिनल पर उपलब्ध है।",
+    "फ़ैक्टरी सेटिंग बहाल करें"
   ],
   "bn": [
     "সেটিংস",
@@ -187,9 +220,12 @@
     "গ্রহণ করুন",
     "বের হন",
     "বর্তমান মান",
-    "টিভিতে ফিরে যান",
+    "স্বয়ংক্রিয়ভাবে টিভিতে ফিরে যান",
     "রিংটোন",
-    "বোতামের শব্দের মাত্রা"
+    "বোতামের শব্দের মাত্রা",
+    "টিভি সেটআপ",
+    "টিভি সেটআপ Raspberry Pi টার্মিনালে উপলব্ধ।",
+    "কারখানার সেটিং ফিরিয়ে আনুন"
   ],
   "th": [
     "การตั้งค่า",
@@ -203,9 +239,12 @@
     "ยืนยัน",
     "ออก",
     "ค่าปัจจุบัน",
-    "กลับไปดูทีวี",
+    "กลับไปยังทีวีโดยอัตโนมัติ",
     "เสียงเรียกเข้า",
-    "ระดับเสียงปุ่ม"
+    "ระดับเสียงปุ่ม",
+    "ตั้งค่าทีวี",
+    "ตั้งค่าทีวีได้บนเครื่อง Raspberry Pi",
+    "คืนค่าเริ่มต้นจากโรงงาน"
   ],
   "ko": [
     "설정",
@@ -219,9 +258,12 @@
     "확인",
     "나가기",
     "현재 값",
-    "TV로 돌아가기",
+    "TV로 자동 복귀",
     "벨소리",
-    "버튼 소리 음량"
+    "버튼 소리 음량",
+    "TV 설정",
+    "TV 설정은 Raspberry Pi 단말기에서 사용할 수 있습니다.",
+    "공장 초기 설정으로 복원"
   ],
   "ja": [
     "設定",
@@ -235,9 +277,12 @@
     "決定",
     "終了",
     "現在の値",
-    "テレビに戻る",
+    "テレビに自動で戻る",
     "着信音",
-    "ボタン音量"
+    "ボタン音量",
+    "テレビ設定",
+    "テレビ設定は Raspberry Pi 端末で利用できます。",
+    "工場出荷時の設定に戻す"
   ],
   "zh-Hans": [
     "设置",
@@ -251,8 +296,11 @@
     "确认",
     "退出",
     "当前值",
-    "返回电视",
+    "自动返回电视",
     "铃声",
-    "按键音量"
+    "按键音量",
+    "电视设置",
+    "电视设置可在 Raspberry Pi 终端上使用。",
+    "恢复出厂设置"
   ]
 }
