@@ -1,0 +1,40 @@
+name: Release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: python -m pip install -r build_tools/leaflet/requirements.txt -r build_tools/release/requirements.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y fonts-noto-core fonts-noto-cjk
+      - run: make package leaflets
+      - name: Build signed application update
+        env:
+          ZMALA_TERMINAL_UPDATE_KEY: ${{ secrets.ZMALA_TERMINAL_UPDATE_KEY }}
+        run: python build_tools/release/terminal_update.py build
+      - run: python build_tools/release/terminal_update.py verify
+      - name: Publish terminal assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python build_tools/release/component.py publish build_tools/dist/ZmalaTerminal-*.tar.gz* build_tools/dist/ZmalaTerminal-Update.json build_tools/dist/leaflets/ZmalaTerminal-Leaflets.zip

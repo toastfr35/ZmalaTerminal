@@ -1,0 +1,31 @@
+active: true
+area: Remote control
+derived: false
+header: |
+  Volume page controls
+level: 39.0
+links:
+- HLR-TERM-REMOTE-011: TiDV7Ft-tt774sL2qNA6OwnzI_7yGdcv_n0YsuUsB6o=
+normative: true
+ref: ''
+references:
+- path: tests/terminal/LLT/test_presenter_input.py
+  type: file
+- path: tests/terminal/LLT/test_input_dispatch.py
+  type: file
+- path: tests/terminal/LLT/test_volume_control.py
+  type: file
+- path: zmala_terminal/common/input_control.py
+  type: file
+- path: zmala_terminal/common/volume_control.py
+  type: file
+- path: zmala_terminal/linux/presenter_input.py
+  type: file
+- path: zmala_terminal/common/settings_control.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  A distinct middle-button press shall open a compact call-volume overlay. Left/right clicks shall decrease/increase call playback volume by five percentage points, bounded to 0 through 100. An existing between-step level shall move to the next boundary in the chosen direction. A red press or a second distinct middle press shall close the overlay, retaining and flushing the current level. The closing red press shall not reach the underlying page or end a call. Motion shall not change volume. Duplicate held reports and release alone shall not toggle it. While open, other physical buttons shall not dial, navigate contacts, hang up or open settings. Incoming call/state, setup or focus changes shall dismiss the overlay without changing the underlying call or selection. Internal timeout and permission-revocation actions shall remain effective while the overlay is open.
+verification: |
+  Open the page, feed movement, duplicate down/release reports and distinct left/right clicks. Check five-percent boundaries, limits, unchanged call/selection, red and second-middle-click closure and context/focus preemption. Verify that logical call cancellation bypasses the physical volume-input handler.

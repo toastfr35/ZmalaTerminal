@@ -1,0 +1,82 @@
+{
+  "de": [
+    "Möchten Sie {name} anrufen?",
+    "Möchten Sie um einen Rückruf bitten?",
+    "Rückruf angefordert"
+  ],
+  "en": [
+    "Do you want to call {name}?",
+    "Do you want to request a callback?",
+    "Callback request sent"
+  ],
+  "es": [
+    "¿Quieres llamar a {name}?",
+    "¿Quieres pedir que te devuelvan la llamada?",
+    "Solicitud de llamada enviada"
+  ],
+  "fr": [
+    "Voulez-vous appeler {name} ?",
+    "Voulez-vous demander à être rappelé ?",
+    "Demande de rappel envoyée"
+  ],
+  "pl": [
+    "Czy chcesz zadzwonić do {name}?",
+    "Czy chcesz poprosić o oddzwonienie?",
+    "Prośba o oddzwonienie wysłana"
+  ],
+  "pt": [
+    "Quer ligar a {name}?",
+    "Quer pedir que lhe liguem de volta?",
+    "Pedido de chamada enviado"
+  ],
+  "el": [
+    "Θέλετε να καλέσετε τον/την {name};",
+    "Θέλετε να ζητήσετε να σας καλέσουν πίσω;",
+    "Το αίτημα κλήσης στάλθηκε"
+  ],
+  "ru": [
+    "Хотите позвонить: {name}?",
+    "Хотите попросить перезвонить?",
+    "Просьба перезвонить отправлена"
+  ],
+  "ur": [
+    "کیا آپ {name} کو کال کرنا چاہتے ہیں؟",
+    "کیا آپ واپس کال کرنے کی درخواست کرنا چاہتے ہیں؟",
+    "واپس کال کرنے کی درخواست بھیج دی گئی"
+  ],
+  "ar": [
+    "هل تريد الاتصال بـ {name}؟",
+    "هل تريد طلب معاودة الاتصال؟",
+    "تم إرسال طلب معاودة الاتصال"
+  ],
+  "hi": [
+    "क्या आप {name} को कॉल करना चाहते हैं?",
+    "क्या आप वापस कॉल करने का अनुरोध करना चाहते हैं?",
+    "वापस कॉल करने का अनुरोध भेजा गया"
+  ],
+  "bn": [
+    "আপনি কি {name}-কে কল করতে চান?",
+    "আপনি কি ফিরতি কলের অনুরোধ করতে চান?",
+    "ফিরতি কলের অনুরোধ পাঠানো হয়েছে"
+  ],
+  "th": [
+    "คุณต้องการโทรหา {name} หรือไม่?",
+    "คุณต้องการขอให้โทรกลับหรือไม่?",
+    "ส่งคำขอให้โทรกลับแล้ว"
+  ],
+  "ko": [
+    "{name}님에게 전화하시겠습니까?",
+    "다시 전화해 달라고 요청하시겠습니까?",
+    "회신 전화 요청을 보냈습니다"
+  ],
+  "ja": [
+    "{name}さんに電話しますか？",
+    "折り返しの電話をお願いしますか？",
+    "折り返しの電話を依頼しました"
+  ],
+  "zh-Hans": [
+    "您想呼叫{name}吗？",
+    "您想请求对方回电吗？",
+    "已发送回电请求"
+  ]
+}

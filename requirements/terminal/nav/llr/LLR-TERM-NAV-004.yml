@@ -1,0 +1,40 @@
+active: true
+area: Contact selection and navigation
+derived: false
+header: |
+  Cyclic stable selection
+level: 45.0
+links:
+- HLR-TERM-NAV-001: NnPrSvfaxidle5dZ_NhC4Qfe-L_j2wMb3vlGjZve01o=
+normative: true
+ref: ''
+references:
+- path: tests/terminal/LLT/test_input_dispatch.py
+  type: file
+- path: tests/terminal/LLT/test_terminal.py
+  type: file
+- path: zmala_terminal/common/carousel.py
+  type: file
+- path: zmala_terminal/common/input_control.py
+  type: file
+- path: zmala_terminal/common/model.py
+  type: file
+- path: zmala_terminal/common/settings_control.py
+  type: file
+- path: zmala_terminal/common/ui/carousel.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  Each distinct left or right press shall move one contact cyclically, including
+  rapid presses during animation. Held-button repeats shall not add moves.
+  Animation shall continue from its current position towards the latest selection;
+  confirmation during animation shall use that selection. Directory refresh shall
+  retain the selected contact when it remains in the list. Removing that contact shall
+  select a valid remaining contact.
+verification: |
+  Move across both list ends, rapidly press each direction three times, reverse
+  direction during animation and confirm before it finishes. Check every press
+  counts, held repeats do not, motion is continuous and the confirmed identity
+  matches the final selection. Update or remove the selected contact and check
+  the resulting identity.

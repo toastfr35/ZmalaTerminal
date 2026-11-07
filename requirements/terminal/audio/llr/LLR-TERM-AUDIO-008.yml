@@ -1,0 +1,34 @@
+active: true
+area: Audio
+derived: false
+header: |
+  Speaker level lifetime
+level: 70.0
+links:
+- HLR-TERM-AUDIO-002: lW9hiMouJja9WRBJlUZBmYmMaSUkNugF77_2t71epGE=
+normative: true
+ref: ''
+references:
+- path: tests/terminal/LLT/test_volume_control.py
+  type: file
+- path: zmala_terminal/common/engine.py
+  type: file
+- path: zmala_terminal/common/input_control.py
+  type: file
+- path: zmala_terminal/common/volume_control.py
+  type: file
+- path: zmala_terminal/linux/c20_volume.py
+  type: file
+- path: zmala_terminal/linux/presenter_input.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  A local speaker adjustment shall survive media-engine recreation during the
+  application session. A changed configured default or application restart shall apply
+  the configured level. USB wake shall reapply the desired level after hardware reset.
+verification: |
+  Recreate media, change the saved default and simulate USB wake. Check preserved or
+  replaced level according to the event. Change the configured default while a volume
+  click is pending, including a default equal to the last written level; verify the
+  pending click cannot overwrite it and later deliberate adjustments still work.

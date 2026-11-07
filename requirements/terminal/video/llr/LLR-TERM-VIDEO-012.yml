@@ -1,0 +1,51 @@
+active: true
+area: Video
+derived: false
+header: |
+  Missing received video
+level: 79.0
+links:
+- HLR-TERM-VIDEO-001: null
+normative: true
+ref: ''
+references:
+- path: tests/terminal/LLT/test_display_states.py
+  type: file
+- path: tests/terminal/LLT/test_engine_adapter.py
+  type: file
+- path: tests/terminal/LLT/test_video_feedback.py
+  type: file
+- path: zmala_terminal/common/engine.py
+  type: file
+- path: zmala_terminal/common/ui/display.py
+  type: file
+- path: zmala_terminal/linux/media/video/codec.c
+  type: file
+- path: zmala_terminal/linux/media/video/codec.h
+  type: file
+- path: zmala_terminal/linux/media/video/mjpeg-filter.c
+  type: file
+- path: zmala_terminal/linux/media/video/mjpeg-stream.c
+  type: file
+- path: zmala_terminal/linux/media/video/mjpeg-stream.h
+  type: file
+- path: zmala_terminal/linux/media/video/preview-display.c
+  type: file
+reviewed: null
+scope: Core
+text: |
+  When no shared call photo is covering the video views, before the first decoded remote frame, the terminal call view shall show a
+  neutral video-starting message and an unslashed camera icon for up to eight
+  seconds. If no frame arrives by that deadline, it shall show missing-video
+  feedback. Once a frame has appeared, four seconds without a decoded remote
+  frame or negotiated receive-video disablement shall show missing-video
+  feedback without restarting the initial grace period. Audio and outgoing
+  media shall continue. A new decoded frame or call shall clear the stale
+  condition; each new call shall receive its own initial grace period.
+verification: |
+  Control frame times and negotiated reception. Check the four-second boundary,
+  feedback and continued audio and send state.
+  Check the neutral initial message and camera icon immediately before and at
+  the eight-second boundary, that redraws do not extend it, that first-frame
+  reception ends it, and that a new call resets it. Render both phases in every
+  supplied language without covering the local preview or rebuilding video.

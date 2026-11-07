@@ -1,0 +1,114 @@
+{
+  "de": [
+    "Vorderseite",
+    "Rückseite",
+    "Ein / Aus",
+    "Drehen Sie die Fernbedienung um",
+    "Schieben Sie den eingekreisten Schalter zum Einschalten.\nBleibt die Verbindung aus, ist der Akku möglicherweise leer.\nStellen Sie die Fernbedienung in die Ladestation mit Stromanschluss."
+  ],
+  "en": [
+    "Front",
+    "Back",
+    "On / Off",
+    "Turn your remote over",
+    "Slide the circled switch to turn it on.\nIf it stays disconnected, the battery may be flat.\nPlace the remote in its charging dock, connected to power."
+  ],
+  "es": [
+    "Frente",
+    "Dorso",
+    "Encender / Apagar",
+    "Dé la vuelta al mando",
+    "Deslice el interruptor marcado para encenderlo.\nSi sigue desconectado, puede que la batería esté agotada.\nColóquelo en su base de carga conectada a la corriente."
+  ],
+  "fr": [
+    "Avant",
+    "Dos",
+    "Marche / Arrêt",
+    "Retournez votre télécommande",
+    "Faites glisser l’interrupteur entouré pour l’allumer.\nSi elle reste déconnectée, sa batterie est peut-être vide.\nPosez-la sur son socle de charge branché."
+  ],
+  "pl": [
+    "Przód",
+    "Tył",
+    "Włącz / Wyłącz",
+    "Odwróć pilota",
+    "Przesuń przełącznik zaznaczony kółkiem, aby włączyć pilota.\nJeśli połączenie nie wraca, bateria może być rozładowana.\nUmieść pilota w stacji ładującej podłączonej do prądu."
+  ],
+  "pt": [
+    "Frente",
+    "Verso",
+    "Ligar / Desligar",
+    "Vire o comando",
+    "Deslize o interruptor assinalado para ligar.\nSe não voltar a ligar-se, a bateria pode estar vazia.\nColoque o comando na base de carregamento ligada à corrente."
+  ],
+  "el": [
+    "Μπροστά",
+    "Πίσω",
+    "Άνοιγμα / Κλείσιμο",
+    "Γυρίστε το τηλεχειριστήριο ανάποδα",
+    "Σύρετε τον διακόπτη μέσα στον κύκλο για να το ανοίξετε.\nΑν δεν επανασυνδεθεί, η μπαταρία μπορεί να έχει αδειάσει.\nΤοποθετήστε το στη βάση φόρτισης που είναι συνδεδεμένη στο ρεύμα."
+  ],
+  "ru": [
+    "Спереди",
+    "Сзади",
+    "Вкл. / Выкл.",
+    "Переверните пульт",
+    "Сдвиньте обведённый переключатель, чтобы включить пульт.\nЕсли соединение не восстановится, батарея может быть разряжена.\nПоставьте пульт в зарядную подставку, подключённую к питанию."
+  ],
+  "ur": [
+    "سامنے",
+    "پیچھے",
+    "چالو / بند",
+    "ریموٹ کو پلٹیں",
+    "چالو کرنے کے لیے دائرے میں دکھایا گیا سوئچ سرکائیں۔\nاگر کنکشن نہ ہو تو بیٹری ختم ہو سکتی ہے۔\nریموٹ کو بجلی سے منسلک چارجنگ اسٹینڈ پر رکھیں۔"
+  ],
+  "ar": [
+    "الأمام",
+    "الخلف",
+    "تشغيل / إيقاف",
+    "اقلب جهاز التحكم",
+    "حرّك المفتاح داخل الدائرة لتشغيله.\nإذا لم يتصل مجددًا، فقد تكون البطارية فارغة.\nضع جهاز التحكم في قاعدة الشحن الموصولة بالكهرباء."
+  ],
+  "hi": [
+    "सामने",
+    "पीछे",
+    "चालू / बंद",
+    "रिमोट को पलटें",
+    "चालू करने के लिए घेरे में दिखाए स्विच को खिसकाएँ।\nअगर कनेक्शन नहीं बनता, तो बैटरी खत्म हो सकती है।\nरिमोट को बिजली से जुड़े चार्जिंग स्टैंड पर रखें।"
+  ],
+  "bn": [
+    "সামনে",
+    "পিছনে",
+    "চালু / বন্ধ",
+    "রিমোটটি উল্টে নিন",
+    "চালু করতে বৃত্ত দিয়ে দেখানো সুইচটি সরান।\nসংযোগ না হলে ব্যাটারি শেষ হয়ে থাকতে পারে।\nরিমোটটি বিদ্যুৎ সংযোগ দেওয়া চার্জিং স্ট্যান্ডে রাখুন।"
+  ],
+  "th": [
+    "ด้านหน้า",
+    "ด้านหลัง",
+    "เปิด / ปิด",
+    "พลิกรีโมตไปด้านหลัง",
+    "เลื่อนสวิตช์ที่วงไว้เพื่อเปิด\nหากยังไม่เชื่อมต่อ แบตเตอรี่อาจหมด\nวางรีโมตบนแท่นชาร์จที่ต่อกับแหล่งจ่ายไฟแล้ว"
+  ],
+  "ko": [
+    "앞면",
+    "뒷면",
+    "켜기 / 끄기",
+    "리모컨을 뒤집어 주세요",
+    "동그라미로 표시된 스위치를 밀어 전원을 켜세요.\n연결되지 않으면 배터리가 방전되었을 수 있습니다.\n리모컨을 전원에 연결된 충전 거치대에 놓으세요."
+  ],
+  "ja": [
+    "表側",
+    "裏側",
+    "入 / 切",
+    "リモコンを裏返してください",
+    "丸で囲んだスイッチをスライドして電源を入れてください。\n接続されない場合は、バッテリーが切れている可能性があります。\n電源に接続した充電台にリモコンを置いてください。"
+  ],
+  "zh-Hans": [
+    "正面",
+    "背面",
+    "开 / 关",
+    "请把遥控器翻过来",
+    "滑动圈出的开关以打开遥控器。\n如果仍未连接，电池可能已耗尽。\n请将遥控器放入已接通电源的充电底座。"
+  ]
+}
