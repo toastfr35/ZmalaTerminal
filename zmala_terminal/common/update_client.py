@@ -94,6 +94,9 @@ def tick_terminal(app, now):
     maintenance = getattr(app, 'maintenance', None)
     television = getattr(app, 'tv_control', None)
     viewing = getattr(television, 'session', None)
+    request = getattr(client, 'current', None)
+    immediate = (isinstance(request, dict) and request.get('phase') == 'request'
+                 and request.get('immediate') is True and 0 <= now-request['heartbeat'] <= 10)
     idle = (app.model.state == State.HOME and not (app.engine and app.engine.call)
             and not app.setup_stage and not app.settings_open and not app.setup_busy
             and not app.settings_draft.busy and not app.keys_down
@@ -104,7 +107,7 @@ def tick_terminal(app, now):
             and not getattr(viewing, 'previous', None)
             and (getattr(power, 'deferred', False)
                  or getattr(power, 'state', None) not in ('switching', 'starting'))
-            and now - app.last_button >= 120)
+            and (immediate or now - app.last_button >= 120))
     def fence():
         hold = getattr(power, 'hold_for_update', None)
         if hold:

@@ -16,6 +16,47 @@ from zmala_terminal.common.input_control import InputControl
 from zmala_terminal.common.engine import Engine
 
 class UpdateClientTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'posix', 'POSIX no-follow IPC')
+    def test_manual_apply_uses_only_the_matching_offer(self):
+        from zmala_terminal.common import update_menu
+        with tempfile.TemporaryDirectory() as directory:
+            offer, command = (Path(directory)/name for name in ('offer.json', 'command.json'))
+            now = [100]
+            offer.write_text('{"schema":1,"state":"current"}')
+            read = update_menu.read_record
+            with patch.object(update_menu, 'read_record', side_effect=lambda path, uid: read(path, os.getuid())):
+                menu = update_menu.UpdateMenu(offer, command, lambda: now[0])
+                self.assertFalse(menu.apply())
+                first = json.loads(command.read_text())
+                self.assertEqual(first['action'], 'check')
+                result = {'schema': 1, 'request': 'a'*32, 'state': 'available', 'version': '0.4.4', 'release': 'b'*64}
+                offer.write_text(json.dumps(result))
+                self.assertFalse(menu.poll())
+                now[0] += 1
+                result['request'] = first['request']
+                offer.write_text(json.dumps(result))
+                self.assertTrue(menu.poll())
+                self.assertTrue(menu.apply())
+                second = json.loads(command.read_text())
+                self.assertNotEqual(first['request'], second['request'])
+                self.assertEqual((second['action'], second['release']), ('apply', result['release']))
+
+    def test_immediate_lease_still_waits_for_call_and_freshness(self):
+        from zmala_terminal.common.model import State
+        client = SimpleNamespace(passive=False, tick=Mock(), current={'phase': 'request', 'immediate': True, 'heartbeat': 99})
+        app = SimpleNamespace(update_client=client, model=SimpleNamespace(state=State.HOME),
+            engine=SimpleNamespace(call=None), setup_stage=None, settings_open=False, setup_busy=False,
+            settings_draft=SimpleNamespace(busy=False), keys_down=set(), last_button=99,
+            language='en', closed=False)
+        tick_terminal(app, 100)
+        self.assertTrue(client.tick.call_args.args[0])
+        app.engine.call = object()
+        tick_terminal(app, 101)
+        self.assertFalse(client.tick.call_args.args[0])
+        app.engine.call = None
+        tick_terminal(app, 110)
+        self.assertFalse(client.tick.call_args.args[0])
+
     def test_failed_ui_cycle_does_not_publish_ready_heartbeat(self):
         from zmala_terminal.common.management import ManagementLoop
         from zmala_terminal.common.model import State

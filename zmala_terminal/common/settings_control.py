@@ -136,6 +136,13 @@ class SettingsControl:
     # @llr LLR-TERM-SETUP-032, LLR-TERM-CONFIG-019
     def settings_button(self, button):
         draft = self.settings_draft
+        if draft.updates:
+            if button == 'red':
+                draft.updates = None
+            elif button == 'green':
+                draft.updates.apply()
+            self.render()
+            return
         if draft.busy:
             return  # An accepted write may already have reached the server.
         if draft.confirm_exit:
@@ -155,6 +162,9 @@ class SettingsControl:
         elif button == 'green':
             if draft.key == 'tv_setup':
                 draft.error = not self.begin_tv_setup(self.model.config)
+            elif draft.key == 'updates':
+                from zmala_terminal.common.update_menu import UpdateMenu
+                draft.updates = UpdateMenu()
             elif draft.key == 'reset':
                 self.settings_open = False
                 self.setup_stage = 'reset'
@@ -165,6 +175,15 @@ class SettingsControl:
             else:
                 draft.open(self.model.config)
         self.render()
+
+    def tick_settings_updates(self):
+        menu = self.settings_draft.updates
+        if self.settings_open and menu and menu.poll():
+            if menu.state == 'queued':
+                self.settings_draft.updates = None
+                self.settings_open = False
+                self.settings_hold.clear()
+            self.render()
 
     def save_local_setting(self):
         draft = self.settings_draft

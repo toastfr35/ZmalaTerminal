@@ -7,12 +7,13 @@ import logging
 import os
 from pathlib import Path
 import platform
-import random
+from datetime import date
 import re
 import shutil
 import stat
 import time
 from zmala_terminal.linux.update_download import download
+from zmala_terminal.linux.update_mailbox import UpdateMailbox
 from zmala_terminal.linux.update_server import ServerLink
 from zmala_terminal.linux.update_package import verify_manifest
 from zmala_terminal.linux.update_prepare import prepare_release, StorageUnavailable
@@ -88,13 +89,15 @@ class UpdateService:
                      for name, value in trusted_json(config['keys']).items()}
         if not self.keys or any(len(value) != 32 for value in self.keys.values()):
             raise RecoveryError('No trusted release key')
-        self.next_check = time.monotonic() + random.uniform(15, 60)
         self.next_claim = 0
         self.next_report = 0
         self.available = None
         self.last_error = None
         self.link = ServerLink(config)
         self.runtime.report = self.report
+        self.mailbox = UpdateMailbox(self.runtime)
+        self.offered = None
+        self.offer_until = 0
 
     # @llr LLR-TERM-MAINT-034
     def report(self):
@@ -182,6 +185,7 @@ class UpdateService:
                 raise RecoveryError('Recovery application is not ready')
             self.runtime.finish(self.runtime.nonce)
         self.collect()
+        self.mailbox.publish('current')
 
     def check(self):
         verify_host(self.config, self.runtime.command)
@@ -201,6 +205,10 @@ class UpdateService:
         if self.quarantined(digest):
             return
         self.available = manifest['version']
+        return manifest
+
+    def prepare(self, manifest):
+        digest = manifest['package']['sha256']
         pending = self.transactions.read('pending')
         if pending and pending.get('state') in ('ready', 'trial'):
             return
@@ -224,9 +232,47 @@ class UpdateService:
             self.last_error = 'preparation_failed'
             raise
 
+    def handle_manual(self, request):
+        identity = request['request']
+        if request['action'] == 'check':
+            self.offered = None
+            self.offered = self.check()
+            if self.offered:
+                self.offer_until = self.runtime.clock()+600
+                self.mailbox.publish('available', identity, version=self.offered['version'],
+                                     release=self.offered['package']['sha256'])
+            else:
+                self.mailbox.publish('current', identity)
+            return
+        manifest = self.offered
+        if (not manifest or self.runtime.clock() > self.offer_until
+                or manifest['package']['sha256'] != request['release']
+                or self.quarantined(request['release'])
+                or manifest['sequence'] <= confirmed_release(self.transactions)['sequence']):
+            self.mailbox.publish('error', identity)
+            return
+        pending = self.transactions.read('pending')
+        if pending and pending.get('state') == 'ready':
+            metadata = trusted_json(self.transactions.slot(pending['candidate'])/'update-release.json')
+            if metadata['digest'] != request['release']:
+                self.mailbox.publish('error', identity)
+                return
+        self.offered = None
+        self.mailbox.publish('queued', identity)
+        self.prepare(manifest)
+        self.runtime.immediate = True
+        self.next_claim = 0
+
     def tick(self):
         now = time.monotonic()
         self.runtime.publish()
+        request = self.mailbox.receive()
+        if request:
+            try:
+                self.handle_manual(request)
+            except Exception as error:
+                self.mailbox.publish('error', request['request'])
+                logging.warning('Manual update request failed (%s)', type(error).__name__)
         pending = self.transactions.read('pending')
         if pending and pending.get('state') == 'ready' and now >= self.next_claim:
             self.next_claim = now + 30
@@ -236,11 +282,15 @@ class UpdateService:
                 self.quarantine(metadata['digest'])
                 self.last_error = 'candidate_failed'
             if result != 'waiting':
+                self.runtime.immediate = False
                 self.collect()
-        if now >= self.next_check:
-            self.next_check = now + random.uniform(270, 330)
+        today = date.today().isoformat()
+        if today > (self.transactions.read('last-check') or {}).get('date', ''):
+            self.transactions.write('last-check', {'date': today})
             try:
-                self.check()
+                manifest = self.check()
+                if manifest:
+                    self.prepare(manifest)
             except Exception as error:
                 # Network exceptions may contain private server/CDN URLs. Report
                 # only a bounded category; keep the confirmed application running.
