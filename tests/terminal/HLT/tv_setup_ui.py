@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory() as folder:
         app.root.update()
         app.render()
         app.root.update()
-        output = Path('build_tools/tmp/tv-check-layout.png')
+        output = Path(tempfile.gettempdir()) / 'tv-check-layout.png'
         output.parent.mkdir(parents=True, exist_ok=True)
         rendered = Image.new('RGB', (app.root.winfo_width(), app.root.winfo_height()), '#0d1420')
         pictures = {str(photo): photo for photo in app.tv_check_images}

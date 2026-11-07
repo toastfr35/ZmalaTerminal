@@ -21,6 +21,8 @@ references:
   type: file
 - path: zmala_terminal/common/ui/settings.py
   type: file
+- path: zmala_terminal/common/settings_artwork.py
+  type: file
 reviewed: null
 scope: Core
 text: |
@@ -32,8 +34,17 @@ text: |
   after acknowledgement; red shall discard and return without saving. Red on
   the carousel shall ask before exiting: green exits, red retains the selected
   card, and arrows have no effect. Each page shall show its own full-width hints.
+  The language card shall show the saved language's flag. Language choices
+  shall reuse those flags alongside native names. Numerical settings shall use
+  a stepped bar with the draft value and endpoints; other settings with exactly
+  two choices shall show two boxes, and longer choice lists shall use a wrapping
+  carousel. The selected choice shall be visibly highlighted. The Zmala logo
+  shall remain visible at the top left throughout Settings without a mismatched
+  background rectangle.
 verification: |
   Navigate every setting and both carousel wrap boundaries. Verify five visible
   icon cards with saved values, green acknowledgement, red cancellation and the
   selected card on return. Exercise both exit answers and ignored arrows. Render
   every language at 900x620 and 1280x720; check icons, values and controls fit.
+  Verify all language flags, draft/cancel flag changes, two-choice boxes,
+  numerical bars at both endpoints, and the persistent corner logo.

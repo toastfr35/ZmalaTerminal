@@ -90,7 +90,7 @@ class SettingsWorkflowTests(unittest.TestCase):
         v=settings.SettingsView(); v.root=widget(); v.model=self.controller().model; v.language='en'; v.available_fonts=['Sans']
         v.text=lambda key:key; v.settings_open=True; v.settings_hold=SettingsHold(); v.settings_draft=SettingsDraft()
         v.text_renderer=Mock(); v.text_renderer.photo.return_value=SimpleNamespace(height=lambda:20)
-        v.icon_renderer=Mock()
+        v.icon_renderer=Mock(); v.corner_logo=Mock()
         with patch.object(settings.tk,'Canvas',side_effect=lambda *a,**kw:widget()): v.build_settings()
         return v
 

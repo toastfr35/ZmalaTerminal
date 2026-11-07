@@ -252,7 +252,8 @@ class ViewContractTests(unittest.TestCase):
         v.settings_signature = None; v.settings_draft = SettingsDraft(); v.language = 'en'
         v.settings_canvas = Mock(); v.settings_canvas.winfo_width.return_value = 1280; v.settings_canvas.winfo_height.return_value = 720
         v.settings_label = Mock(); v.settings_panel = Mock(); v.text = lambda key: key
-        v.draw_connectivity = Mock(); v.draw_settings()
+        v.draw_connectivity = Mock(); v.corner_logo = Mock(); v.text_renderer = Mock(); v.settings_images = []
+        v.draw_settings()
         serial = next(c for c in v.settings_label.call_args_list if c.kwargs.get('tags') == 'settings-serial')
         self.assertEqual(serial.args[0], 'ID : test')
         self.assertEqual(serial.args[2:5], (703, 1216, 11))

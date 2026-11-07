@@ -4,6 +4,7 @@
 # @plan Render settings on the real Tk UI and drive selection/draft transitions; assert five visible setting cards and focused editors show remote controls and cancellation preserves configuration.
 # At both sizes, render French short values with the installed Pango fonts and assert their final images retain the full text without ellipsis and stay inside their cards.
 # Render the exit confirmation in every supported language at both sizes; verify bounded question/buttons, red returns to the same selection and green exits without modifying configuration.
+# Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-choice boxes, longer choice carousels and the persistent corner logo.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
 # Render the ringtone editor and exercise its debounced preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
@@ -18,6 +19,7 @@ from zmala_terminal.common import main as main
 from zmala_terminal.common.local_settings import FIELDS
 from zmala_terminal.common.model import State
 from zmala_terminal.common.localization import LANGUAGES, font_family
+from zmala_terminal.common.settings_artwork import LANGUAGE_FLAGS, artwork_path
 from tests.terminal.LLT.test_terminal import config
 
 class Preview(main.Terminal):
@@ -93,6 +95,8 @@ try:
                     assert bounds[0] >= 0 and bounds[2] <= c.winfo_width(), (language,key,bounds)
                     assert bounds[1] >= 0 and bounds[3] <= c.winfo_height(), (language,key,bounds)
                     assert len(c.find_withtag('settings-hint')) == 3
+                    assert len(c.find_withtag('zmala-logo')) == 1
+                    assert c.bbox('zmala-logo')[2] < c.bbox('settings-title')[0]
                     if editing:
                         assert c.find_withtag('settings-editor')
                         assert not c.find_withtag('settings-card')
@@ -109,6 +113,38 @@ try:
                 assert bounds and bounds[0] >= 0 and bounds[2] <= c.winfo_width(), (language, size, tag, bounds)
                 assert bounds[1] >= 0 and bounds[3] <= c.winfo_height(), (language, size, tag, bounds)
             app.settings_draft.confirm_exit = False
+        # Flags follow the candidate language, without changing the saved flag
+        # or UI language until acknowledgement. Exercise the actual draft input.
+        app.settings_draft.row = FIELDS.index('language')
+        saved_language = app.model.config['language']
+        app.press('green')
+        assert set(LANGUAGE_FLAGS) == set(LANGUAGES)
+        for _ in LANGUAGES:
+            candidate = app.settings_draft.options[app.settings_draft.index]
+            assert artwork_path('language', candidate).is_file()
+            assert app.settings_canvas.find_withtag('settings-flag-'+candidate)
+            assert app.model.config['language'] == saved_language
+            app.press('right'); app.root.update()
+        app.press('red'); app.root.update()
+        assert app.settings_canvas.find_withtag('settings-flag-'+saved_language)
+        for key in ('ringtone_volume','action_sound_volume','auto_answer','tv_idle_seconds','carousel_portraits'):
+            app.settings_draft.row = FIELDS.index(key); app.press('green')
+            for direction, expected in (('left',0), ('right',len(app.settings_draft.options)-1)):
+                for _ in range(len(app.settings_draft.options)+1):
+                    app.press(direction)
+                assert app.settings_draft.index == expected
+                assert app.settings_canvas.find_withtag('settings-bar')
+                assert len(app.settings_canvas.find_withtag('settings-bar-thumb')) == 1
+                panel = app.settings_canvas.bbox('settings-editor')
+                for item in app.settings_canvas.find_withtag('settings-bar-endpoint'):
+                    bounds = app.settings_canvas.bbox(item)
+                    assert panel[0] <= bounds[0] and bounds[2] <= panel[2]
+            app.press('red')
+        app.settings_draft.row = FIELDS.index('auto_framing'); app.press('green')
+        for index in (0,1):
+            assert app.settings_canvas.find_withtag('settings-choice-'+str(index))
+        assert not app.settings_canvas.find_withtag('settings-bar')
+        app.press('red')
     app.settings_draft.editing = False
     app.model.config['ringtone_volume'] = 50
     app.settings_draft.row = FIELDS.index('ringtone_volume')
@@ -125,6 +161,8 @@ try:
     app.usb_power = Mock(enabled=True, ringtone_preview_status='playing')
     app.engine = None
     app.press('green')
+    assert app.settings_canvas.find_withtag('settings-choice-0')
+    assert app.settings_canvas.find_withtag('settings-choice-1')
     app.tick_ringtone(1000); app.tick_ringtone(1000.39)
     app.usb_power.preview_tone.assert_not_called()
     app.tick_ringtone(1000.4); app.root.update()
@@ -174,7 +212,7 @@ try:
         ImageGrab.grab(bbox=(app.root.winfo_rootx(), app.root.winfo_rooty(),
                             app.root.winfo_rootx()+app.root.winfo_width(),
                             app.root.winfo_rooty()+app.root.winfo_height())).save(sys.argv[1])
-    print('Settings: 16 languages, five visible setting cards and eight focused editors at 900x620 and 1280x720; ringtone wrap/preview/cancel/call interruption, exit confirmation, red hold and reset navigation passed.')
+    print('Settings: 16 languages, flags, five visible cards, choice carousels, two-choice boxes, numerical bars and corner logo at 900x620 and 1280x720; preview/cancel/call interruption, exit confirmation, red hold and reset navigation passed.')
 finally:
     app.tv_control.close()
     app.text_renderer.close()

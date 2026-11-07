@@ -17,7 +17,7 @@ class TVViewTests(unittest.TestCase):
         v.enrollment=SimpleNamespace(path=Path('private/enrollment.json')); v.available_fonts=set()
         v.tv_control=Mock(); v.render=Mock(); v.apply_config=Mock(); v.make_maintenance=Mock(); v.configuration=Mock()
         v.text_renderer=Mock(); v.text_renderer.photo.return_value=Mock(height=lambda:30)
-        v.icon_renderer=Mock(); v.language='en'; v.font_family='Sans'
+        v.icon_renderer=Mock(); v.corner_logo=Mock(); v.language='en'; v.font_family='Sans'
         for name in ('video','confirmation','settings_canvas','remote_help'): setattr(v,name,widget())
         with patch.object(tv_setup.tk,'Canvas',return_value=widget()): v.build_tv_setup()
         return v

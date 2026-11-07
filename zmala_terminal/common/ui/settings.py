@@ -4,6 +4,7 @@ from pathlib import Path
 import tkinter as tk
 import unicodedata
 from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
+from zmala_terminal.common.settings_artwork import artwork_path
 from zmala_terminal.common.localization import LANGUAGES, font_family
 from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GREEN, BUTTON_RED, RED
 
@@ -81,55 +82,16 @@ class SettingsView:
             self.settings_images.append(image)
             self.settings_canvas.create_image(x, y, image=image, anchor='nw', tags=tags)
             x, y, width, height = x+3, y+3, width-6, height-6
-        image = self.icon_renderer.rounded_button(int(width), int(height), fill, outline or BG)
+        image = self.icon_renderer.rounded_button(int(width), int(height), fill, None if outline else BG)
         self.settings_images.append(image)
         self.settings_canvas.create_image(x, y, image=image, anchor='nw', tags=tags)
 
-    def settings_icon(self, key, x, y, size, color=FG):
-        """Distinct outlined symbols, independent of emoji/font availability."""
-        c = self.settings_canvas
-        def points(values):
-            return [(x if index%2 == 0 else y)+size*value for index,value in enumerate(values)]
-        def line(*values):
-            c.create_line(*points(values), fill=color, width=3, capstyle='round', joinstyle='round', tags='settings-icon')
-        def oval(*values):
-            c.create_oval(*points(values), outline=color, width=3, tags='settings-icon')
-        def rect(*values):
-            c.create_rectangle(*points(values), outline=color, width=3, tags='settings-icon')
-        if key == 'language':
-            oval(-.42,-.42,.42,.42); oval(-.19,-.42,.19,.42)
-            line(-.4,0,.4,0); line(-.34,-.23,.34,-.23); line(-.34,.23,.34,.23)
-        elif key == 'auto_answer':
-            oval(-.42,-.42,.42,.42); line(0,-.27,0,0,.23,.13)
-            line(-.08,-.53,.08,-.53)
-        elif key == 'auto_framing':
-            for horizontal,vertical in ((-1,-1),(-1,1),(1,-1),(1,1)):
-                line(horizontal*.23,vertical*.43,horizontal*.43,vertical*.43,horizontal*.43,vertical*.23)
-            oval(-.13,-.23,.13,.03)
-            line(-.23,.3,-.23,.2,0,.1,.23,.2,.23,.3)
-        elif key in ('ringtone_volume','action_sound_volume'):
-            line(-.4,-.13,-.2,-.13,0,-.32,0,.32,-.2,.13,-.4,.13,-.4,-.13)
-            for fraction in (.24,.43):
-                c.create_arc(*points((-.1-fraction,-fraction,-.1+fraction,fraction)),
-                             start=-55,extent=110,style='arc',outline=color,width=3,tags='settings-icon')
-            if key == 'action_sound_volume':
-                oval(.25,.28,.48,.51)
-        elif key == 'ringtone':
-            line(-.32,.2,-.24,.08,-.24,-.18,-.13,-.33,.13,-.33,.24,-.18,.24,.08,.32,.2,-.32,.2)
-            oval(-.08,.3,.08,.46); line(0,-.44,0,-.34)
-        elif key == 'carousel_portraits':
-            for offset in (-.33,0,.33):
-                oval(offset-.1,-.25,offset+.1,-.05)
-                line(offset-.13,.3,offset-.13,.08,offset+.13,.08,offset+.13,.3)
-        elif key in ('tv_idle_seconds','tv_setup'):
-            rect(-.43,-.3,.43,.23); line(0,.23,0,.4); line(-.21,.4,.21,.4)
-            if key == 'tv_setup':
-                line(-.18,-.03,-.04,.1,.22,-.16)
-            else:
-                oval(-.16,-.22,.16,.1); line(0,-.16,0,-.06,.1,-.01)
-        elif key == 'reset':
-            c.create_arc(*points((-.4,-.4,.4,.4)),start=40,extent=290,style='arc',outline=color,width=3,tags='settings-icon')
-            line(.06,-.35,.33,-.35,.33,-.08)
+    def settings_icon(self, key, x, y, size, background=PANEL, value=None):
+        language = value if key == 'language' else 'en'
+        picture = self.text_renderer.portrait(artwork_path(key, language), int(size), background)
+        self.settings_images.append(picture)
+        tags = ('settings-icon', 'settings-flag-'+language) if key == 'language' else ('settings-icon',)
+        self.settings_canvas.create_image(x, y, image=picture, tags=tags)
 
     def settings_hints(self, width, height):
         draft = self.settings_draft
@@ -164,6 +126,7 @@ class SettingsView:
         self.settings_signature = signature
         c.delete('all')
         self.settings_images = []
+        c.create_image(42, 40, image=self.corner_logo, tags='zmala-logo')
         self.settings_label('ID : ' + config.get('device_id', ''), width/2, height-17,
                             width-64, 11, MUTED, anchor='center', tags='settings-serial')
         if not self.settings_open:
@@ -177,8 +140,8 @@ class SettingsView:
         if draft.confirm_exit:
             self.draw_settings_exit(width, height)
             return
-        self.settings_label(self.settings_text('settings'), width/2, 48, width-80, 28,
-                            MUTED, anchor='center', max_height=60)
+        self.settings_label(self.settings_text('settings'), width/2, 48, width-180, 28,
+                            MUTED, anchor='center', max_height=60, tags='settings-title')
         if draft.editing:
             self.draw_setting_editor(width, height)
         else:
@@ -193,10 +156,10 @@ class SettingsView:
                 fill = '#303b50' if selected else PANEL
                 self.settings_panel(x, y, card_width, card_height, fill, ACCENT if selected else None,
                                     tags=('settings-card', 'settings-card-'+key))
-                self.settings_icon(key, x+card_width/2, y+card_height*.25, min(76,card_width*.55),
-                                   RED if key == 'reset' else ACCENT if selected else MUTED)
+                self.settings_icon(key, x+card_width/2, y+card_height*.25, min(112,card_width*.76),
+                                   fill, SettingsDraft.value(config, key))
                 self.settings_label(self.settings_text(key), x+card_width/2, y+card_height*.57,
-                                    card_width-18, 22, RED if key == 'reset' else FG, fill, True,
+                                    card_width-18, min(22, int(card_width*.12)), RED if key == 'reset' else FG, fill, True,
                                     anchor='center', max_height=card_height*.27, tags=('settings-card-label',key))
                 self.settings_label(self.settings_value(key, SettingsDraft.value(config,key)),
                                     x+card_width/2, y+card_height*.83, card_width-18, 23,
@@ -213,23 +176,16 @@ class SettingsView:
 
     def draw_setting_editor(self, width, height):
         draft, config = self.settings_draft, self.model.config
-        key, value = draft.key, draft.options[draft.index]
+        key = draft.key
         self.settings_label(self.settings_text(key), width/2, 132, width-100, 32,
                             bold=True, anchor='center', max_height=88)
-        x, y, available, panel_height = 96, 202, width-192, height-416
-        self.settings_panel(x, y, available, panel_height, PANEL, ACCENT, tags='settings-editor')
-        self.settings_label('‹', x+35, y+panel_height/2, 48, 40, ACCENT, PANEL, anchor='center')
-        self.settings_label('›', x+available-35, y+panel_height/2, 48, 40, ACCENT, PANEL, anchor='center')
-        self.settings_label(self.settings_value(key, value), width/2, y+panel_height/2,
-                            available-150, 42, FG, PANEL, True, anchor='center',
-                            language=value if key == 'language' else None, max_height=panel_height-30,
-                            tags='settings-draft-value')
-        if key in ('ringtone_volume', 'action_sound_volume'):
-            left, right, top = width*.25, width*.75, height-197
-            self.settings_canvas.create_rectangle(left, top, right, top+12, fill=PANEL, outline='')
-            if value:
-                self.settings_canvas.create_rectangle(left, top, left+(right-left)*value/100,
-                                                       top+12, fill=ACCENT, outline='')
+        if key in ('auto_answer', 'tv_idle_seconds', 'ringtone_volume',
+                   'action_sound_volume', 'carousel_portraits'):
+            self.draw_numeric_setting(width, height)
+        elif len(draft.options) == 2:
+            self.draw_setting_choices(width, height, two_boxes=True)
+        else:
+            self.draw_setting_choices(width, height)
         current = self.settings_value(key, SettingsDraft.value(config, key))
         self.settings_label(self.settings_text('current')+' : '+current, width/2, height-155,
                             width-128, 20, MUTED, anchor='center', max_height=42)
@@ -238,6 +194,73 @@ class SettingsView:
             caption = self.text('help') if preview == 'error' else self.text('wait') if preview == 'waiting' else '0 %' if preview == 'muted' else '♫' if preview == 'playing' else ''
             self.settings_label(caption, width/2, height-115, width-100, 18,
                                 RED if preview == 'error' else MUTED, anchor='center', max_height=36, tags='ringtone-preview')
+
+    def draw_setting_choices(self, width, height, two_boxes=False):
+        draft = self.settings_draft
+        key = draft.key
+        # Short choice lists do not repeat the same value in adjacent cards.
+        count = min(3, len(draft.options))
+        offsets = list(range(count)) if two_boxes else ([0] if count == 1 else [-1, 0, 1])
+        gap, available = 24, min(1080, width-144)
+        card_width = (available-gap*(count-1))/count
+        left = (width-available)/2
+        for slot, offset in enumerate(offsets):
+            index = offset if two_boxes else (draft.index+offset) % len(draft.options)
+            value = draft.options[index]
+            selected = index == draft.index
+            x = left+slot*(card_width+gap)
+            y = 202 if selected or two_boxes else 220
+            card_height = height-214-y
+            fill = '#303b50' if selected else PANEL
+            tags = ('settings-editor', 'settings-choice', 'settings-choice-'+str(index))
+            self.settings_panel(x, y, card_width, card_height, fill,
+                                ACCENT if selected else None, tags=tags)
+            if key == 'auto_framing':
+                self.settings_label('✓' if value else '×', x+card_width/2, y+card_height*.3,
+                                    card_width-30, 54, '#78ddb5' if value else MUTED,
+                                    fill, True, anchor='center', max_height=90)
+            else:
+                self.settings_icon(key, x+card_width/2, y+card_height*.29,
+                                   min(112, card_height*.45), fill, value)
+            self.settings_label(self.settings_value(key, value), x+card_width/2, y+card_height*.71,
+                                card_width-28, 30, FG if selected else MUTED, fill,
+                                selected, anchor='center', max_height=card_height*.38,
+                                language=value if key == 'language' else None,
+                                tags='settings-draft-value' if selected else 'settings-choice-value')
+        if not two_boxes:
+            self.settings_label(f'{draft.index+1} / {len(draft.options)}', width/2, height-190,
+                                width-128, 14, MUTED, anchor='center', max_height=38)
+        for x, arrow in ((36, '‹'), (width-36, '›')):
+            self.settings_label(arrow, x, (height-12)/2, 40, 36, ACCENT,
+                                anchor='center', max_height=70)
+
+    def draw_numeric_setting(self, width, height):
+        draft = self.settings_draft
+        key, value = draft.key, draft.options[draft.index]
+        x, y, available, panel_height = 96, 202, width-192, height-416
+        self.settings_panel(x, y, available, panel_height, PANEL, ACCENT, tags='settings-editor')
+        self.settings_label(self.settings_value(key, value), width/2, y+panel_height*.28,
+                            available-80, 42, FG, PANEL, True, anchor='center',
+                            max_height=panel_height*.36, tags='settings-draft-value')
+        left, right, top = x+60, x+available-60, y+panel_height*.63
+        c = self.settings_canvas
+        c.create_line(left, top, right, top, fill='#43516b', width=12,
+                      capstyle='round', tags='settings-bar')
+        # Delays are discrete choices with uneven intervals; ticks show supported
+        # stops, including Never. Positions represent stops, not elapsed time.
+        selected_x = left+(right-left)*draft.index/(len(draft.options)-1)
+        if draft.index:
+            c.create_line(left, top, selected_x, top, fill=ACCENT, width=12,
+                          capstyle='round', tags='settings-bar-fill')
+        for index in range(len(draft.options)):
+            tick = left+(right-left)*index/(len(draft.options)-1)
+            c.create_oval(tick-2, top-2, tick+2, top+2, fill=FG, outline='', tags='settings-bar-tick')
+        c.create_oval(selected_x-11, top-11, selected_x+11, top+11,
+                      fill=FG, outline=ACCENT, width=3, tags='settings-bar-thumb')
+        for index, position in ((0,left), (-1,right)):
+            self.settings_label(self.settings_value(key, draft.options[index]), position,
+                                y+panel_height*.85, 112, 17, MUTED, PANEL,
+                                anchor='center', max_height=38, tags='settings-bar-endpoint')
 
     # @llr LLR-TERM-CONFIG-019
     def draw_settings_exit(self, width, height):

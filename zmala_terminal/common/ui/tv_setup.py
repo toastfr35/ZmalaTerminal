@@ -117,7 +117,8 @@ class TVSetupView:
         self.tv_check_signature = signature
         c = self.tv_check_page
         c.delete('all')
-        self.tv_check_images = []
+        self.tv_check_images = [self.corner_logo]
+        c.create_image(42, 40, image=self.corner_logo, tags='zmala-logo')
         messages = MESSAGES.get(self.language, MESSAGES['en'])
         def text(key):
             return messages[key]

@@ -52,7 +52,7 @@ identity and access credentials.
 
 Setup shows an error when an operation fails. It continues only when that step
 has completed. Enrollment then goes to the contact screen. Optional TV tests
-are available under Settings > Terminal and use the selected language.
+are available on the TV setup card in Settings and use the selected language.
 The user can reset the terminal from Settings after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
 
@@ -457,12 +457,19 @@ Middle is Pointer. Remote motion is ignored for volume. While the overlay is ope
 
 Settings has a five-card icon carousel containing all settings, and individual
 editor pages. Each page has full-width control hints. Status icons are hidden,
-and the terminal serial appears at the bottom. Confirmed edits
+the transparent Zmala logo remains at the top left, and the terminal serial
+appears at the bottom. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
 The label renderer reduces the font to fit each settings region. Current values
-appear below the carousel icons; the editor has a large central draft panel.
+appear below the coloured carousel pictograms. Language uses the saved language's
+flag; the language editor reuses the flags with native names. Numerical settings
+(volumes, delays and portrait count) use a stepped bar with a large draft value
+and labelled endpoints. Other settings with two choices use two boxes; longer
+choice lists use a carousel. The highlighted box/card is the draft selection.
+Delay bar ticks represent the supported choices, including Never, rather than
+a continuous time scale. None of these previews saves until green is pressed.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps
 combining marks with their preceding character. This also keeps the button hints
 inside the small-window layout.
