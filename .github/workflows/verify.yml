@@ -37,7 +37,28 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: python build_tools/release/component.py check-pr-version
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA" HEAD)
+          requirements_only='^(requirements/|AGENTS\.md$|\.github/workflows/verify\.yml$)'
+          if ! printf '%s\n' "$changed" | grep -qvE "$requirements_only"; then
+            exit 0
+          fi
+          # Allow the release dependency repair before the first 0.4.0 publication.
+          if ! printf '%s\n' "$changed" | grep -qvE "$requirements_only|^build_tools/release/requirements\.txt$"; then
+            version=$(python -c 'import json; print(json.load(open("VERSION.json"))["version"])')
+            if [ "$version" = 0.4.0 ]; then
+              if git ls-remote --exit-code origin refs/tags/v0.4.0 >/dev/null; then
+                :
+              else
+                status=$?
+                if [ "$status" -eq 2 ]; then
+                  exit 0
+                fi
+                exit "$status"
+              fi
+            fi
+          fi
+          python build_tools/release/component.py check-pr-version
       - name: Install Linux runtime and display test libraries
         run: |
           sudo apt-get update

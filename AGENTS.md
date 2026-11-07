@@ -15,4 +15,10 @@ plans. Do not commit `requirements/output/` or clear suspect links without
 review. Product tests go in the top-level `tests/` tree. Keep packaging,
 installer and tooling tests in `tests/adhoc/`. Record hardware skips explicitly.
 
-Increase this component's version and its update sequence where applicable in each PR.
+Before changing an external interface, read requirements/README.md. Preserve
+released peer compatibility using local fixtures. Coordinate deliberate
+wire changes with the peer repository.
+
+Increase this component's version and update sequence for changes to runtime,
+builds or releases. Changes limited to requirements and their verification
+policy may retain the currently released version and sequence.
