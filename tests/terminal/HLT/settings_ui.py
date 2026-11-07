@@ -163,6 +163,7 @@ try:
     app.press('green')
     assert app.settings_canvas.find_withtag('settings-choice-0')
     assert app.settings_canvas.find_withtag('settings-choice-1')
+    assert len(app.settings_canvas.find_withtag('settings-choice')) == 4  # Three cards plus selected outline.
     app.tick_ringtone(1000); app.tick_ringtone(1000.39)
     app.usb_power.preview_tone.assert_not_called()
     app.tick_ringtone(1000.4); app.root.update()

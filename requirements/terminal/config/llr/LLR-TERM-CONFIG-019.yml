@@ -38,7 +38,8 @@ text: |
   shall reuse those flags alongside native names. Numerical settings shall use
   a stepped bar with the draft value and endpoints; other settings with exactly
   two choices shall show two boxes, and longer choice lists shall use a wrapping
-  carousel. The selected choice shall be visibly highlighted. The Zmala logo
+  carousel. Ringtone selection shall always use a carousel, including a library
+  with only two tones. The selected choice shall be visibly highlighted. The Zmala logo
   shall remain visible at the top left throughout Settings without a mismatched
   background rectangle.
 verification: |

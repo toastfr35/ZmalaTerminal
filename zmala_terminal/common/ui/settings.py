@@ -180,7 +180,7 @@ class SettingsView:
         if key in ('auto_answer', 'tv_idle_seconds', 'ringtone_volume',
                    'action_sound_volume', 'carousel_portraits'):
             self.draw_numeric_setting(width, height)
-        elif len(draft.options) == 2:
+        elif key != 'ringtone' and len(draft.options) == 2:
             self.draw_setting_choices(width, height, two_boxes=True)
         else:
             self.draw_setting_choices(width, height)
@@ -196,8 +196,9 @@ class SettingsView:
     def draw_setting_choices(self, width, height, two_boxes=False):
         draft = self.settings_draft
         key = draft.key
-        # Short choice lists do not repeat the same value in adjacent cards.
-        count = min(3, len(draft.options))
+        # A two-tone carousel has the other tone on both sides of the centre.
+        # The selected tone stays centred as left/right wraps between them.
+        count = 2 if two_boxes else 1 if len(draft.options) == 1 else 3
         offsets = list(range(count)) if two_boxes else ([0] if count == 1 else [-1, 0, 1])
         gap, available = 24, min(1080, width-144)
         card_width = (available-gap*(count-1))/count

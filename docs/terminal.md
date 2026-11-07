@@ -467,7 +467,8 @@ appear below the coloured carousel pictograms. Language uses the saved language'
 flag; the language editor reuses the flags with native names. Numerical settings
 (volumes, delays and portrait count) use a stepped bar with a large draft value
 and labelled endpoints. Other settings with two choices use two boxes; longer
-choice lists use a carousel. The highlighted box/card is the draft selection.
+choice lists use a carousel. Ringtone selection always uses a carousel, even
+with only two tones. The highlighted box/card is the draft selection.
 Delay bar ticks represent the supported choices, including Never, rather than
 a continuous time scale. None of these previews saves until green is pressed.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps

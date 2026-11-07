@@ -31,7 +31,9 @@ class Preview(Terminal):
     def start_services(self):
         self.configuration = MemoryConfiguration(config() | {
             'device_id': 'WINDOWS-ACCEPTANCE', 'language': 'en', 'ringtone_volume': 50,
-            'auto_answer': False, 'auto_answer_seconds': 30})
+            'auto_answer': False, 'auto_answer_seconds': 30,
+            'ringtones': [{'id': 'nokia', 'name': 'Nokia'},
+                          {'id': 'gentle-chime', 'name': 'Gentle chime'}]})
         self.apply_config(self.configuration.value)
         self.settings_open = True
         self.render()
