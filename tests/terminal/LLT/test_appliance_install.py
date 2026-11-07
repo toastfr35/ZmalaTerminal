@@ -23,7 +23,7 @@ class ApplianceInstallTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder, patch.object(launcher, 'ROOT', Path(folder)), \
                 patch.dict(os.environ, {'ZMALA_RUNTIME_DIR':folder}), patch.object(sys, 'argv', ['launcher','run','--profile','fixture']), \
                 patch.object(launcher.fcntl, 'flock', side_effect=BlockingIOError), patch.object(launcher.runpy, 'run_path') as run, \
-                patch.object(launcher.os, 'umask'):
+                patch.object(launcher.os, 'umask'), patch('zmala_terminal.linux.turn_runtime.prepare'):
             with self.assertRaises(SystemExit):
                 launcher.main()
             run.assert_not_called()

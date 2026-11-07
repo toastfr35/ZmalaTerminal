@@ -96,6 +96,8 @@ class ProvisioningFlow:
         self.enrollment.reset(wifi, language=self.language)
         self.remote_test.reset()
         self.tv_setup_checked = False
+        self.tv_check_restore = False
+        self.tv_control.power_enabled = self.tv_control.source_enabled = False
         if self.tv_check:
             self.tv_check.close()
             self.tv_check = None
@@ -198,9 +200,8 @@ class ProvisioningFlow:
             self.setup_stage = None
             self.server_seen = time.monotonic()
             self.last_poll = 0
-            if not self.begin_tv_setup(config):
-                self.apply_config(config)
-                self.maintenance = self.make_maintenance(candidate)
+            self.apply_config(config)
+            self.maintenance = self.make_maintenance(candidate)
         elif kind == 'error':
             self.setup_error_until = time.monotonic() + 3
             if result == 'server':

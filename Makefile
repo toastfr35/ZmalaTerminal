@@ -1,9 +1,10 @@
 PYTHON ?= python3
 NODE ?= node
+REQUIREMENTS_OUTPUT ?= requirements/output
 
 .PHONY: requirements requirements-check
 requirements:
-	$(PYTHON) build_tools/requirements.py
+	$(PYTHON) build_tools/requirements.py --output "$(REQUIREMENTS_OUTPUT)"
 
 requirements-check:
 	$(PYTHON) build_tools/requirements.py --check

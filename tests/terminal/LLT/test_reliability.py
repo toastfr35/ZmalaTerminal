@@ -69,7 +69,6 @@ class ReliabilityTests(unittest.TestCase):
         app.setup_stage = 'wifi'; app.render = Mock(); app.begin_tv_setup = Mock(return_value=True)
         app.apply_config(config()); app.begin_tv_setup.assert_not_called()
         app.setup_stage = None; app.tv_setup_checked = False
-        app.apply_config(config()); app.render.assert_called_once()
         app.tv_setup_checked = True; app.model = TerminalModel(); app.model.configure(config())
         app.engine = Mock(); app.available_fonts = set(); app.root = Mock(); app.text = lambda key:key
         app.press = Mock(); app.usb_media_ready = Mock(return_value=False); app.engine_retry_at = 0
@@ -81,6 +80,7 @@ class ReliabilityTests(unittest.TestCase):
         app.model.ended(); app.apply_config(desired)
         self.assertEqual(app.pending_config, desired)
         app.usb_media_ready.assert_called_once()
+        app.begin_tv_setup.assert_not_called()
         # An existing engine that fails to apply or close remains detached and retryable.
         app.usb_media_ready.return_value = True
         app.configure_engine = Mock(side_effect=RuntimeError('apply failed'))

@@ -24,8 +24,9 @@ references:
 reviewed: null
 scope: Core
 text: |
-  Settings shall hide the normal status icons. It shall show the assigned terminal ID
-  in small text at the bottom. Reset shall follow the ordinary settings.
+  Settings shall hide the normal status icons and show the assigned terminal ID
+  in small text at the bottom. The Terminal category shall contain language,
+  portrait count, return-to-TV delay, TV setup and finally reset.
 verification: |
-  Render Settings at supported sizes. Check identifier, status-strip absence and reset
-  order.
+  Render Settings at supported sizes. Check the identifier, absence of status
+  icons, three category icons and the order of entries within Terminal.

@@ -37,3 +37,12 @@ The final built-in image edit prompt was:
 > text ('Zmala Server', 'Zmala Terminal', 'Zmala Phone'), naturally continuing the
 > cream background in those areas. No letters, words, numbers, captions or
 > watermarks anywhere. Preserve icon-only call controls. Save the resulting image.
+
+## Monochrome print edition
+
+`overview-print.svg` is the authored vector cover used by the leaflet: two people
+on a TV and a person on a phone, drawn with dark outlines on white. The original
+`overview.png` remains as source history. Equipment SVGs use white fill and dark
+outlines to conserve ink. Green/red button details show their physical top/bottom
+positions with a black marker and pointer; translated HTML captions name both
+color and position. The artwork contains no translated text.

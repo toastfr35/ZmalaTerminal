@@ -58,11 +58,11 @@
       "Escolha a pessoa apresentada no centro."
     ],
     [
-      "Verde",
+      "Verde (em cima)",
       "Prima para verificar a pessoa, solte e prima novamente para ligar. Numa chamada recebida, verde atende."
     ],
     [
-      "Vermelho",
+      "Vermelho (em baixo)",
       "Cancele, recuse ou termine a chamada. Com atendimento automático, vermelho recusa antes de terminar a contagem."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Escolha e guarde",
-      "Esquerda/direita escolhe a definição; verde abre-a. Esquerda/direita altera o valor; verde guarda, vermelho descarta. Opções: idioma, atendimento automático, enquadramento, toque, volumes, retratos e regresso à TV."
+      "Esquerda/direita escolhe Chamadas, Som ou Terminal. Verde abre a categoria. Escolha um ajuste e prima verde. Configurar TV está em Terminal."
     ],
     [
       "Saia",
-      "Prima vermelho na lista de definições e depois verde para sair ou vermelho para ficar."
+      "Esquerda/direita altera o valor. Verde guarda e volta; vermelho cancela e volta. Vermelho sai da categoria. No carrossel, vermelho e depois verde sai dos ajustes."
     ]
   ],
   "help": "Com controlo TV ativo, a primeira pressão pode apenas mostrar o Zmala. Caso contrário, escolha a entrada HDMI com o comando TV. Se o comando não responder, verifique o interruptor traseiro e carregue-o. Peça ajuda se falhar uma chamada ou gravação.",

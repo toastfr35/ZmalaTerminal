@@ -144,11 +144,12 @@ class Terminal(InputControl, ConfigurationControl, IdleReturn, SettingsControl,
 
     # @llr LLR-TERM-MAINT-028
     def start_services(self):
+        self.restore_tv_capabilities()
         cached = self.configuration.cached() if self.configuration else None
         if cached and self.update_client.locked:
             self.pending_config = cached
             self.language = cached.get("language", "en")
-        elif cached and not self.begin_tv_setup(cached):
+        elif cached:
             self.apply_config(cached)
         self.render()
         if self.setup_stage and not self.update_client.locked:

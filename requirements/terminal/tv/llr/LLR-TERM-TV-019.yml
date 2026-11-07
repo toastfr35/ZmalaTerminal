@@ -2,13 +2,19 @@ active: true
 area: TV control
 derived: false
 header: |
-  TV setup ordering
+  Optional TV setup from Settings
 level: 95.0
 links:
 - HLR-TERM-TV-017: S2nqx7v0OyXsBJ4cnyWr1LqdDB9WZmvN6aEWTWFqziA=
 normative: true
 ref: ''
 references:
+- path: zmala_terminal/common/main.py
+  type: file
+- path: zmala_terminal/common/setup_flow.py
+  type: file
+- path: zmala_terminal/common/settings_control.py
+  type: file
 - path: tests/terminal/LLT/test_tv_check.py
   type: file
 - path: tests/terminal/LLT/test_tv_setup_view.py
@@ -26,8 +32,17 @@ references:
 reviewed: null
 scope: Core
 text: |
-  TV checks shall follow server enrollment and use the selected language. Pending
-  checks shall prevent ordinary use, native media startup and idle TV restoration.
+  TV checks shall be opened explicitly from Settings, in the Terminal category,
+  using the selected language. Enrollment, cached startup and configuration polls
+  shall not open the wizard or block ordinary use on unfinished checks. Startup
+  shall validate saved TV identity in the background and enable only completed,
+  user-passed capabilities. Opening TV setup shall allow checks to be repeated,
+  suspend maintenance and ordinary call/idle TV actions, and completion shall
+  return to the same settings category and resume maintenance. Unsupported
+  desktop TV control shall show an explanatory message without running commands.
 verification: |
-  Complete enrollment and interrupt TV checks. Check page language and inhibited media
-  and idle actions.
+  Verify enrollment and cached startup apply configuration without opening TV
+  setup. Open/reopen it from Settings, complete or skip checks, and verify the
+  return page, language, maintenance lifetime and independent capability gates.
+  Exercise background restoration with completed, incomplete and changed-TV
+  results. Record physical CEC checks separately from Windows UI acceptance.

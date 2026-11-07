@@ -1,19 +1,22 @@
-"""Two-panel remote-only settings, with hints on the active side and a serial footer."""
+"""Three-category carousel and focused, remote-only setting pages."""
 import json
 from pathlib import Path
 import tkinter as tk
 import unicodedata
-from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
+from zmala_terminal.common.local_settings import FIELDS, CATEGORIES, CATEGORY_FIELDS, SettingsDraft
 from zmala_terminal.common.localization import LANGUAGES, font_family
 from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GREEN, BUTTON_RED, RED
 
 MESSAGES = json.loads((Path(__file__).resolve().parents[1] / 'shared/settings-messages.json').read_text(encoding='utf-8'))
 KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume',
-        'carousel_portraits', 'never', 'open', 'accept', 'exit', 'current', 'tv_idle_seconds', 'ringtone', 'action_sound_volume')
+        'carousel_portraits', 'never', 'open', 'accept', 'exit', 'current', 'tv_idle_seconds', 'ringtone', 'action_sound_volume',
+        'calls', 'sound', 'tv_setup', 'back', 'tv_unavailable')
 
 
 class SettingsView:
     def settings_text(self, key):
+        if key == 'terminal':
+            return self.text('terminal')
         if key == 'reset':
             return self.text('reset')
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
@@ -25,7 +28,7 @@ class SettingsView:
         self.settings_signature = None
 
     def settings_value(self, key, value):
-        if key == 'reset':
+        if key in ('reset', 'tv_setup'):
             return ''
         if key == 'language':
             return LANGUAGES[value]['native']
@@ -84,7 +87,46 @@ class SettingsView:
         self.settings_images.append(image)
         self.settings_canvas.create_image(x, y, image=image, anchor='nw', tags=tags)
 
-    # @llr LLR-TERM-CONFIG-020
+    def settings_icon(self, category, x, y, size, color=FG):
+        """Simple outlined symbols stay legible on a TV, without emoji fonts."""
+        c = self.settings_canvas
+        def line(*points):
+            c.create_line(*points, fill=color, width=4, capstyle='round', joinstyle='round', tags='settings-icon')
+        if category == 'calls':
+            c.create_rectangle(x-size*.35, y-size*.25, x+size*.15, y+size*.25,
+                               outline=color, width=4, tags='settings-icon')
+            line(x+size*.15, y-size*.12, x+size*.38, y-size*.28,
+                 x+size*.38, y+size*.28, x+size*.15, y+size*.12)
+        elif category == 'sound':
+            line(x-size*.35, y-size*.12, x-size*.15, y-size*.12, x+size*.04, y-size*.3,
+                 x+size*.04, y+size*.3, x-size*.15, y+size*.12, x-size*.35, y+size*.12,
+                 x-size*.35, y-size*.12)
+            for fraction in (.23, .39):
+                c.create_arc(x-size*fraction, y-size*fraction, x+size*fraction, y+size*fraction,
+                             start=-55, extent=110, style='arc', outline=color, width=4, tags='settings-icon')
+        else:
+            c.create_rectangle(x-size*.4, y-size*.28, x+size*.4, y+size*.22,
+                               outline=color, width=4, tags='settings-icon')
+            line(x, y+size*.22, x, y+size*.36)
+            line(x-size*.19, y+size*.36, x+size*.19, y+size*.36)
+
+    def settings_hints(self, width, height):
+        draft = self.settings_draft
+        if draft.busy:
+            return
+        back = self.text('cancel') if draft.editing else self.settings_text('back' if draft.category_open else 'exit')
+        labels = [('‹ › ' + self.text('select'), PANEL),
+                  ('✓ ' + self.settings_text('accept' if draft.editing else 'open'), BUTTON_GREEN),
+                  ('× ' + back, BUTTON_RED)]
+        margin, gap = 40, 16
+        part = (width-2*margin-2*gap)/3
+        for index, (label, fill) in enumerate(labels):
+            x, y = margin+index*(part+gap), height-86
+            self.settings_panel(x, y, part, 48, fill, tags='settings-hint')
+            self.settings_label(label, x+part/2, y+24, part-18, 20, FG, fill,
+                                True, anchor='center', max_height=40)
+
+    # @llr LLR-TERM-CONFIG-019, LLR-TERM-CONFIG-020
     def draw_settings(self):
         if not (self.settings_open or self.settings_hold.capturing):
             return
@@ -92,16 +134,17 @@ class SettingsView:
         width, height = max(900, c.winfo_width()), max(620, c.winfo_height())
         draft = self.settings_draft
         signature = (width, height, self.language, self.settings_open, int(self.settings_hold.progress*100),
-                     draft.row, draft.editing, draft.index, draft.busy, draft.error, draft.confirm_exit,
-                     getattr(self, 'ringtone_preview_state', ''),
-                     tuple(SettingsDraft.value(config, key) for key in FIELDS))
+                     draft.category, draft.category_open, draft.row, draft.editing, draft.index,
+                     draft.busy, draft.error, draft.confirm_exit, getattr(self, 'ringtone_preview_state', ''),
+                     tuple(SettingsDraft.value(config, key) for key in FIELDS),
+                     tuple((item['id'], item.get('name', '')) for item in config.get('ringtones', [])))
         if signature == self.settings_signature:
             return
         self.settings_signature = signature
         c.delete('all')
         self.settings_images = []
-        serial = config.get('device_id', '')
-        self.settings_label('ID : ' + serial, width/2, height-18, width-64, 11, MUTED, anchor='center', tags='settings-serial')
+        self.settings_label('ID : ' + config.get('device_id', ''), width/2, height-17,
+                            width-64, 11, MUTED, anchor='center', tags='settings-serial')
         if not self.settings_open:
             self.settings_label(self.settings_text('settings'), width/2, height*.35, width-80,
                                 36, bold=True, anchor='center')
@@ -113,89 +156,79 @@ class SettingsView:
         if draft.confirm_exit:
             self.draw_settings_exit(width, height)
             return
-        split, margin = int(width*.39), 28
-        left_width, right_x = split-2*margin, split+margin
-        right_width = width-right_x-margin
-        c.create_line(split, 28, split, height-50, fill='#2b3547')
-        self.settings_label(self.settings_text('settings'), margin, 28, left_width, 32, bold=True, max_height=66)
-        visible = min(7, len(FIELDS))
-        start = max(0, min(draft.row-visible//2, len(FIELDS)-visible))
-        row_height = min(88, (height-230-6*(visible-1))/visible)
-        value_offset = int(row_height) // 2
-        for index in range(start, start+visible):
-            key = FIELDS[index]
-            y = round(112+(index-start)*(row_height+6))
-            selected = draft.row == index
-            fill = '#303b50' if selected else PANEL
-            self.settings_panel(margin, y, left_width, row_height, fill,
-                                ACCENT if selected and not draft.editing else None, tags=('settings-row', 'settings-row-'+key))
-            self.settings_label(self.settings_text(key), margin+14, y+(row_height*.3 if key == 'reset' else 1), left_width-28,
-                                22, color=RED if key == 'reset' else FG, background=fill, bold=True, max_height=row_height/2-1)
-            value = self.settings_value(key, SettingsDraft.value(config, key))
-            self.settings_label(value, margin+14, y+value_offset, left_width-28,
-                                19, MUTED, fill, max_height=int(row_height)-value_offset, tags=('settings-value', key))
-        key = draft.key
-        self.settings_label(self.settings_text(key), right_x, 28, right_width, 30, bold=True, max_height=72)
-        shown = draft
-        if not draft.editing and key != 'reset':
-            shown = SettingsDraft()
-            shown.row = draft.row
-            shown.open(config)
-        if key == 'reset':
-            self.settings_label(self.text('factory_reset'), right_x, 180, right_width,
-                                28, RED, bold=True, max_height=150)
-        elif key in ('ringtone_volume', 'action_sound_volume'):
-            value = shown.options[shown.index]
-            self.settings_label(f'‹   {value} %   ›', right_x+right_width/2, 190,
-                                right_width, 40, ACCENT if draft.editing else MUTED, anchor='center')
-            x, top, bottom = right_x+right_width/2, 250, height-200
-            self.settings_panel(x-20, top, 40, bottom-top, PANEL)
-            if value:
-                c.create_rectangle(x-15, bottom-5-(bottom-top-10)*value/100, x+15, bottom-5,
-                                   fill=ACCENT, outline='')
-        else:
-            visible = min(7, len(shown.options))
-            start = max(0, min(shown.index-visible//2, len(shown.options)-visible))
-            option_height = min(52, (height-306-(visible-1)*5)/max(1, visible))
-            for index in range(start, start+visible):
-                value = shown.options[index]
-                y = 126+(index-start)*(option_height+5)
-                selected = index == shown.index
+        title = self.settings_text('settings')
+        if draft.category_open:
+            title += '  /  ' + self.settings_text(draft.category_key)
+        self.settings_label(title, width/2, 48, width-80, 28, MUTED, anchor='center', max_height=60)
+        if draft.editing:
+            self.draw_setting_editor(width, height)
+        elif draft.category_open:
+            fields = CATEGORY_FIELDS[draft.category_key]
+            gap, top = 10, 106
+            row_height = min(86, (height-244-gap*(len(fields)-1))/len(fields))
+            for index, key in enumerate(fields):
+                x, y, available = 64, top+index*(row_height+gap), width-128
+                selected = key == draft.key
                 fill = '#303b50' if selected else PANEL
-                self.settings_panel(right_x, y, right_width, option_height, fill,
-                                    ACCENT if selected and draft.editing else None, tags='settings-option')
-                text = ('›  ' if selected and draft.editing else '') + self.settings_value(key, value)
-                self.settings_label(text, right_x+16, y+option_height/2, right_width-32, 22,
-                                    FG if draft.editing else MUTED, fill, selected,
-                                    anchor='w', language=value if key == 'language' else None,
-                                    max_height=option_height-8)
-            if len(shown.options) > visible:
-                self.settings_label(f'{shown.index+1} / {len(shown.options)}', right_x+right_width,
-                                    height-178, right_width, 14, MUTED, anchor='e')
-        if key != 'reset':
-            current = self.settings_value(key, SettingsDraft.value(config, key))
-            self.settings_label(self.settings_text('current') + ' : ' + current, right_x, height-154,
-                                right_width, 17, MUTED, max_height=36)
-        x, available = (right_x, right_width) if draft.editing else (margin, left_width)
+                self.settings_panel(x, y, available, row_height, fill,
+                                    ACCENT if selected else None, tags=('settings-row', 'settings-row-'+key))
+                self.settings_label(('›  ' if selected else '')+self.settings_text(key),
+                                    x+18, y+row_height/2, available*.58-18, 24,
+                                    RED if key == 'reset' else FG, fill, True, anchor='w', max_height=row_height-12)
+                self.settings_label(self.settings_value(key, SettingsDraft.value(config, key)),
+                                    x+available*.61, y+row_height/2, available*.39-18, 23,
+                                    MUTED, fill, anchor='w', max_height=row_height-12, tags=('settings-value', key))
+        else:
+            # The selected category is always centred, like the contact carousel.
+            gap, margin = 22, 48
+            card_width = (width-2*margin-2*gap)/3
+            card_height = min(300, height-270)
+            for slot, offset in enumerate((-1, 0, 1)):
+                category = CATEGORIES[(draft.category+offset) % len(CATEGORIES)]
+                selected = offset == 0
+                x, y = margin+slot*(card_width+gap), 140 if selected else 160
+                fill = '#303b50' if selected else PANEL
+                self.settings_panel(x, y, card_width, card_height, fill, ACCENT if selected else None,
+                                    tags=('settings-category', 'settings-category-'+category))
+                self.settings_icon(category, x+card_width/2, y+card_height*.34, 94, ACCENT if selected else MUTED)
+                self.settings_label(self.settings_text(category), x+card_width/2, y+card_height*.70,
+                                    card_width-28, 28, FG, fill, True, anchor='center', max_height=90)
+            self.settings_label(f'‹    {draft.category+1} / 3    ›', width/2, height-155,
+                                width-80, 22, MUTED, anchor='center')
         if draft.busy or draft.error:
-            self.settings_label(self.text('wait' if draft.busy else 'help'), right_x, height-116,
-                                right_width, 17, MUTED if draft.busy else RED, max_height=38)
-        elif draft.editing and key == 'ringtone':
+            message = (self.settings_text('tv_unavailable') if draft.key == 'tv_setup' and draft.error
+                       else self.text('wait' if draft.busy else 'help'))
+            self.settings_label(message, width/2, height-115, width-100, 18,
+                                MUTED if draft.busy else RED, anchor='center', max_height=42)
+        self.settings_hints(width, height)
+
+    def draw_setting_editor(self, width, height):
+        draft, config = self.settings_draft, self.model.config
+        key, value = draft.key, draft.options[draft.index]
+        self.settings_label(self.settings_text(key), width/2, 132, width-100, 32,
+                            bold=True, anchor='center', max_height=88)
+        x, y, available, panel_height = 96, 202, width-192, height-416
+        self.settings_panel(x, y, available, panel_height, PANEL, ACCENT, tags='settings-editor')
+        self.settings_label('‹', x+35, y+panel_height/2, 48, 40, ACCENT, PANEL, anchor='center')
+        self.settings_label('›', x+available-35, y+panel_height/2, 48, 40, ACCENT, PANEL, anchor='center')
+        self.settings_label(self.settings_value(key, value), width/2, y+panel_height/2,
+                            available-150, 42, FG, PANEL, True, anchor='center',
+                            language=value if key == 'language' else None, max_height=panel_height-30,
+                            tags='settings-draft-value')
+        if key in ('ringtone_volume', 'action_sound_volume'):
+            left, right, top = width*.25, width*.75, height-197
+            self.settings_canvas.create_rectangle(left, top, right, top+12, fill=PANEL, outline='')
+            if value:
+                self.settings_canvas.create_rectangle(left, top, left+(right-left)*value/100,
+                                                       top+12, fill=ACCENT, outline='')
+        current = self.settings_value(key, SettingsDraft.value(config, key))
+        self.settings_label(self.settings_text('current')+' : '+current, width/2, height-155,
+                            width-128, 20, MUTED, anchor='center', max_height=42)
+        if key == 'ringtone' and not draft.busy and not draft.error:
             preview = getattr(self, 'ringtone_preview_state', '')
             caption = self.text('help') if preview == 'error' else self.text('wait') if preview == 'waiting' else '0 %' if preview == 'muted' else '♫' if preview == 'playing' else ''
-            self.settings_label(caption, right_x, height-116, right_width, 17,
-                                RED if preview == 'error' else MUTED, max_height=38, tags='ringtone-preview')
-        if not draft.busy:
-            # Hints belong exclusively to the active panel.
-            y, gap = height-72, 8
-            part = (available-2*gap)/3
-            for i, (label, fill) in enumerate([
-                    ('‹ › ' + self.text('select'), PANEL),
-                    ('✓ ' + self.settings_text('accept' if draft.editing else 'open'), BUTTON_GREEN),
-                    ('× ' + (self.text('cancel') if draft.editing else self.settings_text('exit')), BUTTON_RED)]):
-                self.settings_panel(x+i*(part+gap), y, part, 40, fill, tags='settings-hint')
-                self.settings_label(label, x+i*(part+gap)+part/2, y+20, part-10, 17, FG, fill,
-                                    True, anchor='center', max_height=32)
+            self.settings_label(caption, width/2, height-115, width-100, 18,
+                                RED if preview == 'error' else MUTED, anchor='center', max_height=36, tags='ringtone-preview')
 
     # @llr LLR-TERM-CONFIG-019
     def draw_settings_exit(self, width, height):

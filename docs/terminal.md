@@ -83,9 +83,9 @@ All terminal volume UI uses 5% steps. Settings has separate Ringtone volume and 
 
 The ringtone editor wraps at both ends: left on the first choice selects the last, and right on the last selects the first, without saving.
 
-Red on the Settings list asks whether to exit: green confirms; red keeps the same list selection. Red within an editor only discards that draft. Neither exit answer changes saved configuration.
+Red on the settings category carousel asks whether to exit: green confirms; red keeps the selected category. Red within a category returns to the carousel. Red within an editor discards the draft and returns to its category. Neither exit answer changes saved configuration.
 
-The nine-row Settings menu scrolls a seven-row window to keep the selected row visible. Each row reserves a text line for its label and saved value at both supported sizes.
+Settings opens three icon cards: Calls, Sound and Terminal. Left/right rotates the centred selection; green opens the category. Category pages show a short list with labels and saved values. Green opens one focused editor with a large value; left/right changes it, green saves and returns, and red cancels and returns.
 
 The server supplies the main terminal configuration. The local Settings page lets
 the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count
@@ -449,13 +449,14 @@ button, focus loss, disconnect or an incoming call cancels the settings hold.
 The Presenter green sticker covers the microphone button; red covers Teams.
 Middle is Pointer. Remote motion is ignored for volume. While the overlay is open, physical buttons do not navigate contacts, dial, hang up or open Settings. Internal timeouts and permission revocations still cancel calls. `input_control.py` routes physical input (including delayed TV checks) through `physical_press`; logical `press` remains available to the call/timer controllers. Call/state changes and setup/focus changes dismiss the overlay; an existing call continues.
 
-Settings has a list and editor; only the active side shows button hints, status
-icons are hidden, and the terminal serial appears at the bottom. Confirmed edits
+Settings has a three-category icon carousel, short category lists and individual
+editor pages. Each page has full-width control hints. Status icons are hidden,
+and the terminal serial appears at the bottom. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
-The label renderer reduces the font to fit each settings region. Saved values
-can use the lower half of the row so short labels fit with the installed fonts.
+The label renderer reduces the font to fit each settings region. Category values
+have their own column; the editor devotes a large central panel to the draft.
 If a long translation still wraps beyond the region, it uses an ellipsis and keeps
 combining marks with their preceding character. This also keeps the button hints
 inside the small-window layout.
@@ -470,6 +471,7 @@ inside the small-window layout.
 | Ringtone | Nokia (default) and the private server library |
 | Portraits | Three/five; short contact lists retain three positions |
 | Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
+| TV setup | Guided TV power and input checks, opened explicitly from Terminal |
 | Reset | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
@@ -794,7 +796,12 @@ before a network toggle. The real-call test plan and measured results are in
 
 ### Installation TV checks
 
-After server enrollment the wizard pauses media startup and idle restoration.
+TV checks are optional: open Settings > Terminal > TV setup. Enrollment and
+startup go straight to ordinary use. Saved capabilities are checked against the
+TV identity in the background; incomplete checks stay disabled without opening
+a wizard. Opening TV setup pauses maintenance and ordinary call/idle TV actions.
+The completed wizard returns to the Terminal category. Reopening it restarts the
+checks so a previous failure or skip can be retried.
 Green starts the standby/wake test; a three-second off interval follows a bounded
 standby-report wait. The user confirms whether the picture went off and returned.
 For input testing, switch to another channel/input with the TV remote. The wizard
@@ -805,7 +812,8 @@ or manual operation. CEC acknowledgements alone do not count as a pass.
 
 `/var/lib/zmalacall/<profile>/tv-check.json` stores attempts, performed/results/
 skips, completion, EDID hash and HDMI address. Save failures block completion.
-Interrupted tests resume at a prompt, not another automatic power command.
+Interrupted tests never resume automatically at startup. Open TV setup again to
+repeat them; no power command runs until the user starts a test.
 A changed TV/route invalidates previous results on startup; reset clears them.
 Failed/skipped features are disabled independently; keep the TV remote available.
 The saved `network_paired` flag separately enables the paired network fallback.
@@ -1661,3 +1669,22 @@ Qualification procedures and the initial checkpoint are in
 executed hardware evidence is recorded in
 [issue #131](https://github.com/toastfr35/ZmalaCall/issues/131).
 Process-death recovery passes do not constitute physical SD power-loss evidence.
+
+### Windows settings acceptance
+
+The Windows adapters recovered from `toastfr35/ZmalaCall` support the shared Tk
+UI. Use an isolated fixture without the native call SDK or live server:
+
+```powershell
+$env:TEMP = 'W:/git/zmala/tmp/terminal-settings'
+$env:TMP = $env:TEMP
+python tests/support/terminal/run_display.py tests/support/terminal/settings_preview.py
+```
+
+Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
+The fixture opens Settings immediately. Saves are acknowledged in memory and
+reset when the window closes. Verify all three category icons, each editor's
+accept/cancel return, category back, exit confirmation and the seven-second
+Escape hold from Home. The TV setup entry explains that TV control requires
+the Pi. The display HLT exercises the guided pages with substituted hardware.
+Windows does not qualify physical CEC, audio previews or native call media.

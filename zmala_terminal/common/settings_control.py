@@ -150,10 +150,17 @@ class SettingsControl:
         elif button == 'red':
             if draft.editing:
                 draft.editing, draft.error = False, False
+            elif draft.category_open:
+                draft.category_open = False
+                draft.error = False
             else:
                 draft.confirm_exit = True
         elif button == 'green':
-            if draft.key == 'reset':
+            if not draft.category_open and not draft.editing:
+                draft.open_category()
+            elif draft.key == 'tv_setup':
+                draft.error = not self.begin_tv_setup(self.model.config)
+            elif draft.key == 'reset':
                 self.settings_open = False
                 self.setup_stage = 'reset'
                 self.settings_hold.clear()

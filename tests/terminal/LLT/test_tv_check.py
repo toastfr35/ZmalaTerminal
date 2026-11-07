@@ -22,6 +22,23 @@ IDENTITY = {'address': '2.0.0.0', 'display': 'test-edid'}
 
 
 class CheckTests(unittest.TestCase):
+    def test_explicit_restart_retests_completed_capabilities_without_auto_commands(self):
+        self.path.write_text(json.dumps({'version': 1, 'identity': IDENTITY,
+            'power': {'status': 'passed', 'attempts': 1},
+            'source': {'status': 'skipped', 'attempts': 0}, 'complete': True}))
+        check = TVCheck(self.path, self.transport, restart=True)
+        check.messages.put(('probe', IDENTITY, False))
+        check.launch = Mock()
+        check.poll()
+        self.assertEqual(check.page, 'power_ready')
+        self.assertFalse(check.record['complete'])
+        self.assertEqual(check.record['power']['status'], 'pending')
+        self.assertEqual(check.record['source']['status'], 'pending')
+        check.launch.assert_not_called()
+        check.button('green')
+        check.launch.assert_called_once_with('power')
+        self.assertFalse(json.loads(self.path.read_text())['complete'])
+
     def test_worker_delivers_one_outcome_and_cancelled_check_ignores_late_results(self):
         import zmala_terminal.common.tv_check as module
         check = TVCheck('unused', Mock())

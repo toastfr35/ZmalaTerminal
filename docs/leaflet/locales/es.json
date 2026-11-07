@@ -58,11 +58,11 @@
       "Sitúe a la persona elegida en el centro."
     ],
     [
-      "Verde",
+      "Verde (arriba)",
       "Pulse para comprobar la persona, suelte y pulse de nuevo para llamar. En una llamada entrante, verde responde."
     ],
     [
-      "Rojo",
+      "Rojo (abajo)",
       "Cancele, rechace o termine la llamada. Con respuesta automática, rojo rechaza antes de acabar la cuenta atrás."
     ],
     [
@@ -78,11 +78,11 @@
     ],
     [
       "Elija y guarde",
-      "Izquierda/derecha elige el ajuste; verde lo abre. Izquierda/derecha cambia el valor; verde guarda y rojo descarta. Opciones: idioma, respuesta automática, encuadre, tono, volúmenes, retratos y regreso al televisor."
+      "Izquierda/derecha elige Llamadas, Sonido o Terminal. Verde abre la categoría. Elija un ajuste y pulse verde. Configurar TV está en Terminal."
     ],
     [
       "Salga",
-      "Pulse rojo en la lista de ajustes y luego verde para salir o rojo para quedarse."
+      "Izquierda/derecha cambia el valor. Verde guarda y vuelve; rojo cancela y vuelve. Rojo sale de la categoría. En el carrusel, rojo y luego verde sale de ajustes."
     ]
   ],
   "help": "Con el control TV activo, la primera pulsación puede solo mostrar Zmala. Si no, elija su entrada HDMI con el mando TV. Si el mando no responde, revise su interruptor trasero y cárguelo. Pida ayuda si falla una llamada o no puede guardar.",

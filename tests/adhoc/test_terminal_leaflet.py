@@ -1,6 +1,7 @@
 """Publishing-tool regressions, not terminal product verification."""
 import copy
 import json
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -53,9 +54,13 @@ class TerminalLeafletTests(unittest.TestCase):
         for path in (SOURCE / 'assets').glob('*.svg'):
             with self.subTest(asset=path.name):
                 root = ElementTree.fromstring(path.read_text(encoding='utf-8'))
+                identifiers = {node.attrib['id'] for node in root.iter() if 'id' in node.attrib}
                 for node in root.iter():
                     self.assertNotIn(node.tag.rsplit('}', 1)[-1], ('text', 'foreignObject', 'image'))
                     self.assertFalse((node.text or '').strip())
+                    for value in node.attrib.values():
+                        for reference in re.findall(r'url\(#([^)]+)\)', value):
+                            self.assertIn(reference, identifiers, 'Unresolved paint makes equipment disappear')
 
     def test_imposition_order_dimensions_and_positions_in_both_directions(self):
         from pypdf import PdfReader, PdfWriter

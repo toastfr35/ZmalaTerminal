@@ -1,5 +1,4 @@
-"""Post-enrollment TV checks: full-screen prompts, remote-only interaction."""
-import os
+"""Optional TV checks opened from Settings, with remote-only interaction."""
 import tkinter as tk
 import time
 
@@ -19,15 +18,31 @@ class TVSetupView:
         self.tv_check_page.bind('<Configure>', lambda e: self.draw_tv_setup())
         self.tv_check_signature = None
         self.tv_check_images = []
+        self.tv_check_restore = False
+
+    # @llr LLR-TERM-TV-019, LLR-TERM-TV-024
+    def restore_tv_capabilities(self):
+        """Validate saved TV identity in the background, without a setup screen."""
+        if not getattr(self.tv_control, 'supports_setup', True):
+            return
+        self.tv_control.power_enabled = self.tv_control.source_enabled = False
+        path = self.enrollment.path.parent / 'tv-check.json'
+        if not path.is_file():
+            return
+        self.tv_check = TVCheck(path, CheckTransport(self.tv_control))
+        self.tv_check_restore = True
+        self.tv_check.start()
 
     # @llr LLR-TERM-TV-019
     def begin_tv_setup(self, config):
-        if self.tv_setup_checked:
+        if self.setup_stage or not self.settings_open:
             return False
-        self.tv_setup_checked = True
-        if (not getattr(self.tv_control, 'supports_setup', True)
-                or not os.environ.get('ZMALA_PAIRING_STATUS')):
+        if not getattr(self.tv_control, 'supports_setup', True):
             return False
+        if self.tv_check:
+            self.tv_check.close()
+        self.tv_check_restore = False
+        self.tv_control.power_enabled = self.tv_control.source_enabled = False
         if self.maintenance:
             self.maintenance.stop()
             self.maintenance = None
@@ -35,13 +50,24 @@ class TVSetupView:
         self.font_family = font_family(self.language, self.available_fonts)
         self.tv_check_config = config
         self.setup_stage = 'tv'
-        self.tv_check = TVCheck(self.enrollment.path.parent / 'tv-check.json', CheckTransport(self.tv_control))
+        self.tv_check = TVCheck(self.enrollment.path.parent / 'tv-check.json', CheckTransport(self.tv_control), restart=True)
         self.tv_check.start()
         return True
 
     def tick_tv_setup(self):
         check = self.tv_check
-        if not check or self.setup_stage != 'tv':
+        if not check:
+            return
+        if self.tv_check_restore:
+            if check.poll():
+                record = check.record if check.page == 'done' else {}
+                self.tv_control.power_enabled = record.get('power', {}).get('status') == 'passed'
+                self.tv_control.source_enabled = record.get('source', {}).get('status') == 'passed'
+                check.close()
+                self.tv_check = None
+                self.tv_check_restore = False
+            return
+        if self.setup_stage != 'tv':
             return
         if check.poll():
             self.render()
@@ -53,7 +79,8 @@ class TVSetupView:
             self.tv_check = None
             self.setup_stage = None
             self.last_button = time.monotonic()
-            self.apply_config(self.tv_check_config)
+            self.settings_open = True
+            self.apply_config(self.pending_config or self.tv_check_config)
             self.tv_check_config = None
             self.maintenance = self.make_maintenance(self.configuration)
             self.render()

@@ -310,6 +310,8 @@ def check_report(output: Path, counts: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Validate only; do not publish')
+    parser.add_argument('--output', type=Path, default=ROOT / 'requirements' / 'output',
+                        help='Generated report directory')
     parser.add_argument('--next-id', nargs=3, metavar=('LEVEL', 'COMPONENT', 'GROUP'),
                         help='Print the next shared theme number without creating a record')
     args = parser.parse_args()
@@ -325,7 +327,7 @@ def main() -> int:
         print(f"Test plans: {len(test_trace['tests'])}; unmapped requirements: "
               + ', '.join(f'{prefix} {len(ids)}' for prefix, ids in test_trace['unmapped'].items()))
         if not args.check:
-            output = ROOT / 'requirements' / 'output'
+            output = args.output.resolve()
             # Only obsolete generated document pages are removed. No recursive workspace deletion.
             for page in (output / 'documents').glob('*.html'):
                 if page.stem not in report['counts']:

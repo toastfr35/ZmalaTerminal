@@ -1,7 +1,7 @@
 # @test T-LLT-059
 # @requirements LLR-TERM-TV-019, LLR-TERM-TV-020, LLR-TERM-TV-021, LLR-TERM-TV-022, LLR-TERM-TV-023, LLR-TERM-TV-024
 # @environment portable
-# @plan Run the real TV setup view with recording canvas/text renderers and a fake TVCheck/transport. Verify enrollment-only entry, selected language, maintenance suspension, remote-only actions, independent power/source capability restoration and localized retry/help/summary controls. Exercise narrow-screen text fitting, busy/error states and redraw caching without sending TV commands.
+# @plan Run the real TV setup view with recording canvas/text renderers and a fake TVCheck/transport. Verify settings-only entry, nonblocking saved-capability restoration, selected language, maintenance suspension, remote-only actions, independent power/source capability restoration and localized retry/help/summary controls. Exercise narrow-screen text fitting, busy/error states and redraw caching without sending TV commands.
 # @pass Setup surfaces and button hints match each stage; completion enables only user-passed capabilities and resumes maintenance once. Pixel quality and actual CEC behavior are outside this unit test.
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,7 +13,7 @@ from tests.terminal.LLT.test_display_states import widget
 
 class TVViewTests(unittest.TestCase):
     def fixture(self):
-        v=tv_setup.TVSetupView(); v.root=widget(); v.maintenance=Mock(); v.setup_stage=None
+        v=tv_setup.TVSetupView(); v.root=widget(); v.maintenance=Mock(); v.setup_stage=None; v.settings_open=True; v.pending_config=None
         v.enrollment=SimpleNamespace(path=Path('private/enrollment.json')); v.available_fonts=set()
         v.tv_control=Mock(); v.render=Mock(); v.apply_config=Mock(); v.make_maintenance=Mock(); v.configuration=Mock()
         v.text_renderer=Mock(); v.text_renderer.photo.return_value=Mock(height=lambda:30)
@@ -22,21 +22,41 @@ class TVViewTests(unittest.TestCase):
         with patch.object(tv_setup.tk,'Canvas',return_value=widget()): v.build_tv_setup()
         return v
 
-    def test_entry_is_once_after_enrollment_and_suspends_maintenance(self):
-        v=self.fixture()
-        with patch.dict(tv_setup.os.environ,{},clear=True): self.assertFalse(v.begin_tv_setup({}))
+    def test_entry_is_only_from_settings_and_can_be_reopened(self):
+        v=self.fixture(); v.settings_open=False
+        self.assertFalse(v.begin_tv_setup({}))
+        v.settings_open=True; v.tv_control.supports_setup=False
+        self.assertFalse(v.begin_tv_setup({}))
         v=self.fixture(); old=v.maintenance
-        with patch.dict(tv_setup.os.environ,{'ZMALA_PAIRING_STATUS':'pairing.json'}), \
-                patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport') as transport:
+        with patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport') as transport:
             self.assertTrue(v.begin_tv_setup({'language':'fr'})); self.assertFalse(v.begin_tv_setup({}))
+            check.assert_called_once_with(Path('private/tv-check.json'),transport.return_value,restart=True)
+            check.return_value.start.assert_called_once()
+            v.setup_stage=None
+            self.assertTrue(v.begin_tv_setup({'language':'fr'}))
+            self.assertEqual(check.call_count,2)
         old.stop.assert_called_once(); self.assertIsNone(v.maintenance)
         self.assertEqual(v.language,'fr'); self.assertEqual(v.setup_stage,'tv')
-        check.assert_called_once_with(Path('private/tv-check.json'),transport.return_value)
-        check.return_value.start.assert_called_once()
         check.return_value.poll.return_value=True; check.return_value.page='power_ready'
         v.tick_tv_setup(); v.render.assert_called_once()
         self.assertTrue(v.tv_setup_button('red')); check.return_value.button.assert_called_once_with('red')
         v.setup_stage=None; self.assertFalse(v.tv_setup_button('green'))
+
+    def test_background_restore_never_opens_wizard_or_resumes_incomplete_check(self):
+        for page,expected in (('done',True),('power_ready',False),('unavailable',False)):
+            v=self.fixture(); v.tv_control.supports_setup=True
+            with patch.object(Path,'is_file',return_value=True), patch.object(tv_setup,'TVCheck') as check, patch.object(tv_setup,'CheckTransport'):
+                v.restore_tv_capabilities()
+            self.assertIsNone(v.setup_stage)
+            self.assertFalse(v.tv_control.power_enabled)
+            check.return_value.poll.return_value=True; check.return_value.page=page
+            check.return_value.record={'power':{'status':'passed'},'source':{'status':'failed'}}
+            v.tick_tv_setup()
+            self.assertEqual(v.tv_control.power_enabled,expected)
+            self.assertFalse(v.tv_control.source_enabled)
+            self.assertIsNone(v.setup_stage); self.assertIsNone(v.tv_check)
+            v.apply_config.assert_not_called(); v.make_maintenance.assert_not_called()
+            v.render.assert_not_called()
 
     def test_completion_restores_only_confirmed_capabilities_and_resumes_once(self):
         for power,source in (('passed','failed'),('skipped','passed')):
@@ -47,6 +67,7 @@ class TVViewTests(unittest.TestCase):
             self.assertEqual(v.tv_control.power_enabled,power=='passed')
             self.assertEqual(v.tv_control.source_enabled,source=='passed')
             check.close.assert_called_once(); self.assertIsNone(v.tv_check); self.assertIsNone(v.setup_stage)
+            self.assertTrue(v.settings_open)
             v.apply_config.assert_called_once_with({'language':'fr'})
             v.make_maintenance.assert_called_once_with(v.configuration); self.assertEqual(v.last_button,100)
             v.tick_tv_setup(); v.make_maintenance.assert_called_once()

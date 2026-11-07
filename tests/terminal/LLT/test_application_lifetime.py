@@ -136,8 +136,8 @@ class ApplicationLifetimeTests(unittest.TestCase):
             t.start_services()
             t.root.after.assert_any_call(20,t.tick); t.render.assert_called_once()
             if setup: t.root.after.assert_any_call(100,t.start_scanner)
-            elif not checking: t.apply_config.assert_called_once_with(cache)
-            else: t.apply_config.assert_not_called()
+            else: t.apply_config.assert_called_once_with(cache)
+            t.begin_tv_setup.assert_not_called()
 
     def test_factories_pass_owned_profile_and_surfaces(self):
         t=self.terminal('test'); t.video_window=101; t.preview_window=102

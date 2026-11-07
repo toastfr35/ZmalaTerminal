@@ -10,7 +10,7 @@ from zmala_terminal.linux.tv_plugins.samsung.driver import save_config
 
 
 class TVCheck:
-    def __init__(self, path, transport):
+    def __init__(self, path, transport, restart=False):
         self.path, self.transport = Path(path), transport
         self.cancel = threading.Event()
         self.messages = queue.Queue()
@@ -21,6 +21,7 @@ class TVCheck:
         self.selection = 0
         self.busy = False
         self.save_pending = None
+        self.restart = restart
 
     def launch(self, operation, *args):
         self.busy = True
@@ -62,6 +63,11 @@ class TVCheck:
                 'version': 1, 'identity': value, 'power': {'status': 'pending', 'attempts': 0},
                 'source': {'status': 'pending', 'attempts': 0}, 'complete': False}
             self.transport.resume_network(self.record.get('network_paired', False))
+            if self.restart:
+                self.record = dict(self.record, complete=False,
+                    power={'status': 'pending', 'attempts': 0},
+                    source={'status': 'pending', 'attempts': 0})
+                self.restart = False
             if self.record.get('complete'):
                 self.page = 'done'
             elif not value:

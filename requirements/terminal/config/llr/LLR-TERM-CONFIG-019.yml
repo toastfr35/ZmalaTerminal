@@ -2,7 +2,7 @@ active: true
 area: Configuration
 derived: false
 header: |
-  Settings list and editor
+  Settings categories and focused editors
 level: 30.0
 links:
 - HLR-TERM-CONFIG-016: tF6jWzImg7gepg3fagqe56SUaj2ierhVysKpWA6YeEU=
@@ -24,12 +24,17 @@ references:
 reviewed: null
 scope: Core
 text: |
-  Arrows shall select a setting. Green shall open its editor. Red on the list shall ask
-  for confirmation before leaving Settings: green shall exit and red shall return
-  to the same list selection without changing configuration. Arrows on the exit
-  confirmation shall have no effect. In the editor, arrows shall change the draft,
-  green shall accept it and red shall discard it. Only the active pane shall show button hints.
+  Settings shall open a carousel of exactly three icon categories: Calls, Sound
+  and Terminal. Left/right shall rotate categories and green shall open the
+  selected category. Within a category, left/right shall select an entry and
+  green shall open its individual page. In an editor, left/right shall change
+  only the draft; green shall accept and return to the category after acknowledgement;
+  red shall discard and return without saving. Red on a category shall return
+  to the carousel. Red on the carousel shall ask before exiting: green exits,
+  red retains the selected category, and arrows have no effect. Each page shall
+  show its own full-width button hints.
 verification: |
-  Navigate both panes and cancel drafts. Check saved values and hints for the active
-  pane. Exercise both exit answers and ignored arrows; check configuration and list
-  selection are preserved until confirmed.
+  Navigate all three categories and every setting. Verify category and option
+  wrap/clamp behavior, green acknowledgement, red cancellation and return paths.
+  Exercise both exit answers and ignored arrows. Render all supported languages
+  at 900x620 and 1280x720 and check icons, labels, values and controls stay bounded.
