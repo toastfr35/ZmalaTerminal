@@ -81,5 +81,3 @@ class NativeQRScanner(Engine):
             self.preview_bridge.zmala_qr_stop(self.preview)
             self.preview = None
         super().close()
-
-

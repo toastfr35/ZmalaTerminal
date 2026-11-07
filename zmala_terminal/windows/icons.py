@@ -105,4 +105,3 @@ class IconRenderer(IconShapes):
                 if handle:d.GdipDeleteGraphics(handle)
             for handle in [source,target]:
                 if handle:d.GdipDisposeImage(handle)
-

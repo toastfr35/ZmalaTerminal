@@ -800,8 +800,8 @@ TV checks are optional: open Settings > Terminal > TV setup. Enrollment and
 startup go straight to ordinary use. Saved capabilities are checked against the
 TV identity in the background; incomplete checks stay disabled without opening
 a wizard. Opening TV setup pauses maintenance and ordinary call/idle TV actions.
-The completed wizard returns to the Terminal category. Reopening it restarts the
-checks so a previous failure or skip can be retried.
+The completed wizard returns to the Terminal category. Reopening completed checks
+allows retesting while keeping attempt counts; incomplete checks resume at a prompt.
 Green starts the standby/wake test; a three-second off interval follows a bounded
 standby-report wait. The user confirms whether the picture went off and returned.
 For input testing, switch to another channel/input with the TV remote. The wizard
@@ -813,7 +813,7 @@ or manual operation. CEC acknowledgements alone do not count as a pass.
 `/var/lib/zmalacall/<profile>/tv-check.json` stores attempts, performed/results/
 skips, completion, EDID hash and HDMI address. Save failures block completion.
 Interrupted tests never resume automatically at startup. Open TV setup again to
-repeat them; no power command runs until the user starts a test.
+resume them; no power command runs until the user starts a test.
 A changed TV/route invalidates previous results on startup; reset clears them.
 Failed/skipped features are disabled independently; keep the TV remote available.
 The saved `network_paired` flag separately enables the paired network fallback.

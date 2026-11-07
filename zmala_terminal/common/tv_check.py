@@ -63,11 +63,12 @@ class TVCheck:
                 'version': 1, 'identity': value, 'power': {'status': 'pending', 'attempts': 0},
                 'source': {'status': 'pending', 'attempts': 0}, 'complete': False}
             self.transport.resume_network(self.record.get('network_paired', False))
-            if self.restart:
+            if self.restart and self.record.get('complete'):
                 self.record = dict(self.record, complete=False,
-                    power={'status': 'pending', 'attempts': 0},
-                    source={'status': 'pending', 'attempts': 0})
-                self.restart = False
+                    power={'status': 'pending', 'attempts': self.record['power']['attempts']},
+                    source={'status': 'pending', 'attempts': self.record['source']['attempts']})
+                self.record.pop('completed_at', None)
+            self.restart = False
             if self.record.get('complete'):
                 self.page = 'done'
             elif not value:
