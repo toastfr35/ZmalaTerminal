@@ -39,7 +39,7 @@ def render_message(text, language, width, height):
     from gi.repository import Pango, PangoCairo
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     context = cairo.Context(surface)
-    context.set_source_rgb(13/255, 18/255, 28/255)
+    context.set_source_rgb(0, 0, 0)
     context.paint()
     layout = PangoCairo.create_layout(context)
     layout.get_context().set_language(Pango.Language.from_string(language))
@@ -69,10 +69,10 @@ def main(state_file='/run/zmalacall-updater/state.json'):
     root.withdraw()
     root.title("Zmala update")
     root.overrideredirect(True)
-    root.configure(bg='#0d121c')
+    root.configure(bg='#000000')
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry(f'{width}x{height}+0+0')
-    canvas = tk.Canvas(root, bg='#0d121c', highlightthickness=0)
+    canvas = tk.Canvas(root, bg='#000000', highlightthickness=0)
     canvas.pack(fill='both', expand=True)
     previous = None
     def refresh():

@@ -460,9 +460,10 @@ Middle is Pointer. Remote motion is ignored for volume. While the overlay is ope
 
 Settings has a five-card icon carousel containing all settings, and individual
 editor pages. Each page has full-width control hints. Status icons are hidden,
-the transparent Zmala logo remains at the top left, and the terminal serial
-appears at the bottom. Confirmed edits
+the transparent Zmala logo remains at the top left, and the terminal ID and
+running software version appear in the footer. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
+The main background is black. Cards and frames retain their dark-blue fills.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
 The label renderer reduces the font to fit each settings region. Current values
