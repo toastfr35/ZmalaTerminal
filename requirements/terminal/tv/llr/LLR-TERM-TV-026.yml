@@ -1,0 +1,46 @@
+active: true
+area: TV control
+derived: false
+header: |
+  First press reveals the terminal
+level: 102.0
+links:
+- HLR-TERM-TV-018: F35loWawZvWnhbpGyFAu7gd_eyY2h5N8S9KwsRLIoZg=
+normative: true
+ref: ''
+references:
+- path: zmala_terminal/common/tv_session.py
+  type: file
+- path: tests/terminal/LLT/test_idle_return.py
+  type: file
+- path: tests/terminal/LLT/test_input_dispatch.py
+  type: file
+- path: tests/terminal/LLT/test_tv_control.py
+  type: file
+- path: zmala_terminal/common/idle_return.py
+  type: file
+- path: zmala_terminal/common/input_control.py
+  type: file
+- path: zmala_terminal/linux/cec_device.py
+  type: file
+- path: zmala_terminal/linux/cec_observer.py
+  type: file
+- path: zmala_terminal/linux/tv_plugins/samsung/driver.py
+  type: file
+- path: zmala_terminal/linux/tv_control.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  When observed TV state hides the UI, the first mapped remote press shall request
+  wake or input selection and consume that press. Presses during input settling shall
+  also be consumed. A consumed middle press shall require release and a fresh press
+  before the volume page opens.
+  Unknown TV power state shall permit qualified power-on even when input switching
+  was skipped or failed. It shall not permit power-on when power control is disabled,
+  or be treated as a known standby state for restoration.
+verification: |
+  Hide the UI and send every button, including middle clicks and motion. Check selection
+  requests and absence of normal button actions.
+  Repeat after restart with unknown power, an unconfigured CEC adapter and only
+  power control qualified; check wake and no invented standby restoration.

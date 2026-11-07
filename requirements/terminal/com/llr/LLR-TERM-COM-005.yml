@@ -1,0 +1,38 @@
+active: true
+area: Server communication
+derived: false
+header: |
+  Contact and callback fields
+level: 25.0
+links:
+- HLR-TERM-COM-001: ydNPWcnm6yTEn1zC-hL6mdqdWGyJaKNXJaxgGGafcOo=
+normative: true
+ref: ''
+references:
+- path: tests/terminal/LLT/test_management.py
+  type: file
+- path: tests/terminal/LLT/test_terminal.py
+  type: file
+- path: zmala_terminal/common/config_validation.py
+  type: file
+- path: zmala_terminal/common/configuration.py
+  type: file
+- path: zmala_terminal/common/configuration_control.py
+  type: file
+- path: zmala_terminal/common/management.py
+  type: file
+- path: zmala_terminal/common/model.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  Contact permissions shall be Boolean values. Automatic answer shall require receive
+  permission. A missing portrait or empty string shall mean no portrait.
+  Every supplied portrait value shall be a string; a nonempty value shall use
+  /photos/<hash>.<extension>, with a nonempty lowercase hexadecimal hash and
+  png, jpg or gif extension. Null, Boolean, number and collection values shall
+  be rejected even when empty.
+  Callback state shall contain no more than 80 valid pending account pairs.
+verification: |
+  Supply invalid permissions, image paths and callback pairs. Check bounds and
+  acceptance of a complete valid response.

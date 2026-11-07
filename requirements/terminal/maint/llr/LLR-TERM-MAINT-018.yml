@@ -1,0 +1,57 @@
+active: true
+area: Maintenance and diagnostics
+derived: false
+header: |
+  Applied operating status
+level: 123.0
+links:
+- HLR-TERM-MAINT-012: BYCtRD3d-Wx2oRuznD6OcNT7x-_eCUfqXGpQHUJiAyk=
+normative: true
+ref: ''
+references:
+- path: zmala_terminal/common/server_sync.py
+  type: file
+- path: zmala_terminal/common/media_diagnostics.py
+  type: file
+- path: tests/terminal/LLT/test-codec-boundaries.c
+  type: file
+- path: zmala_terminal/linux/media/video/codec.c
+  type: file
+- path: tests/terminal/LLT/test_engine_adapter.py
+  type: file
+- path: tests/terminal/LLT/test_management_loop.py
+  type: file
+- path: tests/terminal/LLT/test_runtime_contracts.py
+  type: file
+- path: zmala_terminal/common/connectivity.py
+  type: file
+- path: zmala_terminal/common/engine.py
+  type: file
+- path: zmala_terminal/common/peripherals.py
+  type: file
+- path: zmala_terminal/common/management.py
+  type: file
+- path: zmala_terminal/common/runtime_logging.py
+  type: file
+- path: zmala_terminal/linux/connectivity.py
+  type: file
+- path: zmala_terminal/linux/media.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  Status shall include application and registration state, applied configuration
+  revision, detected devices and available native media statistics. It shall include
+  implemented frame, queue and drop counters. Reports shall also include remote
+  connection/input state, battery percentage and charger connection, and C10/C20 USB
+  presence, confirmed power and transition/recovery state. Unknown observations
+  shall remain explicit unknowns; gathering status shall not wake USB or open media. Counters shall not be represented as
+  proof of audible speech or perceived image quality.
+verification: |
+  Sample live codec queues without consuming frames; check exact production/drop counts,
+  bounded snapshot fields and unavailability after codec destruction. Submit the
+  native transport and codec snapshot through the normal diagnostic report.
+  Vary applied state, devices and native counters. Check report values, unavailable
+  fields and absence of inferred quality claims. Vary remote connection, zero and
+  unknown battery, charger, C10/C20 presence and power/wake/error states; assert captured
+  report snapshots and no device-control side effects.

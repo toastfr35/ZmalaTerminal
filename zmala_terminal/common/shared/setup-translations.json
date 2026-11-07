@@ -1,0 +1,82 @@
+{
+  "de": [
+    "Werkseinstellungen wiederherstellen?",
+    "Zurücksetzen",
+    "Einstellungen behalten"
+  ],
+  "en": [
+    "Factory reset?",
+    "Reset",
+    "Keep configuration"
+  ],
+  "es": [
+    "¿Restablecer el terminal?",
+    "Restablecer",
+    "Conservar configuración"
+  ],
+  "fr": [
+    "Réinitialiser le terminal ?",
+    "Réinitialiser",
+    "Garder la configuration"
+  ],
+  "pl": [
+    "Przywrócić ustawienia fabryczne?",
+    "Przywróć",
+    "Zachowaj ustawienia"
+  ],
+  "pt": [
+    "Repor o terminal?",
+    "Repor",
+    "Manter configuração"
+  ],
+  "el": [
+    "Επαναφορά εργοστασιακών ρυθμίσεων;",
+    "Επαναφορά",
+    "Διατήρηση ρυθμίσεων"
+  ],
+  "ru": [
+    "Сбросить настройки терминала?",
+    "Сбросить",
+    "Сохранить настройки"
+  ],
+  "ur": [
+    "فیکٹری کی ترتیبات بحال کریں؟",
+    "ری سیٹ",
+    "ترتیبات برقرار رکھیں"
+  ],
+  "ar": [
+    "استعادة إعدادات المصنع؟",
+    "إعادة ضبط",
+    "الاحتفاظ بالإعدادات"
+  ],
+  "hi": [
+    "फ़ैक्टरी सेटिंग बहाल करें?",
+    "रीसेट करें",
+    "सेटिंग रखें"
+  ],
+  "bn": [
+    "কারখানার সেটিং ফিরিয়ে আনবেন?",
+    "রিসেট",
+    "সেটিং রাখুন"
+  ],
+  "th": [
+    "คืนค่าจากโรงงานหรือไม่?",
+    "รีเซ็ต",
+    "เก็บการตั้งค่า"
+  ],
+  "ko": [
+    "초기 설정으로 복원할까요?",
+    "초기화",
+    "설정 유지"
+  ],
+  "ja": [
+    "初期設定に戻しますか？",
+    "リセット",
+    "設定を保持"
+  ],
+  "zh-Hans": [
+    "恢复出厂设置？",
+    "重置",
+    "保留设置"
+  ]
+}

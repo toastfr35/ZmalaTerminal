@@ -1,0 +1,19 @@
+{
+  "TERM": {
+    "AUDIO": "Audio",
+    "CALL": "Call control",
+    "COM": "Server communication",
+    "CONFIG": "Configuration",
+    "HISTORY": "Call history and callback requests",
+    "MAINT": "Maintenance and diagnostics",
+    "NAV": "Contact selection and navigation",
+    "NET": "Network connection",
+    "POWER": "Connected devices and power",
+    "REMOTE": "Remote control",
+    "SETUP": "Initial setup and reset",
+    "START": "Startup and shutdown",
+    "TV": "TV control",
+    "UI": "User interface and language",
+    "VIDEO": "Video"
+  }
+}

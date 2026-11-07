@@ -1,0 +1,82 @@
+{
+  "de": [
+    "Kein Video von der anderen Person",
+    "Sie können weiter sprechen",
+    "Video wird gestartet…"
+  ],
+  "en": [
+    "No video from the other person",
+    "You can still talk",
+    "Video is starting…"
+  ],
+  "es": [
+    "La otra persona no envía vídeo",
+    "Podéis seguir hablando",
+    "Iniciando vídeo…"
+  ],
+  "fr": [
+    "Votre interlocuteur n’envoie pas de vidéo",
+    "Vous pouvez toujours parler",
+    "Connexion vidéo en cours…"
+  ],
+  "pl": [
+    "Druga osoba nie przesyła obrazu",
+    "Nadal możecie rozmawiać",
+    "Uruchamianie obrazu…"
+  ],
+  "pt": [
+    "A outra pessoa não está a enviar vídeo",
+    "Podem continuar a falar",
+    "A iniciar vídeo…"
+  ],
+  "el": [
+    "Το άλλο άτομο δεν στέλνει βίντεο",
+    "Μπορείτε να συνεχίσετε να μιλάτε",
+    "Γίνεται εκκίνηση βίντεο…"
+  ],
+  "ru": [
+    "Собеседник не передаёт видео",
+    "Вы можете продолжать разговор",
+    "Видео запускается…"
+  ],
+  "ur": [
+    "دوسرا شخص ویڈیو نہیں بھیج رہا",
+    "آپ اب بھی بات کر سکتے ہیں",
+    "ویڈیو شروع ہو رہی ہے…"
+  ],
+  "ar": [
+    "الطرف الآخر لا يرسل فيديو",
+    "يمكنكما مواصلة الحديث",
+    "جارٍ بدء الفيديو…"
+  ],
+  "hi": [
+    "दूसरा व्यक्ति वीडियो नहीं भेज रहा है",
+    "आप अभी भी बात कर सकते हैं",
+    "वीडियो शुरू हो रहा है…"
+  ],
+  "bn": [
+    "অন্য ব্যক্তি ভিডিও পাঠাচ্ছেন না",
+    "আপনারা এখনও কথা বলতে পারেন",
+    "ভিডিও শুরু হচ্ছে…"
+  ],
+  "th": [
+    "อีกฝ่ายไม่ได้ส่งวิดีโอ",
+    "คุณยังคงพูดคุยกันได้",
+    "กำลังเริ่มวิดีโอ…"
+  ],
+  "ko": [
+    "상대방의 영상이 없습니다",
+    "계속 대화할 수 있습니다",
+    "영상을 연결하고 있습니다…"
+  ],
+  "ja": [
+    "相手からの映像がありません",
+    "そのまま会話できます",
+    "映像を接続しています…"
+  ],
+  "zh-Hans": [
+    "对方没有发送视频",
+    "您仍然可以通话",
+    "视频正在启动…"
+  ]
+}

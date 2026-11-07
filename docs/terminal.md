@@ -1,0 +1,1662 @@
+# Zmala Terminal implementation
+
+A1 dark supplies the terminal/window mark and updated family-word-cloud boot artwork.
+The artwork remains in `common/assets/`;
+application updates do not rewrite the installed Plymouth host theme.
+
+This technical guide covers the Python terminal and its Raspberry Pi runtime. It is for developers and maintainers. Preparation, enrollment
+and everyday operation are covered by the multilingual release leaflet. See [Leaflet sources and printing](leaflet/README.md).
+
+Contents: [purpose and functions](#terminal-purpose-and-functions),
+[architecture](#architecture-and-thread-ownership), [deployment](#pi-deployment-pipeline),
+[onboarding/reset](#onboarding-and-reset-state), [settings/input](#settings-and-controls),
+[remote](#remote-status-and-recovery), [TV/display](#tv-control-and-display),
+[media](#video-and-audio), [services](#appliance-services-storage-and-peripherals),
+[verification](#verification-and-troubleshooting).
+
+## Terminal purpose and functions
+
+Zmala is a home audio and video call terminal. It connects a television,
+a Nuroum C10 or C20 camera with a microphone and speaker, and a Microsoft Presenter+
+remote to a Raspberry Pi. The television shows the people that the user can call.
+The remote lets the user select a person and control the call.
+
+The terminal is intended for people who need simple controls, including elderly
+users. It provides a small set of actions with clear visual feedback. The user
+does not need a keyboard, a mouse or a web browser for normal operation.
+
+The server supplies the terminal identity, permitted contacts and settings. The
+terminal controls its own display, devices and calls. It reports its state to the
+server and sends accepted local setting changes back to the server.
+
+This description covers the Pi terminal with its software already installed.
+Software packaging and installation are outside this description. Server functions
+are described only where they form an interface with the terminal.
+
+### 1. Startup and shutdown
+
+The terminal starts automatically when the Pi starts. It opens the application
+across the television screen. It resumes initial setup when setup is incomplete.
+Otherwise, it loads the saved identity and settings and starts normal operation.
+
+The terminal can start when the server is unavailable. It shows the available
+local state and tries to reconnect. A service supervisor restarts a failed
+application. Shutdown stops the work and devices owned by the application.
+
+### 2. Initial setup and reset
+
+Initial setup guides the user through camera connection and remote pairing. A
+button test confirms that the remote works before setup continues. The camera
+reads a Wi-Fi code and a server code. The server code supplies the terminal
+identity and access credentials.
+
+Setup shows an error when an operation fails. It continues only when that step
+has completed. TV tests follow server registration and use the selected language.
+The user can reset the terminal from Settings after a separate confirmation.
+Reset removes this terminal profile's setup data but does not delete server accounts.
+
+### 3. Network connection
+
+The terminal uses Ethernet or Wi-Fi to reach the server. Initial setup configures
+Wi-Fi from the scanned code. The terminal keeps that connection for later use.
+The Wi-Fi indicator shows wireless status even when server traffic uses Ethernet.
+
+A connection failure does not close the application. The terminal detects the
+failure, reports the available status and retries communication. Reset removes
+only the Wi-Fi profile that the terminal created.
+
+### 4. Server communication
+
+The terminal uses its assigned credentials to communicate with the server. It
+receives its permitted contacts, settings, contact availability and callback state.
+It sends its operating status and the results of user or maintenance actions.
+
+The terminal checks received data before it uses that data. Invalid or old data
+does not replace newer accepted settings. Background communication does not wait
+for portrait downloads. A late response cannot replace state from a newer operation.
+
+### 5. Configuration
+
+Outgoing local ringback uses the saved Ringtone volume at dial time, independently of call playback. The SDK tone is scaled into a disposable RAM-backed WAV (silent at 0%) and reused until its level changes; the SDK still controls its lifetime. The bundled 8 kHz WAV has a streaming length header, so scaling bounds reads by actual PCM size.
+
+All terminal volume UI uses 5% steps. Settings has separate Ringtone volume and Button sounds volume editors; the middle-button overlay adjusts received call sound. The server exposes all three defaults. Left/right on the overlay moves an existing between-step level to the next boundary in the chosen direction. Settings editors display the nearest step without saving until accepted.
+
+The ringtone editor wraps at both ends: left on the first choice selects the last, and right on the last selects the first, without saving.
+
+Red on the Settings list asks whether to exit: green confirms; red keeps the same list selection. Red within an editor only discards that draft. Neither exit answer changes saved configuration.
+
+The nine-row Settings menu scrolls a seven-row window to keep the selected row visible. Each row reserves a text line for its label and saved value at both supported sizes.
+
+The server supplies the main terminal configuration. The local Settings page lets
+the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count
+and the return-to-TV timeout. Each editor lets the user accept or cancel a change.
+
+The terminal confirms a saved change only after the server accepts it. A rejected
+or failed change produces visible feedback. Settings that require a new media
+configuration wait until the terminal is idle. Supported live changes do not end a call.
+
+### 6. Remote control
+
+The remote has left, right, green, red and middle controls. Green and red stickers
+identify the two action buttons. Button actions depend on the current page or call
+state. Pressing the middle button opens a compact call-volume overlay; left/right changes volume and red or a second middle press closes it.
+
+The terminal detects remote connection, battery level and external charging power
+where the device reports them. It shows help when the remote is unavailable.
+A lost connection alone cannot show whether the remote is off, discharged or faulty.
+
+### 7. Contact selection and navigation
+
+The user moves left or right through the permitted contact list. Each contact has
+a portrait, name and availability indication. The selected contact remains selected
+when a compatible directory update arrives. Offline contacts remain available for
+callback requests.
+
+The same controls navigate settings and confirmation pages. Green selects or
+accepts an action. Red cancels or returns where the current page permits it.
+Incoming calls take priority over unfinished navigation and edits.
+
+### 8. User interface and language
+
+The display uses large portraits, clear text and consistent action colors. Names
+stay inside their portrait cards. The settled centre card uses a larger, bold name
+to emphasize the selected person; long names shrink to fit above availability.
+Moving cards retain the compact name style until navigation settles.
+Status symbols and words give information without
+relying on color alone. Confirmation pages make the proposed action clear.
+
+Normal operation uses the selected language. Early setup uses English before the
+server supplies that preference. Text rendering supports Unicode names and scripts.
+Missing pictures or translations use the defined fallback presentation.
+
+The shared catalog contains 16 languages in displayed-native-name alphabetical order:
+Deutsch, English, Español, Français, Polski, Português, Ελληνικά, Русский,
+اردو, العربية الفصحى, हिन्दी, বাংলা, ไทย, 한국어, 日本語 and 普通话.
+The terminal and server retain this catalog order. Language navigation wraps at
+both ends; an older unsupported server preference migrates to English once.
+
+### 9. Call control
+
+The user confirms an outgoing call before the terminal starts it. The terminal
+checks contact availability and permission again at confirmation. Incoming calls
+require an authorized caller. The user can answer or decline them.
+The terminal handles one active call at a time and declines a second incoming call.
+
+Automatic answering is optional and includes a visible delay. The user can decline
+a call during that delay. Red ends a connected call. Cancellation, failure and
+normal call completion return the terminal to the appropriate idle state.
+
+### 10. Audio
+
+The terminal uses the C20 microphone and speaker for calls. It plays an incoming
+ringtone and an outgoing waiting tone on the C20 speaker. Call, ringtone and
+button-sound levels are independent, including their 0% silent setting, without
+changing microphone gain or television volume. Idle remote navigation plays a
+short low tap for left/right and middle, a rising tone for green and a low double
+tap for red. Calls, ringing and ringtone previews suppress button feedback.
+
+Audio processing provides the configured echo-control behavior. The Pi waits for
+all C20 media instead of starting a receive-only call or selecting TV audio.
+Missing devices or rejected routes retry once per second while SIP and remote
+buttons remain responsive. A cancelled or superseded call cannot resume.
+USB wake restores the C20 playback route and fixed hardware gain before media is ready.
+
+### 11. Video
+
+The terminal sends camera video and displays received video. A small local preview
+lets the user see the outgoing camera view. The local preview shares the camera
+capture path with the outgoing stream.
+
+Video size and frame rate are configurable targets. Actual delivery depends on
+the camera, processing capacity and network. Before the first remote picture,
+the call page shows a neutral video-starting message and an unslashed camera
+icon for eight seconds. A decoded picture clears it immediately; if none arrives,
+the page changes to missing-video feedback while preserving audio and the local
+preview. Once video has appeared, a subsequent four-second stall uses the
+missing-video message without another startup grace period. Each new call resets
+the initial wait. Both message phases use the selected language.
+Optional local people detection adjusts the frame
+within a two-times digital zoom limit. Detector failure restores the wide view.
+
+### 12. Call history and callback requests
+
+The terminal keeps unread counts for missed incoming calls and authorized phone
+text notifications. It shows these counts beside the relevant contacts and in a
+total indicator. It does not display or save the text bodies.
+
+The user can request a callback from an unavailable contact and cancel a pending
+request. A contact tag shows the pending request. When the contact becomes
+available, the terminal can notify the user. It does not dial automatically.
+
+### 13. TV control
+
+The terminal tests TV power and input switching during setup. The user confirms
+the observed result of each test. Confirmed capabilities control later automatic
+TV actions. Failed or skipped capabilities remain available through manual TV control.
+
+When the TV hides the terminal view, the first remote action can reveal that view.
+That action does not also operate the terminal page. The terminal remembers the
+observed previous TV state and restores it after the relevant call or idle timeout.
+A bottom progress bar shows the approaching idle return.
+
+### 14. Connected devices and power
+
+The terminal detects required media devices and uses their identities after
+reconnection. It controls the supported case fan during connected calls. Device
+work that can block runs separately from display updates.
+
+Optional USB power control can turn off the shared camera and charger supply
+when the terminal is inactive and the remote battery has sufficient charge.
+User activity or an incoming call requests power restoration. Unknown device or
+battery state favors retaining power. The webcam indicator reports confirmed hub power.
+
+### 15. Maintenance and diagnostics
+
+The terminal reports application, connection and media status to the server.
+Each two-second management poll captures remote input/connection, battery and
+charger state, C20 USB presence, confirmed power and transition/recovery state.
+`peripherals.py` collects these read-only observations separately from the
+management scheduler. They do not wake USB or open the camera; unsupported or stale
+sensor values remain unknown. The server displays them on the selected terminal
+card and suppresses stale readings after 20 seconds.
+Authorized maintenance jobs run with limited duration and output. Cancellation,
+reset and shutdown stop work that belongs to the terminal.
+
+Routine logs use volatile storage to limit microSD writes. Temporary detailed
+logging helps diagnose failures. Diagnostics protect credentials and distinguish
+reported device state from unverified sound or picture quality.
+
+### Qualities that apply to all functions
+
+The terminal favors simple, predictable interaction. User messages explain the
+current state and the next available action. The same terms and controls keep
+the same meaning throughout related pages.
+
+The terminal protects saved identity and settings and rejects invalid updates.
+It separates background work from display and call control. It limits retained
+queues, pictures and logs. Recovery behavior preserves newer state when old work
+finishes late.
+
+Access controls protect calls, server requests and maintenance actions. Stored
+credentials remain private. Camera images used for framing stay on the terminal.
+Automatic TV control and hardware performance require tests on the actual equipment.
+
+The HLRs below this description's functional structure define observable product
+responsibilities. The LLRs define settings, limits, state transitions and interface
+rules. Code and tests trace to those LLRs; test links alone do not establish a pass.
+
+## Architecture and thread ownership
+
+The shared UI, models, enrollment and call logic live in `common/`. The `windows/`
+and `linux/` directories provide platform rendering, network, process and native
+media adapters. The common entry point is `python -m zmala_terminal.common.main`.
+Linux source archives exclude Windows adapters and locally built native artifacts.
+
+| Shared modules (under `common/`) | Responsibility |
+| --- | --- |
+| `main.py` | Own state/resource lifetimes and compose controllers |
+| `input_control.py`, `settings_control.py`, `idle_return.py` | Input/repeat handling, drafts/hold and TV timeout |
+| `model.py`, `call_control.py`, `management.py` | Call/notification state, async actions, polling and timers |
+| `configuration.py`, `config_validation.py`, `configuration_control.py` | HTTP validation/cache and idle engine replacement |
+| `setup_flow.py`, `provisioning.py`, `remote_test.py`, `tv_check.py` | Enrollment/reset and persisted setup verification |
+| `ui/`, `theme.py`, `icons.py`, `text_renderer.py` | Display, confirmation, carousel and platform rendering |
+| `engine.py`, `linphone_api.py`, `native_runtime.py` | Shared native ABI/call engine and platform loading |
+| `qr_scanner.py`, `qr_worker.py`, `native_qr.py` | Isolated camera process and preview protocol |
+| `maintenance.py`, `process_job.py`, `volume_control.py` | Command ownership, process cleanup and mixer worker |
+
+`Terminal` owns shared state; controllers do not keep independent state copies.
+Tk and core iteration run on the UI thread. Native media owns worker/ticker
+threads; HTTP/Wi-Fi results return through queues. Generation/serial checks discard
+late results after reset, cancellation or replacement. Native callbacks/DLL handles
+remain referenced until their core closes; borrowed call pointers are explicitly
+retained/released. Shutdown is idempotent, though SDK/QR waits can still block.
+
+Configuration polls and settings responses share validation, rollback rejection
+and stable-cache policy; presence/callback fields are not persisted every poll.
+Malformed contact photo values are rejected as configuration validation errors
+before path matching or image loading.
+Authenticated HTTP rejects redirects. Failed engine setup retains the newest
+desired configuration for idle retry after five seconds, without publishing it as
+successfully applied. QR capture is isolated from native decoder failure and
+releases the camera before the call engine acquires it.
+
+## Pi deployment pipeline
+
+The terminal package contains the Pi services, launcher, native source and
+stable application updater. The installer runner serializes installation,
+records stage failures and prepares a root-owned release before switching
+current. Local logs are under /var/log/zmalacall-install/.
+
+### Manual package installation
+
+Download the archive and its SHA-256 sidecar from [Terminal releases](https://github.com/toastfr35/ZmalaTerminal/releases), or build them from a clean checkout with `make package`. The commands use version 0.3.103 as an example. Copy both files to the Pi:
+
+```sh
+scp ZmalaTerminal-0.3.103-linux-arm64.tar.gz* zmala@zmala.local:~/
+```
+
+Over Ethernet on the Pi:
+
+```sh
+sha256sum --check ZmalaTerminal-0.3.103-linux-arm64.tar.gz.sha256
+mkdir -p ~/zmala-install
+tar -xzf ~/ZmalaTerminal-0.3.103-linux-arm64.tar.gz -C ~/zmala-install
+cd ~/zmala-install
+sudo ./install.sh --argon-one
+sudo reboot
+```
+
+The shell installer uses `--argon-one` explicitly
+for the case. It verifies the archive manifest, physical Ethernet, boot mount,
+3 GiB free on `/var` and 128 MiB on `/boot/firmware`; failures identify the stage
+and return nonzero. Dependency download failures are fatal. Retrying preserves
+enrollment; OS/package changes are not automatically rolled back.
+
+| Shell option | Purpose |
+| --- | --- |
+| `--user zmala` | Non-root service user; default is `zmala` |
+| `--ssh-interface eth0` | Physical wired interface for SSH |
+| `--display-mode 1280x720` | Default HDMI desktop; `1920x1080` or `auto` are alternatives |
+| `--no-splash` | Leave boot presentation unchanged |
+| `--without-framing` | Skip detector installation; leave framing disabled |
+| `--data-from PATH` | Explicit migration of missing old state |
+| `--bootstrap PATH` | Administrator-supplied connection JSON instead of server QR |
+| `--wifi-mode existing-link` | Development-only bypass of joining the scanned Wi-Fi |
+
+The Plymouth boot screen overlays `Zmala vX.Y.Z` in the bottom-right corner, with
+text size and inset scaled to the display. `zmalacall-boot-version.service` runs
+after local filesystems mount and before Plymouth quits. Its installer-owned helper
+reads `/opt/zmalacall-updates/confirmed.json` and the confirmed slot's
+`update-release.json`; an interrupted trial therefore shows the recovery target's
+version. Later confirmed application updates and rollbacks need no artwork edit or
+initramfs rebuild. The early initramfs frames show the artwork alone. Missing or
+invalid release metadata or an unavailable Plymouth daemon leaves the label absent
+and startup continues. Existing hosts need a trusted installer run to provision the
+helper, unit and updated theme; `--no-splash` leaves their boot presentation alone.
+Portable tests check metadata and the command boundary; actual Pi/TV rendering
+and readability still require a boot check at 720p and 1080p.
+
+Use the system Python on Pi: apt-installed GI, Cairo, Tk and OpenCV are not
+automatically visible in a pip virtual environment. The installer supplies Xorg,
+Openbox, Picom, BlueZ, NetworkManager, Liblinphone 5.3, native media plugins,
+framing runtime/model and fonts. Linux packages include shared/Linux source only.
+
+## Configuration validation
+
+`common/config_validation.py` validates the complete server reply before it reaches
+the model or persistent configuration cache. Schema version 1 and the revision
+are JSON integers; Python's equality between `True`, `1.0` and `1` is not used
+as a type check. Contact permissions are Boolean, SIP addresses match the account
+and configured domain, and names and collections are bounded. An omitted portrait
+or empty string means no picture; null, numbers, Booleans and collections are
+invalid even when empty. Nonempty paths identify local hash-named PNG/JPEG/GIF files.
+Polling and settings responses share these checks through `Configuration`.
+
+## Onboarding and reset state
+
+`setup_flow.py` coordinates USB readiness, pairing/button verification, Wi-Fi QR,
+server QR and post-enrollment TV checks. `provisioning.py` persists accepted
+identity and owns reset cleanup; `qr_scanner.py` owns a separate camera process.
+The Linux preview releases partially acquired decoder, window and X11 resources
+if embedding or capture initialization fails; closing it is idempotent. The parent
+ignores malformed JSON and non-object pipe messages before dispatching QR strings.
+The application entry function keeps CLI parsing and final cleanup testable without
+starting a real kiosk.
+Each asynchronous completion is checked against the current setup generation.
+
+| Stage | Advancement condition and retained state |
+| --- | --- |
+| USB readiness | C20 detected; charger is power-only and cannot itself be detected |
+| Pairing | A unique advertising Presenter+ with HID service; BlueZ pairing alone is insufficient |
+| Button verification | Distinct physical left/right/green/red/middle press and release sequence, saved against pairing identity |
+| Wi-Fi QR | Actual join succeeds, followed by an unskippable ten-second confirmation; existing-link is a development mode |
+| Server QR | URL, device ID and token decode; authenticated, validated configuration succeeds before committing enrollment |
+| TV checks | Independent power/input outcomes and TV binding persist before normal use; power-only success does not authorize active-source announcements |
+
+Before enrollment, prompts use English. Enrollment applies the selected language;
+detailed diagnostic catalogs use English fallback where a translation is absent.
+Invalid codes, unreachable servers and rejected credentials retain the current
+stage with retry feedback. The visible positioning guides flash amber for 1.5
+seconds when the camera worker reports a QR, then return to mint. This indicates
+detection, not successful enrollment. Valid codes immediately show connection
+progress; invalid codes identify the expected QR type. Wi-Fi failures distinguish
+recognized missing networks, authentication failures, denied permissions,
+unavailable adapters, address allocation failures and timeouts. Authentication
+feedback asks the helper to check the password and router security settings;
+it does not assert that the password alone is wrong. Unknown causes use a generic
+retry message. Error text remains visible until a new operation or stage change.
+`setup_feedback.py` owns the allowlisted English messages. The Linux adapter forces
+nmcli's C locale and matches known activation reasons; unfamiliar output stays
+generic. D-Bus permission errors use their error names. Raw diagnostics and QR
+credentials never become UI text or setup logs, and failed joins still clean up
+only their owned UUID. Temporary Ethernet debugging is separate from normal image
+SSH policy and does not bypass this Wi-Fi join stage.
+
+The offline terminal and combined images explicitly include `wpasupplicant`.
+Their package intake disables APT recommendations, so NetworkManager alone does
+not supply this backend. Application validation checks the target executable,
+shared-library loading, D-Bus activation/policy files and systemd unit before
+accepting a root. Without the backend, the radio can report enabled with firmware
+present while the device remains unavailable and every QR-based join fails.
+
+Both QR stages show mint corner guides with a dark
+outline around a centred square in the unmirrored camera picture. Hold the whole
+code inside the guides; the centre stays clear. Guides resize with the displayed
+picture, including letterboxing, and are added only to its display copy: decoding
+still receives the entire untouched camera frame. QR preview remains contained
+within the screen and its process releases the camera before call-engine startup.
+
+Reset is entered through Settings with a separate confirmation. It invalidates
+workers and clears the current profile's enrollment, configuration cache, missed
+counts, button verification and TV results. Existing Bluetooth pairing remains,
+but the button test repeats. Only application-owned Wi-Fi profiles are removed.
+A secret-free cleanup record survives failures/reboot; cleanup retries block new
+Wi-Fi enrollment. Other profiles and server accounts are unaffected.
+
+The device ID is supplied by the server QR and is independent of hostname or
+hardware serial. New physical hardware needs its own Bluetooth and Samsung
+permissions even when it reuses an account enrollment. Wi-Fi status is sampled
+independently of the Ethernet path used to reach the server.
+
+## Settings and controls
+
+`input_control.py` maps keyboard and physical reports to model actions.
+`settings_control.py` owns drafts and the long-red gesture; `volume_control.py`
+coalesces mixer work. The following mappings are implementation behavior, while
+`terminal_use.docx` explains the caller workflow.
+
+| Control | Action |
+| --- | --- |
+| Left/right | Select contacts; navigate settings/options or change a value |
+| Green | Open confirmation, call/request/answer, open a setting or accept its draft |
+| Red | Cancel/decline/end, cancel a selected callback request, or discard/leave an editor |
+| Hold red for 7 seconds on the carousel | Open Settings; progress appears after two seconds |
+| Press middle | Open/close the compact horizontal call-volume overlay |
+| Left/right while volume is open | Decrease/increase received call volume in 5% steps |
+
+Windows equivalents are Left/Right, Enter and Escape. F11 toggles fullscreen
+outside confirmation. Each distinct left/right press advances one contact, even
+while the carousel is moving. Further presses retarget the animation from its
+current position; they do not wait for the previous movement to finish. Green
+confirms the selection reached by all presses, including during animation.
+Held-arrow repeats remain suppressed; navigation clicks bypass the 80 ms
+confirmation debounce.
+Keyboard release/down timestamps distinguish X11 autorepeat from distinct clicks
+even when a busy canvas delays the idle release callback. Physical HID releases
+continue to dispatch immediately.
+Button repeat cannot confirm a call; release, another
+button, focus loss, disconnect or an incoming call cancels the settings hold.
+The Presenter green sticker covers the microphone button; red covers Teams.
+Middle is Pointer. Remote motion is ignored for volume. While the overlay is open, physical buttons do not navigate contacts, dial, hang up or open Settings. Internal timeouts and permission revocations still cancel calls. `input_control.py` routes physical input (including delayed TV checks) through `physical_press`; logical `press` remains available to the call/timer controllers. Call/state changes and setup/focus changes dismiss the overlay; an existing call continues.
+
+Settings has a list and editor; only the active side shows button hints, status
+icons are hidden, and the terminal serial appears at the bottom. Confirmed edits
+go back to the server. Failed/conflicting saves retain visible error guidance.
+After reconciliation, retry expectations use the editor defaults for optional
+fields omitted by older valid configurations.
+The label renderer reduces the font to fit each settings region. If a long
+translation still wraps beyond the region, it uses an ellipsis and keeps
+combining marks with their preceding character. This also keeps the button hints
+inside the small-window layout.
+
+| Setting | Local choices |
+| --- | --- |
+| Language | 16 native labels in alphabetical order, wrapping at both ends |
+| Automatic answer | Never, 10 seconds, 30 seconds, 1, 2, 5 or 10 minutes |
+| Automatic framing | On/off; Pi C10/C20 only |
+| Ringtone volume | 0–100%, in 5% steps; incoming/outgoing tones and previews |
+| Button sounds volume | 0–100%, in 5% steps; idle navigation feedback |
+| Ringtone | Nokia (default) and the private server library |
+| Portraits | Three/five; short contact lists retain three positions |
+| Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
+| Reset | Confirmed local reset and re-enrollment |
+
+Open Ringtone with green, then use left/right to hear the highlighted choice.
+Preview starts after 400 ms without another selection and plays for at most ten
+seconds through the C20 at Ringtone volume. The Ringtone volume editor also previews the selected tone. It waits for a waking C20;
+zero volume remains silent. Green saves the choice after server acknowledgement;
+red cancels it. Leaving the editor or receiving a call stops preview immediately.
+The editor shows waiting, playing, muted or playback-failure feedback.
+
+`ringtones.py` downloads selected private audio asynchronously from the enrolled
+origin with terminal authentication, validates its canonical SHA-256 path and
+normalized PCM bytes, and atomically caches it under the profile's data folder.
+The catalog holds Nokia plus at most 64 private choices. Each custom WAV is mono
+16-bit PCM at 16 kHz and at most 30 seconds. Valid cached audio works offline;
+incoming calls use Nokia until a selected download becomes available. Reset
+cancels pending cache writes. `usb_power.py` owns bounded C20 preview playback,
+including installations without USB power switching; incoming ringing preempts it.
+
+The call-volume overlay uses a black frame, direction icons and the current
+percentage above the existing page or video. Its width is at most 900 pixels
+and its height at most 160 pixels, leaving most of the screen visible.
+Press middle to open it, click left/right for
+5% steps, and press red or middle again to close it. Button release does not close it,
+and it has no automatic timeout. A red exclamation indicates mixer failure.
+It changes received call playback, not ringtone or microphone gain/mute. Level requests
+coalesce on one worker at at most ten per second, with a final pending value
+flushed on closing. Volume changes survive calls/core replacement in the current
+session; restart or a changed server volume restores the saved setting. A saved-
+default revision also invalidates any pending volume click, so closing an open
+control cannot overwrite a newly applied default.
+
+`c20_speaker_volume` retains its historical configuration key for the call default.
+`ringtone_volume` defaults to the old call value for older profiles; new profiles
+start at 50%. `action_sound_volume` starts at 20%. The C10/C20 hardware PCM stays at
++12 dB for both C10 and C20 without changing its mute switch. `media.py` applies the logical call level
+through the SDK playback gain on its owner thread (50% is -14 dB; 0% is -120 dB).
+`sound_levels.py` scales validated ringtone PCM into a private RAM-backed temporary
+file, replacing and deleting it when the tone or level changes and on shutdown.
+
+`action_sounds.py` keeps one idle raw-PCM player warm to avoid C20 startup lag.
+It feeds paced 2.5 ms frames through a 4 KiB nonblocking pipe with a 200 ms write
+deadline; left/right/middle use a 400 Hz tap for 20 ms with a soft decay. Green
+adds a 600 Hz note; red uses two 250 Hz taps separated by 30 ms of silence.
+Cold, busy or stale presses
+are dropped instead of queued. Calls and ringtone playback stop/reap the feedback
+player before taking the exclusive C20 route. Helpers remove the inherited SIP
+`LD_PRELOAD` while preserving the ALSA configuration. Button feedback is not mixed
+with call or ringtone audio.
+Before opening PCM for the first time, the worker prepares all three cues at
+every nonzero integer volume into a bounded RAM bank (under 4 MiB, about 3 MiB).
+The three waveform shapes are synthesized once. Scaled frames remain available
+across calls, previews and volume changes: warmed playback only indexes existing
+frames, without file reads, synthesis or slicing. The ALSA buffer is 5 ms with
+2.5 ms periods. Normal pauses resume immediately; only a failed player has a
+one-second retry backoff. Cancellation checks preparation before opening PCM and
+shares a 200 ms stop/join budget with player termination.
+Native core creation/replacement also stops the idle stream before ALSA device
+probing; feedback remains disabled while no core exists. Otherwise the exclusive
+idle player can hide the C20 speaker from the probe and prevent SIP registration.
+Before starting visual navigation, input yields for up to 20 ms for the worker's
+first PCM frame. A successful handoff gives playback another 20 ms head start,
+so portrait rendering does not starve sound startup. Missing audio skips that
+head start and cannot block navigation beyond the bounded handoff wait.
+
+Contact names stay within portrait frames. Online/offline bands use symbols and
+words. Green opens a separate call confirmation for an online contact or callback
+confirmation for an offline contact; another distinct green press confirms.
+Availability is checked again before dialing. Offline contacts stay visible.
+Incoming calls interrupt drafts/confirmation without late callbacks overwriting
+the ringing screen. Connected calls show remote video and a bottom-right self-view.
+Missing remote video shows an explanation without stopping audio/outgoing video.
+
+Pending callbacks have a separate return-arrow badge. Red opens cancellation
+confirmation. Requests update only after acknowledgement, and stale polls cannot
+restore a cancelled request. Eligible callback contacts may be selected after an
+idle interval, but still need call confirmation; there is no automatic callback dial.
+
+Missed incoming calls and authenticated phone texts share per-contact unread
+counts. Merely browsing preserves them; opening that contact's confirmation clears
+its count, even when cancelled. Connecting an incoming call also clears its count.
+After a missed incoming call, the carousel selects that caller without clearing
+the badge. Selection is unchanged for other outcomes or if the caller is absent
+from the callable contacts. Incoming calls discard any unfinished carousel motion,
+including when cancellation arrives before the first ringing frame is drawn.
+Answered/locally declined/outgoing calls do not create missed counts. Bodies are
+not displayed or stored. Counts persist by SIP account/domain and are pruned for
+removed/ineligible contacts. The corner badge totals them; values over 99 display
+as `99+` while exact counts remain stored.
+
+## Remote status and recovery
+
+Bluetooth is green when Presenter input devices are open, red/slashed when
+unavailable, grey where monitoring is unsupported (including Windows). The idle
+recovery page appears after five seconds without input availability and clears
+automatically on recovery; it does not wake the TV or supersede a call.
+Background checks distinguish absent pairing, disabled adapter, blocked device
+and connected-but-unready input. A disconnected remote cannot be reliably
+classified as switched off, out of range, flat or faulty; the help explains
+switching it on and charging it.
+
+Battery is green above 20%, amber at 11–20%, red at 0–10%, and unknown if stale
+or unavailable. Five-second checks expire after 20 seconds without an update.
+The lightning bolt uses the Presenter's measured charger-connection HID report;
+it indicates external power, including at full charge, not measured charging current.
+Unsupported report shapes remain unknown.
+
+For manual pairing recovery, stop `zmalacall-pairing` to avoid competing agents.
+Unblock Bluetooth with `sudo rfkill unblock bluetooth` if needed, start
+`bluetoothctl --agent NoInputNoOutput`, select `default-agent`, `power on` and
+`scan on`, then pair/trust/connect the currently advertised Presenter address.
+Keep the agent running until completion; stop discovery and restart the pairing
+service afterward. A pairing-mode address can change. Moving an SD card to a
+different Pi does not transfer the Bluetooth controller identity.
+
+## TV control and display
+
+The first mapped button when TV power/input hides the UI wakes/selects the
+terminal and is consumed, as are presses while HDMI settles. It cannot also dial
+or change contacts. This includes the first middle/Pointer press: that consumed
+press does not open volume. Release and press again to open the volume overlay.
+With no CEC, normal button behavior remains available; unknown routing limits
+detection.
+After restart, a missing power observation still permits a previously qualified
+power-on, even if the separate source-switching check was skipped or failed.
+The first press configures the CEC playback identity if needed and wakes the TV;
+it remains consumed. Unknown power is never saved as a standby restoration target.
+If power control was not qualified, an unknown state cannot authorize waking it.
+
+Incoming calls remember observed power/source before revealing the UI. Answered,
+declined, cancelled, failed and missed calls leave the terminal view available
+for a fresh configured inactivity interval (30 minutes by default; Never disables
+return). The TV goes back to standby if originally off, or its previous input if
+originally on, only when this interval expires. The same browsing timer and thin
+blue bar are used: the bar appears after ten seconds idle, and any button activity
+restarts it. Calls and pending saves suspend the timer. Consecutive calls preserve
+the original TV baseline; a manual power/input change releases the pending return.
+`TVControl.cancel(defer=True)` stops pending wake commands and transfers the saved
+baseline to a browsing lease outside Tk, after any in-flight command finishes.
+The lease's `idle_started` timestamp prevents a short missed call from inheriting
+an expired idle anchor. Shutdown still uses immediate cancellation. Volume/mute
+are not changed by CEC. Unknown previous input is not guessed.
+
+Idle return requires a live observer heartbeat (under five seconds old) and a
+TV-originated selected-input report received within 30 seconds. The observer
+publishes `selected_source` and `source_observed_at` separately from ordinary
+`active_source` routing hints. Pi commands, source-device announcements and later
+heartbeats cannot renew this evidence. A read-only active-source request runs
+every ten seconds; a TV is not assumed to answer it with selected-input evidence.
+Missing, stale or legacy observer fields pause the countdown without using the
+saved baseline as proof of visibility. A fresh confirmation restarts a full
+interval; confirmation of another input or standby releases the pending return.
+
+The asynchronous worker rechecks the current input before restoration and each
+standby retry, including the paired driver's checks around authentication. An
+originally-off TV goes directly to standby while the terminal input is confirmed;
+it is not switched to another input before that guarded power command. An
+originally-on TV returns to the observed previous input without a standby command.
+TVs that do not supply selected-input confirmation remain on for manual control.
+Older stable observer installations fail safe until the trusted manual installer
+refreshes the host helpers; application-only updates never replace root host files.
+Existing explicit timeout settings are preserved; only new/missing values adopt
+the 30-minute default.
+
+If an incoming call needed to reveal the terminal, source selection is retried
+up to three times after the initial wake/selection sequence, waiting five seconds
+before each attempt. The retries use the paired driver's verified HDMI input,
+with CEC Active Source as fallback, and never repeat a power toggle.
+The initial readiness/auto-answer gate does not wait for this retry sequence.
+Each attempt and the driver's post-authentication send require the same native
+call still to be ringing; answer, cancellation, replacement or shutdown stops
+further requests. A power-On report or accepted command alone cannot establish
+that HDMI is visible. Logs identify each ringing input retry and its transport.
+
+### Remote developer access
+
+The server administrator can enable one terminal through **Terminals → Developer
+access**. Live HTTPS settings carry the tunnel credentials and server host key;
+ordinary configuration caches omit them. The client rejects another device ID,
+non-HTTPS enrollment or a host different from its enrolled server.
+
+`linux/developer_access.py` applies settings through a narrow root helper. A
+separate SSH service listens on `127.0.0.1:2223` and allows the configured Pi user;
+that user needs an existing usable SSH login. The generated server `terminal`
+password does not create or change the Pi user's credentials. The outbound client
+pins the server's Ed25519 key, forwards server-loopback port 22001 to this local
+listener, and reconnects every ten seconds while enabled. Normal network SSH
+policy remains separate; the dedicated shell listener is never bound to Wi-Fi
+or Ethernet. Runtime secrets live under root-only `/run/zmalacall-developer`.
+
+Disabling on the server immediately breaks the tunnel; the next successful
+settings refresh stops local reconnects and the shell listener and removes
+runtime secrets. After a terminal reboot, a fresh authenticated refresh is needed
+to recreate them. A temporary network failure does not change the administrator's
+manual enable/disable choice. Developer-helper failures do not prevent normal
+configuration or calling. Installation uses `install-developer-access.py terminal
+--user <service-user>` after that user has been created.
+
+Appliance images install these services declaratively. Ordinary `ssh.service`
+and `ssh.socket` remain masked. The dedicated shell admits the separate `zmala`
+operator account using a device-specific public key, with password authentication
+disabled; it does not admit the `zmalaterminal` application account. The operator
+has passwordless sudo for diagnostics. Store authorized public keys in the
+root-owned persistent `/etc/ssh/keys/authorized_keys`; the fixed root-owned key
+reader supplies them to sshd without making the private key directory readable
+by the operator. Generic image artifacts contain no authorized keys or shared
+passwords. Enabling Developer Access alone does not provision that credential.
+Do not add `host/ssh` to an uninitialized factory data partition: the identity
+initializer deliberately rejects that extra state. The private development
+candidate instead carries only this PC's public key in both read-only system
+slots, at `/usr/lib/zmala-development-operator.pub`, with its isolated SSH
+configuration selecting a fixed root `cat` command for that file. It leaves the
+factory data partition untouched. This private authorization follows the root
+slot and is removed by a later generic system image; it is not the public-image
+operator enrollment workflow.
+
+The preparation service generates the per-device Ed25519 host identity under
+`/etc/ssh/keys` after persistent storage mounts. Only a fresh server setting starts
+the shell and tunnel. Combined hosts route the narrow helper by the authenticated
+sudo service identity, keeping terminal and server activation state separate.
+The image builder checks the target SSH configuration, operator authentication,
+key rejection and listener shutdown in a private network namespace. This is not
+a physical server-admin enable/disable qualification.
+
+The image also installs the Zmala Plymouth theme and artwork, selects the theme
+in `plymouthd.conf`, and sets quiet splash arguments in the U-Boot-generated
+kernel command line for terminal and combined roles. Initramfs acceptance checks
+the actual theme bytes and script plugin. The legacy `cmdline.txt` branding
+installer is not used by image assembly. Physical logo visibility remains a
+card-boot check.
+
+For TV plugin development, point the C20 at the television and inspect its video
+while trying a driver. This provides visual evidence in addition to TV status
+reports. Avoid replacing/restarting software during a call, preserve the existing
+pairing file and keep a recoverable copy of the plugin. Ordinary calls do not
+implicitly start a developer preview or change TV settings.
+
+### Internal TV qualification tool
+
+The Pi terminal package installs `/usr/local/sbin/zmala-tv-test`. Its CLI, report
+generator, continuous camera, process cleanup and fullscreen test-card helpers are bundled together under the active
+release's `build_tools/linux/` directory. The wrapper follows
+`/opt/zmalacall/current`, so updates and rollback use the matching tool version.
+OpenCV and Tk are already part of the terminal dependencies. No service, UI entry
+or additional passwordless sudo permission is installed.
+
+During an idle maintenance window, point the C10/C20 at the TV and run:
+
+```sh
+sudo zmala-tv-test --help
+sudo zmala-tv-test --driver samsung --input 2.0.0.0 --input 0.0.0.0 \
+  --operate-tv --pause-terminal --output /home/zmala/tv-test.zip
+```
+
+Use that terminal's verified driver/input identifiers and a new output filename.
+This deliberately operates the TV and temporarily stops the terminal; never run
+during a call. It attempts to restore the TV state and restarts the terminal after
+testing. Camera loss stops further experimental actions while restoration is
+still attempted. Cleanup tries every helper and restarts a previously active
+terminal even after child shutdown failure or a timed-out stop command. Helpers
+have bounded termination waits; cleanup failures return a nonzero exit. A
+previously stopped terminal is not started. Retrieve the ZIP through the developer shell and inspect its embedded
+HTML photos alongside power/input readings. Pictures may contain private household
+content; reports stay on the terminal until retrieved and are not published.
+The tool is for internal deployment/plugin qualification, not automatic support
+certification. See `new_TV.md` for the complete investigation procedure and timing
+options. Existing installations receive the command on their next installer update.
+
+### TV driver plugins
+
+`linux/tv_plugins/<model-family>/driver.py` exports one `TVDriver` class.
+`tv_plugins/api.py` defines the seven-method contract: `get_model`,
+`get_capabilities`, `get_power_status`, `set_power_on`, `set_power_off`,
+`get_current_input` and `set_current_input`. Each future model/family has its own
+folder and an explicit entry in the bundled registry. Configuration cannot load
+arbitrary modules. `TVControl(driver='samsung')` selects the existing integration.
+
+Capabilities contain supported optional method names, independently of the
+wizard's user-confirmed power/source results. Unsupported methods raise
+`NotImplementedError`; unavailable observations return `None`. Power is `True`
+for on and `False` for standby, with transitions remaining unknown. Setters return
+whether the command was sent (or the requested power state was already observed),
+not confirmation that the picture changed. Inputs are opaque, round-trippable
+identifiers; no input enumeration or channel/volume API is required.
+
+The Samsung driver reuses the existing private `tv-remote.json` and pairing
+workflow. Its LAN input identifiers are the TV/tuner `0.0.0.0` and the verified
+terminal HDMI physical address. Other inputs and smart-TV apps cannot be restored
+by this LAN driver. It reports the paired TV's model through a bounded local
+metadata request, or `None` when unavailable. Settled CEC power replies take
+precedence; when CEC is ambiguous or unavailable, fresh `/api/v2/` metadata on
+port 8001 can report `on` or `standby`. The tested QE55Q60CAUXXU reports CEC
+`to-on` while in standby; its metadata endpoint remains available even when the
+TLS remote port closes. Unknown values, oversized responses, redirects and network
+failures remain unknown. Metadata is a local, unauthenticated observation and
+contains no credentials; command authentication still uses pinned TLS.
+Current-input observation and wake capability still require controller-supplied
+bounded CEC callbacks. Samsung wake first observes power: already-on is a no-op.
+Confirmed standby allows a paired network power key, with another fresh standby
+check after authentication. If the network attempt is unavailable or rejected,
+the driver rechecks power and cancellation before using the existing CEC wake
+fallback. It never sends a network toggle when power is unknown. This keeps
+repeated wake requests from disturbing an already-on source. Power/input getters
+report control state, not proof that the programme picture is playing. Capabilities describe these mechanisms, not current reachability.
+See `docs/samsung-tv-investigation.md` for measured scope and remaining limitations.
+
+CEC remains the primary transport. The controller dispatches network fallbacks
+through the common API and creates a driver instance per operation so cancellation
+belongs to that operation. It supplies a private config path, cancellation predicate
+and CEC callbacks; these callbacks are internal services, not serialized settings.
+Only the guided source test supplies a temporary trial binding. Ordinary calls
+require the persisted user-verified binding. Power toggle fallback checks a fresh
+settled on-state again after authentication and rechecks cancellation before send.
+Driver I/O runs on existing workers with timeouts; failures cannot stop calls.
+Restoration, qualification, retries and idle policy remain in the controller.
+Normal incoming calls invoke the qualified model driver's `set_power_on` before
+CEC fallback. A successful driver result suppresses redundant Image View On;
+cancellation is rechecked after driver I/O before any fallback. On Samsung this
+leaves an already-on TV's picture untouched. Standby restoration can delegate
+ambiguous CEC replies to the guarded driver, which requires fresh confirmed on
+before a network toggle. The real-call test plan and measured results are in
+`docs/tv-in-situ-test-plan.md`.
+
+### Installation TV checks
+
+After server enrollment the wizard pauses media startup and idle restoration.
+Green starts the standby/wake test; a three-second off interval follows a bounded
+standby-report wait. The user confirms whether the picture went off and returned.
+For input testing, switch to another channel/input with the TV remote. The wizard
+detects departure, returns to Zmala, restores the previous source, then returns
+again, allowing three seconds between commands. Select the input manually if it
+does not return within 30 seconds. Green confirms success; red offers recovery/retry
+or manual operation. CEC acknowledgements alone do not count as a pass.
+
+`/var/lib/zmalacall/<profile>/tv-check.json` stores attempts, performed/results/
+skips, completion, EDID hash and HDMI address. Save failures block completion.
+Interrupted tests resume at a prompt, not another automatic power command.
+A changed TV/route invalidates previous results on startup; reset clears them.
+Failed/skipped features are disabled independently; keep the TV remote available.
+The saved `network_paired` flag separately enables the paired network fallback.
+A credential file installed by a development experiment does not enable it in
+normal calls. Standalone tests bypass these setup gates: always inspect both
+power/source results and pairing state before comparing them with a real call.
+Do not mark an unobserved setup check as passed to hide a routing failure.
+
+Samsung recovery covers Anynet+/Network Control, local discovery and permission
+approval. The user selects among discovered TVs. The fallback stores private
+`tv-remote.json` credentials with mode 600 and a pinned TLS certificate, and sends
+`KEY_TV` for the remembered tuner source. A power-toggle fallback is used only
+after rechecking a settled on-state, never for unknown/transitional/off status.
+It does not restore arbitrary smart-TV apps.
+If the Q60C displays “Check Device Power” despite an active Pi HDMI output, inspect
+its source identification and Universal remote setup. Term2's HDMI 2 had retained
+a Sky box profile; remove only that obsolete association from the Pi's port and
+repeat physical call qualification. Do not reset all TV settings or remove other
+devices. The plugin does not silently rewrite the TV's universal-remote profiles.
+
+Some Samsung models need a verified HDMI key bound to their actual physical
+address, for example `"terminal_source":{"address":"1.0.0.0","key":"KEY_HDMI"}`.
+The wizard saves it only after the user confirms the complete round trip.
+`KEY_HDMI1` and `KEY_HDMI` are not interchangeable on every model. Cable moves
+invalidate the binding; changed TV address/certificate requires pairing again.
+For manual recovery, run `build_tools/linux/pair-samsung-tv.py <TV-IP>` as the
+terminal service user and approve the TV prompt. Removing the private credential
+file disables network fallback without removing CEC.
+
+Sony BRAVIA uses standard CEC, not Samsung commands. Enable BRAVIA Sync control
+and TV auto power on, and check its device list under External inputs (menu names
+vary). Older models call this Control for HDMI/HDMI CEC. Physical BRAVIA operation,
+especially tuner restoration, has not been qualified; use the wizard's actual
+picture checks rather than assuming protocol support guarantees switching.
+
+### HDMI presentation
+
+HDMI desktop resolution is independent of transmitted call resolution. The kiosk
+defaults to 1280×720 near 60 Hz when advertised, avoiding a 4K desktop; the shell
+installer can select 1080p or auto. Plymouth displays the logo/family word cloud;
+firmware/HDMI negotiation may still produce brief blank screens. Original boot
+files are saved as `*.before-zmala`; rescue consoles remain on other VTs.
+
+The kiosk owns display `:0`/VT7 and disables a competing desktop display manager.
+Picom uses XRender/VSync with fullscreen composition. Supported Pi 4 Xorg drivers
+receive the `msdri3` override in `/etc/X11/xorg.conf.d/21-zmalacall-pi4.conf` to
+permit synchronized page flips; Tk buffering alone did not prevent scanout tearing.
+The override is board/driver-specific. The Xorg 21.1 driver does not implement
+the newer `TearFree` option. Carousel animation uses absolute 60 Hz deadlines,
+skipping missed deadlines; this is not a guaranteed 60 fps rendering rate.
+
+CEC adapter selection prefers connected EDID-bearing outputs, then enabled
+scanout, retaining the current adapter when disconnected for standby wake.
+An explicit observer `--device` stays fixed; saved restoration is not redirected
+mid-call. Check TV input, cable, EDID, display service and observer selection before
+forcing HDMI boot modes. A fresh supported image is preferable to Pi 3 migration
+settings, which can retain obsolete display and Bluetooth configuration.
+
+## Photos during calls
+
+When server configuration advertises `call_photo_sharing`, `common/call_photo.py`
+polls the authenticated current SIP Call-ID while IN_CALL. Network and JPEG decode
+run off Tk; Tk owns the full-window, aspect-preserving black-backed image layer.
+It covers received video and self-view while retaining both native surfaces and
+the voice call. Remote volume/hangup controls remain available. The app sender
+stops sharing; call end/change and expired leases also remove the layer.
+
+The receiver accepts only bounded JPEGs (2 MiB, 1600 pixels per side), checks
+revision and owner identity, and never extends its local deadline after a failed
+request. Old servers without the capability flag are not polled. Display-fixture
+tests cover resizing and retained surfaces; physical audio/video continuity must
+be qualified separately on the deployed Pi.
+
+## Video and audio
+
+Fresh profiles use 720p at 15 fps. Each terminal independently selects 480p
+(640×480), 720p (1280×720) or 1080p (1920×1080), with 10/15/20/25/30 fps targets.
+Legacy 360p maps to supported 480p. Media graph changes wait until idle;
+framing and speaker volume have live controls.
+
+| Resolution | Upload budget at 15 fps (kbit/s) | Receive allowance (kbit/s) |
+| --- | ---: | ---: |
+| 480p | 700 | 2000 |
+| 720p | 1500 | 4000 |
+| 1080p | 2500 | 6000 |
+
+Upload is `ceil(base × target_fps / 15)`; receive allowance is independent of the
+local FPS to support a faster peer. These are SDK bandwidth allowances, not
+reserved network bandwidth or guaranteed quality. Camera exposure, scene detail,
+codec/UI work and network jitter affect delivered frames. Read actual capture,
+negotiated and decoded dimensions/rates, not just configuration or transmit counters.
+
+Linux uses explicit C20 MJPEG capture, Pi `bcm2835-codec` H.264 encoding and
+FFmpeg software H.264 decoding. It does not silently choose another camera or
+HDMI audio when the C20 is absent. Camera format/size checks avoid the SDK's
+YUYV/VGA fallback. The admin page offers no camera, microphone or speaker selector for the Pi.
+Pi peers use H.264 with software decoding.
+
+Capture keeps the latest pending frame. JPEG decode, framing and preview reduction
+run on a separate worker with one waiting JPEG and one completed picture. The
+H.264 decoder uses two threads and ordered compressed queues; arbitrary compressed
+frame dropping would corrupt references. Encoding reuses buffers and scales only
+when input/target sizes differ. Encoder overflow recovers with fresh headers;
+recovery requests are coalesced. Queue count/age diagnostics exist; byte budgets
+and bounded stuck-native shutdown remain outstanding.
+When a damaged received access unit is discarded, its received SPS/PPS NALs
+remain cached and precede the next intact unit. Discarding those setup NALs as
+well can leave every later frame undecodable after an initial loss over a relay.
+The native filter regression checks this recovery without submitting damaged
+slices to the decoder worker.
+Before the first decoded picture, the receiver also requests a keyframe once per
+second. Waiting only for decoder errors can leave it stuck after ICE drops the
+initial setup frame: accepting later inter frames need not report a fresh error.
+Retries stop after a decoded picture and resume if the first-picture notification
+is reset during a stream update.
+The pinned TURN correction also retries TLS short writes and socket backpressure
+through the shared `common/native/turn-write.h` helper. It polls in 100 ms steps
+and shuts down the connection if a frame cannot finish within three seconds.
+This avoids dropping the middle of large keyframes when the SDK's small socket
+send buffer fills. The native TURN regression exercises exact output bytes,
+retry buffer identity, timeout and closed/error paths.
+The Pi correction also reads the actual operating-system socket error in the
+TLS callbacks. The pinned SDK instead negates `send`/`recv`'s `-1` result and
+mistakes temporary backpressure for a disconnected peer. Under video load that
+can close the video relay connection while the separate audio connection survives.
+`T-LLT-080` fills a real local socket buffer to EAGAIN, checks read/write retries
+and peer closure, and fails against the original SDK callbacks before passing
+against the correction. TLS verification and the three-second write bound remain.
+
+The local preview shares camera capture, averages pixels before final display
+scaling and uses NEON for common 2×/4× reductions with scalar fallback. Small
+frames avoid another reduction copy. Drawing occurs for new frames/state changes
+plus a 250 ms recovery refresh, rather than every empty ticker pass.
+Current short Pi 4 checks established two-way 1080p20 when the peer camera exposure
+could supply 20 fps; they do not qualify sustained 30 fps or uniformly low latency.
+An old 15 fps observation is not a hard limit. Low-light exposure can limit capture
+below its advertised format rate; a faster server does not fix that bottleneck.
+
+C20 routing uses both core default audio-device objects and the pending call's
+input/output objects, with readback validation. This matters when an incoming
+call is created while USB is off: changing only core defaults leaves that call's
+old HDMI route intact. Native references remain owned until all setters/readbacks
+finish, then are released. Dial/answer refresh the devices before allocating call
+parameters. Setup also retries missing C20 hardware after one second (other
+engine failures retain the five-second retry).
+
+On 19 October 2026, `tests/terminal/HLT/c20_audio_native.py` passed on term2
+with its installed Debian SDK: a loopback incoming call initially selected HDMI,
+then reported C20 input and output after rebinding and reaching StreamsRunning.
+This checks native route selection; physical listening and USB wake timing are
+separate checks. Run this opt-in test only with the terminal service stopped and
+the C20 powered on; it uses temporary SDK data, no account credentials, external
+peer or recording, and releases both cores afterwards.
+
+C20 microphone input is 16 kHz stereo; playback is 48 kHz stereo. The speech
+profile limits echo processing to the native input rate while retaining the
+48 kHz Opus clock and playback resampling. Normal processing remains selectable.
+Before loading Liblinphone, the Pi adapter selects the process-local
+`linux/media/audio/c20-alsa.conf` policy. It retains the distribution configuration
+for other cards and replaces the Nuroum C10 and C20 default PCMs with separate
+capture/playback converters to its hardware rates and stereo S16_LE format.
+The supplied ALSA card identity is retained, including after USB renumbering.
+This avoids generic `dsnoop` opening the C20 input at its default 48 kHz and
+keeps ringback/call conversion in software. Missing policy prevents SDK startup
+with an explicit installation diagnostic. The real ALSA parser regression
+expands both directions without opening hardware.
+Echo cancellation uses a 500 ms window/automatic delay; assess real speech before
+changing it. Packet counters alone do not establish intelligibility or acoustic
+echo performance. Earlier USB/control timeouts require separate capture/audio
+diagnosis; changing codec bitrate cannot repair a stalled physical device.
+
+On 19 October 2026, a test terminal's C20 returned UVC/ALSA USB timeouts and failed device
+opens. Stopping the terminal, cycling C20 power through the existing guarded USB
+helper and restarting restored capture. The underlying timeout trigger remains
+undetermined; this was an operational recovery, not a new automatic recovery
+feature. After the first-picture keyframe retry change and Android 0.3.6's
+deferred notification acceptance, four Pi-to-OnePlus calls showed remote video
+at both ends (two app-closed, then two app-open, with the phone on cellular data).
+The native filter regression passed, including a negative control against the
+old first-picture behavior. See `docs/android.md` for the bounded hardware run
+and its limitations; it does not establish sustained C20 reliability.
+
+On 25 October 2026, intermittent missing terminal video was reproduced together
+with C20 UVC/ALSA control timeouts and failed camera/microphone opens. A guarded
+USB power cycle restored the device. The C20 PCM policy above corrects the
+incompatible generic capture configuration; it does not establish that every
+possible USB timeout has the same trigger. Repeated real phone calls must still
+check decoded images at both ends, including alternating callers and USB wake;
+configured/sent FPS alone can remain nonzero when the camera has failed.
+The C20 was also configured for USB runtime autosuspend after two idle seconds.
+The host rule `linux/99-zmalacall-c20.rules` now keeps only that USB device awake
+while powered, including after re-enumeration. This removes automatic runtime
+suspend from the idle path; it does not change the opt-in guarded five-minute hub
+power-off. Confirm `power/control` is `on` on the actual C20 USB device when
+investigating an installation or upgrade.
+
+Further checks on the same day reproduced a C20 stall with `power/control=on`
+and zero runtime-suspended time. Independent, concurrent ALSA/V4L2 start/stop
+cycles also reproduced audio-parameter failures and video `STREAMON` errors,
+without either calling application. Runtime-suspend prevention alone is therefore
+not a complete resolution of this intermittent device-control failure. A USB
+power cycle recovers the tested unit; successful short call sequences cannot
+establish that a particular workaround eliminates the fault. Trials of fixed-rate,
+interface-close and settling-delay driver quirks were inconclusive; long control
+runs also passed without those overrides, so they are not installed as fixes.
+Moving the same C20 from a USB 3 port to a USB 2 port did not prevent recurrence.
+After an initial playback-volume write, separate 40-cycle audio-duplex and
+camera-only checks passed, but concurrent microphone/camera startup failed on
+its fifth cycle. An additional control-message-delay trial failed on its
+seventeenth combined-media cycle. These comparisons narrow the reproduction
+conditions; they do not distinguish camera firmware, cable or host-driver faults.
+
+The C20 camera worker waits for its microphone PCM to remain `RUNNING` for
+750 ms before camera open, format negotiation and streaming. Size queries retain
+the requested size without opening the camera. The readiness gate uses a
+five-second deadline and 20 ms polling, and runs off the UI/media ticker. Stop
+cancels and joins the worker; failed camera initialization releases partial
+buffers and descriptors. This sequencing addresses a reproduced USB-control
+startup interaction without changing the audio rates or relay policy.
+
+The explicit hardware plan `tests/terminal/LLT/c20_media_cycle.py` requires the
+terminal service to be stopped. It captures three seconds of native 16 kHz stereo
+microphone data and plays native 48 kHz stereo silence, then captures 30 full-HD
+MJPEG frames after the microphone has remained `RUNNING` for 750 ms.
+Results contain aggregate byte counts; temporary
+capture files are removed. Run it with the installed `c20-alsa.conf` policy and a
+private `--output` path, specifying the intended `--cycles` count. This verifies
+USB media startup, not speech quality, call transport or indefinite reliability.
+On October 25 this staged hardware plan completed 50/50 cycles on term2 after
+an initial playback-volume write. Native boundary tests also checked the
+production worker's readiness reset, timeout, cancellation and cleanup paths.
+The installed startup sequence also completed eight terminal/OnePlus calls in
+alternating directions, including an app-closed call and two calls after verified
+USB power-off/wake. Both ends displayed actual camera pictures in every call.
+These bounded checks do not establish indefinite hardware reliability.
+
+The eight October 25 calls with the startup sequence through the encrypted relay
+made received video available about 2.1–3.6 seconds after answer at the terminal and 2.2–2.7 seconds at
+the OnePlus phone. Phone measurements use its decoded-frame callback; the Pi
+measurement uses the decoded-video gate sampled by its UI. These are bounded
+samples with healthy C20 media, not a latency guarantee or display-scanout measure.
+The earlier failed C20 control-stall case is excluded from that timing range.
+In the captured successful trace, relay ICE checks completed about 1.9
+seconds after answer, before the first usable video picture.
+
+### Automatic framing
+
+Framing defaults off, is per-terminal and currently supports the Pi C10/C20 only.
+Windows leaves its view unchanged. The detector samples the uncropped picture
+every two seconds, frames the group with margin, and limits digital zoom to 1–2×.
+Zoom-in needs stable observations; new people outside the crop widen promptly.
+Pan/zoom ease over about two seconds. Temporary misses retain people for six
+seconds; no people or detector failure returns wide, with an eight-second native
+watchdog. New calls start wide and discard previous session results.
+
+At 2×, a 1080p source contains only a 960×540 crop enlarged to the output; digital
+zoom adds no optical detail. People on a TV or in a photo can be detected too.
+No images are normally saved or sent to the server for inference.
+
+The installer prepares LiteRT 2.3.0 and a checksum-pinned SSD MobileNet V2 COCO
+quantized model (Apache-2.0, 300×300 input). A lower-priority worker thread uses two
+inference threads and one replaceable thumbnail slot; media never waits for it.
+Session/sample tokens reject old results after toggles, size changes or calls.
+The MJPEG worker crops YUV once for preview and encoder. With framing off/wide,
+decoded frames pass through without a crop copy. CPU affinity is not restricted.
+Repair an omitted/broken runtime from the installed project using
+`sudo sh build_tools/linux/setup-auto-framing.sh`, then restart the terminal.
+Source archives omit downloaded models/runtime; calls never download them.
+
+## Appliance services, storage and peripherals
+
+The proposed image-installed system update path is tracked in
+[the update/upgrade plan](../update_upgrade.md).
+[Image development tools](../zmala_images/README.md) now build locked
+OS-package roots and package experimental host-storage archives. They do not
+change installed terminal services or the application-only updater described below.
+Boot-probe assembly uses the emitted project's `-S` source directory and its
+offline EEPROM mask hook; see the image tools for inspection and remaining
+qualification limits. This does not update or reconfigure an installed terminal.
+
+The experimental shared `zmala_system` policy (`HLR-TERM-MAINT-035` and its LLRs)
+expects a marked read-only root, prevalidated ext4 data with initialized identity
+and RAM work. Package records/alternatives stay in the selected root; fresh `/etc`
+overlay defaults and `/var` state are not imported from another OS generation.
+The RAM upper area is capped at 64 MiB, `/var` at 128 MiB and `/tmp` at 128 MiB.
+The image journald template uses volatile storage capped at 32 MiB/4 MiB files.
+Fixed bindings preserve terminal data, network/Bluetooth state, SSH keys and
+operator settings; `/etc/ssh/keys` and `/etc/zmalacall/operator` are distinct from
+new slot defaults. Saved identity/hostname are exposed read-only. Only declared
+mount operations are invoked; no TV, camera, media, package or service helper runs.
+
+
+The experimental `combined` image role (**Zmala Terminal + Server**) uses the same
+host identity and A/B boot contract, with terminal UID/GID 1000 and server UID/GID
+1001. Their application trees remain separate mode-0700 bindings. Operator
+configuration binds `/etc/zmalacall/operator/terminal` and
+`/etc/zmalacall/operator/server` as root-owned mode-0750 directories readable only
+by their respective groups. SSH and certificate state remain root-private.
+Standalone roles retain UID/GID 1000 and their existing paths. Root, factory data,
+initialized data and boot records reject role substitution; conversion needs a
+separate migration. Offline image provisioning now creates the locked terminal
+account, installs the existing display/application/pairing/CEC/compositor units
+and compiles the video, audio and TURN libraries from retained public inputs.
+ARM64 library loads and TURN regressions are checked without opening hardware
+devices. Combined server sources and bootstrap state remain separate. SSH and
+legacy application updates are masked in these development roots. Onboarding,
+coordinated updates and qualified installation media remain pending.
+
+Unit and real private-namespace tests cover this storage helper. The offline
+archive tool packages its profile, variable-state seed and runtime without
+extracting or booting the result. The separate `device_identity` helper
+(`HLR-TERM-MAINT-040`) initializes identity on an explicitly marked, prevalidated
+ext4 data mount. Linux UID/GID 0, private ownership/modes and a matching factory
+record are required. Kernel entropy supplies the machine ID and default hostname;
+ordered file/directory synchronization and atomic publication allow interrupted
+first boot to resume without changing a committed identity. Unknown or corrupt
+saved state is rejected without resetting data. It never selects/formats disks,
+generates SSH keys, operates TV/USB devices or starts terminal services.
+
+The experimental early-boot path (`HLR-TERM-MAINT-044`) validates selected slot and
+root PARTUUID against actual read-only ext4/GPT/kernel topology, and finds data
+only as its declared same-parent sibling. Compact-policy roots first run the
+factory capacity check (`HLR-TERM-MAINT-057`): the 14,001,635,328-byte layout has
+two 4 GiB system slots and fixed 4 GiB data. On larger supported Pi 4 SD cards,
+backup GPT metadata is relocated with durable readback before identity creation.
+Partition sizes and boot state remain unchanged; extra space is unallocated.
+Unknown or initialized media needing repair is fenced. An interrupted metadata
+commit can retry from a complete original GPT pair or a complete new backup
+matching the unchanged primary array. Physical interruption is not qualified.
+The path then initializes identity and views,
+generates a read-only selected-root entry in the RAM `fstab`, and publishes complete
+current-boot readiness. A separate PID1 gate is required before `sysinit.target`,
+so killed or missing early preparation cannot admit ordinary services. It does
+not operate TV, camera, remote or application services.
+
+Direct LLTs and real GPT/loop namespace HLTs cover both roles. The offline
+initramfs builder checks copied runtime/tool bytes and actual ARM64 imports. It
+also requires the registered storage entry in the generated execution list and
+traces its harmless prerequisite call through the target dispatcher. The first
+physical development boot exposed a missing dispatch entry (issue #174); the
+startup gate blocked ordinary services as intended. These build checks
+do not qualify physical initramfs/PID1 boot. Regular-file A/B assembly now
+requires matched application root, initramfs and pinned loader manifests. The
+development factory boot stops the loader watchdog until joint health transfer
+exists. Data expansion, onboarding and physical qualification remain pending.
+The experimental confirmed/trial controller (`HLR-TERM-MAINT-049`)
+adds one durably consumed candidate attempt and explicit current-slot,
+transaction/generation confirmation. RAUC eligibility is separate from product
+health; unqualified `set-primary` is refused and automatic installed-slot
+activation is disabled by the packaged policy. The later coordinator must stage
+only a completely installed inactive boot/root pair after safe admission.
+
+Native raw environment access requires marked current-boot readiness, the Pi 4
+SD parent, both GPT copies, exact selected root/data topology and the fixed raw
+gap. Root-private configuration, bounded fixed tools, empty defaults, lock/CAS
+and readback prevent ambiguous mutations from being reported as successful.
+The authored selector and real Linux environment tools are tested on new regular
+GPT fixtures. Actual U-Boot/Pi interpretation, physical interruption, bounded
+kernel watchdog handoff and product-health takeover remain pending. PID1 runtime
+watchdog ownership stays disabled until that separate handover is integrated;
+otherwise PID1 could keep an unhealthy trial alive indefinitely. No current
+terminal service or hardware behavior changes through this experiment.
+
+The current manual installer and its 64 MiB journal policy remain as
+described below.
+
+```sh
+sudo systemctl status zmalacall-terminal zmalacall-display zmalacall-pairing
+sudo systemctl restart zmalacall-terminal
+sudo systemctl stop zmalacall-terminal zmalacall-display
+sudo systemctl start zmalacall-display
+sudo journalctl -u zmalacall-terminal -u zmalacall-display -b
+```
+
+Use `disable --now` for both terminal/display services to disable autostart.
+Display controls the separate compositor; CEC and pairing have separate services.
+Application failures restart automatically, while explicit stops stay stopped.
+Code is root-owned under `/opt/zmalacall/releases`; private state is in
+`/var/lib/zmalacall`. `current` changes after preparation and `previous` retains
+the old release. This is not transactional rollback of OS/configuration/data.
+
+SSH is Ethernet-only after installation. Its nftables guard covers configured
+ports, IPv4/IPv6 and traffic arriving over Wi-Fi even if addressed to Ethernet.
+Preserve its include/service dependencies. The application runs without root;
+scoped Polkit, input permissions and fixed-action helpers handle required hardware.
+
+Journals are volatile/capped at 64 MiB; zram replaces SD-backed swap, `/tmp` is
+RAM-backed and root uses `noatime`. Locks/status live under `/run/zmalacall`.
+Enrollment, Bluetooth/Wi-Fi, settings, photos and SDK security databases remain
+persistent. Export logs before reboot. To enable bounded verbose diagnostics:
+
+```sh
+python3 /opt/zmalacall/current/build_tools/linux/diagnostics.py 10
+sudo journalctl -u zmalacall-terminal -f
+python3 /opt/zmalacall/current/build_tools/linux/check-low-wear.py
+```
+
+Maintenance result authorization failures (HTTP 401/403) retire the pending result
+without resubmitting a diagnostic or replaying its command. Transient failures
+retain the existing lease for retry.
+
+Periodic status includes available audio/video transport measurements, frame rates
+and negotiated sizes. The Pi plugin supplies read-only encoder/decoder queue, drop,
+peak, maximum queue-age and produced-frame counters for the current codec lifetime.
+Sampling does not open media or consume frames. Older plugins and SDK sentinel
+values remain unavailable; counters do not establish picture or speech quality.
+
+Diagnostics expires after the selected minutes (maximum 60) or restart; use `0`
+to stop early. The filesystem remains writable; this is not a read-only overlay.
+
+### Argon fan
+
+To enable fan control during package installation, use `--argon-one`.
+Terminal and terminal+server images always use the Argon ONE Pi 4 V2 case.
+Their build automatically provisions the call-only controller, I2C group/device
+permissions and module loading. Assembly requires this configuration and enables
+I2C in both slot device trees and the firmware configuration. There is no case
+selection option for these images. Server-only images do not enable this control.
+It is off outside connected calls, 55% during calls and 100% at 65°C during calls.
+Hangup/stop requests fan-off. Reads/writes run off the UI thread. There is no
+outside-call thermal override; firmware throttling remains active. Only I2C bus 1,
+address `0x1a`, duty values 0–100 are used. Power-button/IR/vendor power-mode
+software is not installed. An enabled competing `argononed` causes install refusal.
+
+Hourly TURN credential renewal updates the existing idle core's relay policy and
+replaces its superseded TURN authentication entry. It does not request USB power,
+probe devices, recreate the core or refresh SIP registration. During a call renewal
+waits until idle. Failure preserves the core and retries after five seconds; expired
+credentials still block new calls. Real media/transport changes use normal preparation.
+Successful renewal logs `Relay credentials refreshed without waking USB media`.
+
+### Optional USB power control
+
+Routine USB power transitions and shutdown restoration are quiet. Power-operation
+failures and failed-off rollback remain reported in `journalctl -u zmalacall-terminal`.
+Shutdown still restores shared USB power for charging. Runtime power telemetry
+continues to drive the camera indicator and server status. The temporary wake-cause
+tracing and periodic wake monitor have been removed; kernel USB disconnect and
+re-enumeration events remain available in the kernel journal.
+
+This experiment is not enabled by the regular installer. The Pi 4's external USB
+ports switch together, including the C20 and charger. It cuts power only after
+five minutes without terminal activity with a fresh remote battery reading of at
+least 25%. Every button press (even consumed or debounced), volume adjustment and
+accepted incoming call wakes the worker immediately, before TV routing or answer
+timers. Calls/ringing/setup/settings, held buttons, low/unknown battery or a stale
+app heartbeat restore or retain power. The idle interval starts when ongoing
+activity ends. Another peripheral or open media handles blocks shutdown.
+Do not use with USB storage; disable before attaching extra equipment to an
+unpowered port, where it cannot yet be detected.
+
+Enable on a matching installed release:
+
+```sh
+sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh zmala
+sudo systemctl restart zmalacall-terminal
+```
+
+The helper deauthorizes C20 interfaces before switching; wake waits for camera/
+audio enumeration, refreshes SDK devices on their owning thread and reapplies
+volume. Operations run off-thread and fail toward power-on. A stop hook restores
+power after app exit. Status is `/run/zmalacall/usb-power.json`. Wake adds device
+startup latency before auto-answer; no electrical energy-saving claim is made.
+
+The webcam icon immediately left of the battery represents shared USB power. Its
+gap before the battery matches the gap after Bluetooth. It uses the compact status
+style: mint means powered, grey with a slash means off, and a grey question mark
+means transitioning or unconfirmed. The helper checks all ports of both shared
+hubs after switching; `powered` in the runtime JSON and the icon reflect that
+confirmation, independently of camera/SDK readiness. Settings hides this strip,
+and installations without the experiment omit the USB icon.
+
+Disable while preserving power:
+
+```sh
+sudo systemctl stop zmalacall-terminal
+sudo /usr/local/libexec/zmala-usb-power on
+sudo rm /etc/systemd/system/zmalacall-terminal.service.d/usb-power.conf
+sudo systemctl daemon-reload
+sudo systemctl start zmalacall-terminal
+```
+
+## Verification and troubleshooting
+
+Requirement-based unit tests live in `tests/terminal/LLT/`; system and integration
+scenarios live in `tests/terminal/HLT/`. Their leading comments identify the test,
+linked requirements, procedure and expected observations. Installer unit tests
+are included in `make test-adhoc`, outside Pi runtime RBT coverage. They exercise release preparation with temporary
+state, including restoration of directory mode 0700 after archive copying so an
+imported directory cannot make enrollment credentials readable to other users. See `docs/general.md` for trace validation and
+the generated trace report. Every terminal LLR has direct unit-test links and
+every HLR has a system-test plan; validation rejects additions without a
+corresponding test. This does not establish complete behavioral or hardware coverage.
+
+`xvfb-run -a make test-hlt test-hlt-display` runs controller/HTTP/Tk integration
+and the standalone display scenarios. The controller fixtures use real queues,
+worker threads, input file handlers and persistence, substituting native devices,
+CEC transport and privileged hardware writes. They cover stale replies, rejected
+settings, remote releases, relative volume, notification persistence, USB wake,
+fan transitions, TV restoration and framing cancellation. Inspect each plan's
+limits before treating a result as device acceptance.
+
+After a Pi reboot, run `sudo env ZMALA_INSTALLED_HOST_TESTS=terminal python3 -m
+unittest tests.terminal.HLT.test_installed_storage -v` from a prepared checkout
+to inspect effective storage policy. This is read-only and skips by default.
+For real network/reboot acceptance, `tests/terminal/HLT/network_restart.py`
+requires both Ethernet and a configured controlled Wi-Fi access point. Run it
+as root with `--before --provisioning <profile>/provisioning.json --evidence
+<private-path>/network.json`, reboot normally, then repeat with `--after`.
+It binds authenticated requests separately to both interfaces and compares the
+Wi-Fi UUID, terminal identity and boot ID. It neither reboots nor changes network
+settings, and it does not retain credentials. Record the two results together.
+
+Historical terminal rewrite evidence used the local generated path
+`tests/coverage/terminal-rebaseline/index.html`; it is not distributed with a fresh
+checkout. Generate current LLT execution evidence with `make coverage-llt` and
+trace/plan reports with `make requirements`. Executed HLT and physical hardware
+evidence remain separate from the plan matrix.
+
+Portable tests do not operate the TV or prove native SDK compatibility. For real
+rendering use `tests/terminal/HLT/render_cache_ui.py` (Linux under Xvfb);
+`--benchmark` measures synthetic cache pressure. UI probes such as `settings_ui.py`,
+`tv_setup_ui.py` and `terminal_languages_ui.py` exercise layouts without CEC.
+`tests/support/terminal/run-native.sh` checks JPEG workers, preview pixels,
+framing, stale tokens, camera-failure size retention, coalesced recovery, encoder
+buffer reuse/exact-size scaler bypass and UBSan
+paths; a Pi run additionally covers ARM NEON. The opt-in hardware resize scenario
+is `tests/terminal/HLT/test-video-resize.c`; its header gives the build command
+and idle-device prerequisite. Native size readback and QR-worker lifecycle checks
+also live under HLT and require the installed SDK.
+Exploratory encoder/decoder probes in `tests/adhoc/native/` require the native SDK.
+
+Live HLTs and shared fixtures under `tests/support/terminal/` can use real cameras/accounts: read their
+entry points first, use disposable accounts, and stop any normal terminal whose
+registration/camera would conflict. Launcher integration tests start/stop actual
+terminal processes.
+Restore normal services and volume after tests. Run hardware HLTs separately and
+record their IDs/platform/results; a portable pass does not qualify them.
+
+| Symptom | First checks |
+| --- | --- |
+| No TV image | Power/input/cable, `zmalacall-display`, EDID and selected HDMI/CEC adapter |
+| Remote unavailable | Charge/power, BlueZ pairing/adapter state, pairing service and input-device readiness |
+| Server QR rejected | Current URL/token/ID, reachable server, correct QR and account association |
+| Pixelated/slow video | Actual negotiated/captured dimensions, exposure, bitrate, CPU/thermal state, jitter/loss |
+| No C20 audio and video | Kernel USB errors and independent capture/audio probes before blaming SIP or codecs |
+| Call connected but no sound | C20 connection and effective call routes, actual decoded levels and physical listening in both directions |
+| Old backup rejected | Follow server re-enrollment recovery; do not disable revision checks |
+
+Long idle/repeated calls, USB reconnect/power faults, network loss, CEC across TV
+models, echo/listening and intended-user readability still need physical acceptance.
+Keep failures distinct from old tests on different hardware. Remaining engineering
+work is in [astra.md](../astra.md).
+
+
+## Secure relay transport
+
+A server can select `secure_calls.mode = tls-relay` in its authenticated HTTPS
+configuration. The terminal disables SIP UDP/plain TCP, enables SIP TLS, verifies
+the server certificate and name against the local CA bundle, and requires SRTP
+for outgoing and incoming media. ICE gathers TURN candidates through TLS on the
+configured port (443 by default) and forces relay selection. Separate SIP/TURN
+ports support a single public server IP. Network failure does not trigger plaintext fallback.
+The installed trust store is authoritative; a server response cannot supply a CA.
+For a private deployment, install its CA in the OS trust store before enrollment.
+`SSL_CERT_FILE` can select a locally administered CA bundle for both HTTPS and SIP.
+
+Configuration validation rejects incomplete or expired TURN credentials and secure
+configuration received through an HTTP enrollment. Re-enroll using the server's
+new HTTPS QR code when changing deployment mode. Hourly credential changes pass
+through normal configuration application even when the server revision is unchanged;
+they rebuild the core only while idle, preserving active calls. Dial and answer
+recheck expiry on the running core before opening media, even after a polling outage. An offline cache with expired
+credentials cannot start a secure call; reconnect to the configuration server.
+The normal user call and answer controls do not change.
+
+Debian Trixie mediastreamer2 5.3.105 has a fragmented TURN ChannelData padding bug
+which breaks SRTP authentication. `build_tools/linux/build-turn.py` fetches pinned,
+SHA-256-checked upstream source, applies the framing, complete-write and socket-error
+patches under `linux/native/`, and builds
+a process-local interposition library under `linux/turn-runtime/`. The original
+parser must reproduce the defect; the corrected parser must pass 3,804 chunk sizes.
+The socket callback fixture must likewise fail on original EAGAIN handling and
+pass with the correction, including a successful retry and real peer closure.
+The installer runs this build on the target architecture and retains upstream source
+and test evidence. It does not replace the system SDK library. Upstream source is
+AGPL-3.0-or-later, with its original notices retained in the downloaded files.
+
+The Linux launcher checks the exact installed Debian SDK package version before
+loading this library with `LD_PRELOAD`. A version mismatch stops startup and requires
+rebuilding/requalifying the correction. Secure mode refuses to run without the loaded
+correction. Ordinary LAN-only source launches can run without it. No ARM binary or
+local SDK source download is committed. See the server guide for endpoint routing,
+certificates, coturn configuration and network limitations.
+
+## Android companion accounts
+
+Zmala Phone uses the same palette and logo with an **App** account. Pi enrollment still requires a **Terminal** account. An account cannot belong to both; changing its type revokes its previous device and SIP credentials and requires a fresh setup QR. Zmala Phone supports LAN or encrypted relay calls and Firebase incoming alerts while closed. A blue App contact can be reached through push without an active SIP registration; delivery still depends on notification permission and connectivity. Both clients must use HTTPS enrollment when secure mode is enabled. See [Android implementation](android.md) for build and qualification status.
+
+
+### Contact presence colours
+
+Contacts distinguish confirmed activity from unconfirmed push delivery: **Available**
+(green) means a current SIP registration remains reachable under the server's
+five-second checks; **Try calling** (blue) means only push eligibility remains;
+**Offline** (red) means neither. Both green and blue permit an attempted call.
+A push registration is not proof that the app is installed, online or ready to answer.
+The API adds `presence` (`available`, `push`, `offline`) to full, delta and preflight
+responses; `online` remains true for both callable states for older clients.
+Terminal live information expires after six seconds without a successful refresh,
+and cached configurations discard both live fields. Android clears the directory
+when a configuration refresh fails. Name buttons show a smaller status line;
+terminal cards show the status with a check, question mark or cross. New terminal
+labels are translated in English and French, with English fallback elsewhere.
+
+Terminal cards reserve a 56-pixel status area below the name, with separate
+regions for the symbol and shaped label. Text fits within 48 pixels vertically
+at no less than 11 points; exceptionally narrow cards elide overflow while keeping
+combining marks with their base. French status phrases fit in full in the 720p
+and full-HD three/five-card TV layouts. Animation uses the smallest card's label
+width to reuse shaped images without overlapping the symbol. The display HLT
+checks actual text/icon bounds, rather than only the coloured band's rectangle.
+
+Incoming callback requests from a current app contact show a persistent yellow flag banner over that contact portrait, including adjacent cards. The localized callback-requested label stays separate from the name and availability. The flag disappears when the server reports cancellation or completion. Outgoing requests keep their existing return-arrow tag and cancellation controls. Neither marker starts a call.
+
+When an outgoing call ends before answer, including timeout, refusal or caller cancellation, the terminal offers to request a callback from the same contact. Green submits the request; red returns home. It waits for media teardown, does not repeat an existing pending request, and does not show this question after a connected call or declined incoming call. Late native events cannot dismiss the offer or start a cancelled call.
+
+### Sound and settings verification on 26 October 2026
+
+The candidate passed 506 portable terminal LLTs (11 platform-specific skips),
+the two real-Tk feedback/remote controller HLTs and the Settings display scenario
+across all 16 languages at 900x620 and 1280x720. Thirteen focused server tests
+checked field validation, independent defaults and legacy language migration.
+`make lint requirements` passed with reciprocal code/test traces intact.
+
+On term2, the user confirmed immediate first-press feedback with the warmed
+stream, approved the lower navigation pitch and confirmed the rising green cue.
+The compact black overlay was inspected over the live carousel. The isolated
+T-HLT-034 native call test also passed on the C20, restoring both routes from an
+obsolete HDMI output before connected streams. This checks native routing, not
+acoustic quality. Fresh phone-to-terminal call-volume and video acceptance is
+pending because the phone was unavailable. The final bounded audio-first handoff
+has automated lifecycle coverage; term2 logged first-frame submission in 5-12 ms
+and the user confirmed that the sound now precedes carousel movement and feels right.
+
+On 27 October, further feedback optimization passed 509 terminal LLTs on Linux
+and Windows (11 Windows platform-specific skips), both feedback/remote display
+HLTs and `make lint requirements`. The Linux ringtone regression now explicitly
+checks that SDK ringing stays disabled on Linux and retains its legacy Windows
+behavior when a core is replaced.
+
+On term2, preparing the complete PCM bank took 562 ms once on the background
+worker and used 2,747,304 bytes for its frames/indexes. Warm lookup measured
+about 1 microsecond. The C20 accepted 120-frame periods and a 240-frame buffer
+(2.5 and 5 ms). Twelve alternating navigation presses logged first-frame handoff
+in 2.3-4.6 ms; 773 PCM status samples remained RUNNING with one start timestamp.
+The pipe held 2.5 ms of PCM instead of 5 ms. These are software/driver measurements,
+not an acoustic button-to-speaker latency measurement.
+
+
+### Uploaded portrait animation
+
+`portrait_animation.py` automatically handles downloaded GIF portraits, without a
+name/hash catalog or private launcher. GIFs are validated by the photo worker before
+atomic publication: 480 × 480, at most 16 MiB, 2–72 frames and 5 seconds. A selected,
+settled carousel card plays once, holds its final frame and replays after reselection.
+Moving cards, confirmations and calls use the ordinary static first-frame rendering.
+Settings/setup/navigation interrupt playback; calls and closing clear retained frames.
+One background decoder prepares PNG frame bytes. The Tk thread creates at most
+four images per tick and changes only the tagged selected portrait canvas item.
+An LRU limits animation pixel payload to 64 MiB, in addition to the ordinary renderer
+budgets; transient compressed data/native allocation overhead is not included.
+Missing downloads remain retryable; invalid bytes keep static/initials fallback.
+The private D-drive prototypes must be disabled when testing the supported player.
+
+Portrait bytes are validated by `portrait_validation.py`; `photo_cache.py` owns
+scheduling and atomic publication. Contact changes prune obsolete queued downloads,
+and the worker checks current contact ownership before publishing a late result.
+Only one request runs at once; retry backoff applies only to current portraits.
+`media_diagnostics.py` reads native media snapshots independently of engine setup
+and always releases each acquired statistics reference, including on getter errors.
+
+
+## Nuroum C10 and C20 compatibility
+
+The Pi accepts either one C10 (USB 0525:a4b0) or one C20 (0525:a4ad).
+`linux/nuroum.py` centralizes name matching and fresh ALSA card lookup. Camera,
+microphone and speaker selection, setup presence and USB readiness accept both;
+HDMI and unrelated devices remain excluded. Missing or multiple supported sound
+cards fail closed for standalone playback. Connect one supported device at a time.
+The existing `c20_speaker_volume`, environment variables and module names remain
+compatible configuration identifiers for either model.
+
+Both models expose stereo S16_LE microphone input at 16 kHz and speaker output at
+48 kHz, plus 720p/1080p MJPEG at 30 camera fps. Both use explicit asymmetric ALSA
+profiles and the staged microphone-before-camera startup. Playback hardware gain
+is fixed at each model's maximum (+12 dB for both C10 and C20) while streams
+retain independent software levels. The default is reapplied after startup and USB wake. Hardware
+mute is preserved. Runtime suspend is disabled for either USB identity; the hub
+helper still refuses to cut power with unrelated peripherals or open streams.
+
+Earlier measurements in this document were made with a C20 and do not constitute
+C10 qualification. The model-parameterized physical cycle and native loopback
+audio plans can now be run with either device. C10 results are recorded separately.
+
+
+C10 qualification on term2, 30 October 2026: ten staged 1080p MJPEG/microphone/
+silent-speaker cycles passed, followed by three guarded USB power cycles. The
+native loopback call asserted C10 input/output after replacing HDMI routes; both
+ALSA profiles and udev policy passed their real Linux parser checks. Native camera
+catalog tests exercised both models, and the worker's C10 microphone gate passed.
+A real incoming call from the OnePlus displayed the C10 video on the phone and
+logged C10 input/output routing on term2. This did not independently verify
+acoustic listening quality, phone video on the TV, or eliminate the separate
+intermittent Samsung wake problem. Auto-answer was restored off afterward.
+Private captures and logs are retained under `build_tools/tmp/c10-*` and
+`build_tools/tmp/tv-real-calls/c10-phone1-*`; they are not release assets.
+The Pi incoming-call screen shows two distinct controls beneath the caller: green with a check mark and the localized Answer action, and red with a cross and Decline. Both remain visible alongside an automatic-answer countdown. Colours match the remote buttons; symbols and action labels make the choices clear without relying on colour alone. Only the Windows terminal shows ENTER; remote disconnection does not select keyboard hints.
+
+Live C20 ALSA readback on term2 (31 October 2026) confirmed its PCM hardware
+range is -28 to +12 dB, matching the C10. Both now use +12 dB by default; the
+previous C20 0 dB setting was below its supported maximum. The separate call,
+ringtone and button-sound levels still attenuate their respective streams.
+
+
+### Voice-volume scale
+
+The Pi call-volume overlay still uses 5% steps. `sound_levels.call_gain_db` maps
+0% to mute, 5% to -16.8 dB (the previous 40% setting) and 100% to 0 dB. Nonzero
+steps are evenly spaced in dB; legacy positive integer defaults below 5% use
+-16.8 dB. The existing saved percentage remains unchanged, so most intermediate
+settings sound louder after updating. C10/C20 hardware remains at +12 dB.
+Ringtone, outgoing ringback and button feedback keep their independent old curve.
+
+
+### Hardware construction boundary
+
+`common/platform_services.py` constructs the fan, USB-power and TV-control adapters
+for `Terminal.make_platform_services()`. The application still owns shutdown
+ordering. Windows now receives explicit desktop substitutes for these Pi-only services;
+they perform no hardware I/O and leave ringing to the Windows call engine.
+The desktop also skips Pi-only TV setup even if a pairing environment variable
+is inherited. Other device construction remains to be migrated. Tests replace the factory
+without patching hardware classes in the UI module.
+
+If platform construction fails, the factory closes already-created services in
+reverse order before propagating the startup error. Normal shutdown remains owned
+by the application.
+
+The same platform boundary selects remote input, feedback audio, pairing/camera
+status and TV-check transport. Windows uses explicit inactive substitutes; these
+factories do not import Pi adapters on the desktop. Fan, USB-power and television
+interfaces are structural protocols, while the application retains shutdown ownership.
+
+Callback request state belongs to `common/callbacks.py`: it owns the request list,
+seen alerts, mutation serial and revision. HTTP workers capture configuration and
+queue references, never the terminal UI. Named results return to the UI thread;
+the owner rejects obsolete generations/serials and prevents older polls undoing
+an acknowledgement. Call/screen controllers retain navigation and rendering only.
+Factory reset invalidates callback work before a new enrollment is applied.
+
+`common/server_sync.py` performs background Wi-Fi and configuration polling from
+captured inputs and emits named configuration/network results. ManagementLoop
+retains scheduling, busy flags and UI dispatch. Enrollment generations invalidate
+results; callback revisions prevent stale poll resurrection. Reports deep-copy the
+captured status so later UI mutations cannot alter queued diagnostics. Workers
+have no reference to the terminal, widgets or hardware controllers.
+
+`common/config_changes.py` classifies validated snapshots without side effects.
+ConfigurationUpdate carries live language/framing and caller permissions plus the
+credential-only renewal decision; MediaSnapshot compares applied SIP, transport,
+resolution, frame rate and audio profile before rebuilding. ConfigurationControl
+still owns idle deferral, retry deadlines and committing the applied revision only
+after success. Revocation during ringing remains immediate.
+
+The engine creates one `MediaAdapter` for its lifetime. The adapter owns the native
+plugin, framing worker, applied speaker-level cache and decoded-frame probe timer.
+Plugin configuration receives only DLL/core handles, FPS and framing policy; it
+no longer writes resource fields into Engine. Device routing helpers still use
+native engine operations on the core thread. Shutdown stops framing first, then
+ends calls/stops/unrefs the core, then releases the plugin reference. If native
+teardown fails the plugin stays retained, preventing dangling callback pointers.
+
+`common/tv_session.py` owns saved call/browsing baselines and restoration policy.
+It consumes observations and explicit time values without doing I/O. TVControl
+owns CEC/network execution, fresh observations, locks and cancellation tokens.
+Unknown power/input remain unknown: a command acknowledgement cannot establish
+visibility. Manual source/off observations discard the browsing lease, and
+consecutive calls inherit the original baseline. Setup resets session policy via
+an explicit transport method rather than changing its individual state fields.
+
+Ambiguous CEC power replies require a fresh paired-driver query before saving the pre-call baseline. The observer heartbeat does not date its remembered power report. Unknown fresh power cannot authorize standby during restoration. Settled direct CEC replies remain usable.
+
+Pi installer payloads exclude local Floorplan, cache and VCS directories. Archive regression checks cover the current runtime modules; installer checks remain separate from product runtime requirements. Installation builds generated assets before root-owned deployment and preserves persistent device/account data.
+
+### Automatic application updates
+
+The Pi installer provisions a root-owned updater under
+`/usr/local/lib/zmalacall-updater`, independently of application slots under
+`/opt/zmalacall-updates`. A once-per-boot recovery unit selects the durable confirmed
+application before terminal startup. The updater downloads compatible signed
+releases, prepares them in a dedicated unprivileged sandbox, and activates after
+safe inactivity. It never invokes an OS installer or package manager. The stable
+updater in a new installation reads [Terminal releases](https://github.com/toastfr35/ZmalaTerminal/releases).
+Existing installations that still use the ZmalaCall feed require a package-level
+upgrade to install the new stable updater. Back up enrollment and settings before
+any package-level migration.
+
+Host compatibility level 3 places display-cookie setup, pairing, compositor and
+passive CEC and fan-cleanup files under `/usr/local/lib/zmalacall-terminal-host`. Their services
+never execute a candidate's boot helpers. The manual installer provisions these
+before first service startup; older prototypes need one trusted bootstrap
+update. Ordinary application payloads do not replace this privileged host layer.
+The installer also migrates the optional root USB stop hook to maintenance-aware
+restoration. Active trial/recovery fencing suppresses all USB operations in that
+hook; ordinary service stops still restore power.
+
+`update_package.py` authenticates canonical Ed25519 manifests, compatibility,
+sequence and exact package size/digest, then admits only bounded regular files in
+approved paths. The public trust registry is root-owned; signing material remains
+in the release workflow. Native preparation reuses installed framing dependencies,
+builds offline pinned corrections, and starts/iterates/closes a native core using
+disposable account-free data with devices and networking isolated. Prepared trees
+reject links and special files before root metadata writes.
+
+`update_client.py` acknowledges fresh root-owned requests only after calls,
+setup/settings, held input, active workers, USB transitions and TV restoration have
+finished. The app fences calls/input and holds USB/TV shutdown behavior before
+acknowledgement. Sleeping media remains passive across consecutive restarts until
+genuine user/call activity. Configuration and console polling pause during trial.
+
+`update_runtime.py` checks heartbeat ownership, freshness, service cgroup and working
+directory. `update_supervisor.py` requires a stable same-process UI heartbeat and
+rejects restarts/timeouts. Recovery never briefly releases maintenance fencing.
+The UI publishes readiness after its complete event/render cycle, so repeated
+cycle failures cannot keep a broken trial healthy.
+The independent Pango/Tk display survives app replacement, uses the selected
+language and sends no TV/USB commands. Background preparation stays quiet.
+
+Before a trial, the stopped application's persistent data is durably copied into
+a private same-filesystem checkpoint. Passive trials that change it are rejected.
+Rollback uses atomic directory exchange and a durable transaction marker to avoid
+swapping failed data back after interrupted recovery. Completed checkpoints are
+collected; confirmed, previous and pending application slots remain protected.
+
+The updater reads active profile enrollment and reset markers before legacy
+bootstrap data. Credential-isolated HTTPS without redirects/proxies carries the
+shared server feed and independent status reports; GitHub/CDN requests carry no
+device credentials. Network reporting cannot prevent local recovery.
+
+Qualification procedures and the initial checkpoint are in
+[terminal-update-qualification.md](terminal-update-qualification.md); subsequent
+executed hardware evidence is recorded in
+[issue #131](https://github.com/toastfr35/ZmalaCall/issues/131).
+Process-death recovery passes do not constitute physical SD power-loss evidence.

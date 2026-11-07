@@ -1,0 +1,38 @@
+active: true
+area: TV control
+derived: false
+header: |
+  Unknown TV state
+level: 103.0
+links:
+- HLR-TERM-TV-018: F35loWawZvWnhbpGyFAu7gd_eyY2h5N8S9KwsRLIoZg=
+normative: true
+ref: ''
+references:
+- path: zmala_terminal/common/tv_session.py
+  type: file
+- path: tests/terminal/LLT/test_tv_control.py
+  type: file
+- path: zmala_terminal/common/idle_return.py
+  type: file
+- path: zmala_terminal/common/input_control.py
+  type: file
+- path: zmala_terminal/linux/cec_device.py
+  type: file
+- path: zmala_terminal/linux/cec_observer.py
+  type: file
+- path: zmala_terminal/linux/tv_plugins/samsung/driver.py
+  type: file
+- path: zmala_terminal/linux/tv_control.py
+  type: file
+reviewed: null
+scope: Core
+text: |
+  Normal terminal controls shall remain available without usable CEC information.
+  Unknown routing shall not establish UI visibility. Restoration shall not guess an
+  unknown previous input.
+verification: |
+  Remove CEC and return unknown routing and power reports. Check normal input and
+  absence of invented restore targets.
+  Exercise ambiguous power replies with stale cached standby and fresh driver
+  on/off/unknown/failure results; unknown power must not authorize standby.

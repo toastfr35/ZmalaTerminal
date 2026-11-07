@@ -1,0 +1,66 @@
+{
+  "de": [
+    "WLAN verbunden",
+    "Zeigen Sie als Nächstes den Server-QR-Code"
+  ],
+  "en": [
+    "Wi-Fi connected",
+    "Next, show the server QR code"
+  ],
+  "es": [
+    "Wi-Fi conectado",
+    "Ahora muestre el código QR del servidor"
+  ],
+  "fr": [
+    "Wi-Fi connecté",
+    "Ensuite, montrez le QR code du serveur"
+  ],
+  "pl": [
+    "Połączono z Wi-Fi",
+    "Teraz pokaż kod QR serwera"
+  ],
+  "pt": [
+    "Wi-Fi ligado",
+    "A seguir, mostre o código QR do servidor"
+  ],
+  "el": [
+    "Το Wi-Fi συνδέθηκε",
+    "Τώρα δείξτε τον κωδικό QR του διακομιστή"
+  ],
+  "ru": [
+    "Wi-Fi подключён",
+    "Теперь покажите QR-код сервера"
+  ],
+  "ur": [
+    "Wi-Fi منسلک ہو گیا ہے",
+    "اب سرور کا QR کوڈ دکھائیں"
+  ],
+  "ar": [
+    "تم الاتصال بشبكة Wi-Fi",
+    "الآن اعرض رمز QR الخاص بالخادم"
+  ],
+  "hi": [
+    "Wi-Fi जुड़ गया है",
+    "अब सर्वर का QR कोड दिखाएँ"
+  ],
+  "bn": [
+    "Wi-Fi সংযুক্ত হয়েছে",
+    "এবার সার্ভারের QR কোড দেখান"
+  ],
+  "th": [
+    "เชื่อมต่อ Wi-Fi แล้ว",
+    "ต่อไป ให้แสดงคิวอาร์โค้ดของเซิร์ฟเวอร์"
+  ],
+  "ko": [
+    "Wi-Fi에 연결되었습니다",
+    "다음으로 서버 QR 코드를 보여 주세요"
+  ],
+  "ja": [
+    "Wi-Fi に接続しました",
+    "次にサーバーの QR コードを見せてください"
+  ],
+  "zh-Hans": [
+    "Wi-Fi 已连接",
+    "接下来，请出示服务器二维码"
+  ]
+}
