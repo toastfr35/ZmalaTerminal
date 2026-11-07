@@ -60,6 +60,8 @@ with tempfile.TemporaryDirectory() as folder:
                     app.root.update()
                     assert app.tv_check_page.winfo_ismapped()
                     c = app.tv_check_page
+                    if page == 'models':
+                        assert len(c.find_withtag('tv-brand')) == min(5,len(app.tv_profiles))
                     for item in c.find_all():
                         box = c.bbox(item)
                         assert box and 0 <= box[0] and box[2] <= width and 0 <= box[1] and box[3] <= height, (language, page, box)

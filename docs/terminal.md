@@ -468,8 +468,9 @@ fields omitted by older valid configurations.
 The label renderer reduces the font to fit each settings region. Current values
 appear below the coloured carousel pictograms. Language uses the saved language's
 flag; the language editor reuses the flags with native names. Language and
-ringtone editors show five cards with the draft centred, repeating short lists
-as needed. Portrait count uses two cards with miniature contact-screen previews
+ringtone editors show up to five unique cards. Lists with fewer than five choices
+show each item once in a centred group; longer lists centre the draft selection.
+The TV-model carousel follows the same rule. Portrait count uses two cards with miniature contact-screen previews
 of three and five portraits. Automatic framing uses matching cartoon room views
 before and after reframing, labelled No/Yes. Volumes and delays use a stepped bar
 with a large draft value and labelled endpoints. The highlighted box/card is

@@ -47,7 +47,8 @@ text: |
   user-passed capabilities. Opening TV setup shall allow checks to be repeated,
   suspend maintenance and ordinary call/idle TV actions, and completion shall
   return to the same settings card and resume maintenance. TV setup shall first
-  present a carousel of bundled model profiles with brand artwork. Selecting a
+  present a carousel of bundled model profiles with brand artwork, at most five
+  visible cards and no duplicated items in short lists. Selecting a
   profile shall ask whether to test the TV controls. Declining shall save the
   profile without issuing TV commands; cancelling the carousel shall discard
   its draft. Changing profile shall disable qualifications from another profile.

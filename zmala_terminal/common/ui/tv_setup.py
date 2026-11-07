@@ -244,10 +244,13 @@ class TVSetupView:
             label(text('models'), .20, 24, maximum=70)
             gap, margin = 16, 34
             width = (w-2*margin-4*gap)/5
-            for slot, offset in enumerate((-2, -1, 0, 1, 2)):
-                info = DRIVERS[self.tv_profiles[(self.tv_profile_index+offset) % len(self.tv_profiles)]]
-                selected = offset == 0
-                x, y = margin+slot*(width+gap), h*(.29 if selected else .32)
+            count = min(5, len(self.tv_profiles))
+            indices = list(range(count)) if count < 5 else [(self.tv_profile_index+offset) % len(self.tv_profiles) for offset in (-2,-1,0,1,2)]
+            left = (w-count*width-(count-1)*gap)/2
+            for slot, index in enumerate(indices):
+                info = DRIVERS[self.tv_profiles[index]]
+                selected = index == self.tv_profile_index
+                x, y = left+slot*(width+gap), h*(.29 if selected else .32)
                 height = h*.40
                 fill = '#303b50' if selected else PANEL
                 if selected:

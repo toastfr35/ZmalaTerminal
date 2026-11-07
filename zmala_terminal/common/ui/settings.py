@@ -199,16 +199,15 @@ class SettingsView:
     def draw_setting_choices(self, width, height, two_boxes=False):
         draft = self.settings_draft
         key = draft.key
-        # Short cyclic lists may repeat; only the central card is highlighted.
-        count = 2 if two_boxes else 5
-        offsets = list(range(count)) if two_boxes else [-2, -1, 0, 1, 2]
+        count = 2 if two_boxes else min(5, len(draft.options))
+        indices = list(range(count)) if two_boxes or count < 5 else [(draft.index+offset) % len(draft.options) for offset in (-2,-1,0,1,2)]
         gap, available = (24, min(1080, width-144)) if two_boxes else (14, width-112)
-        card_width = (available-gap*(count-1))/count
+        card_width = (available-gap*(count-1))/count if two_boxes else (available-4*gap)/5
+        available = count*card_width+(count-1)*gap
         left = (width-available)/2
-        for slot, offset in enumerate(offsets):
-            index = offset if two_boxes else (draft.index+offset) % len(draft.options)
+        for slot, index in enumerate(indices):
             value = draft.options[index]
-            selected = index == draft.index if two_boxes else offset == 0
+            selected = index == draft.index
             x = left+slot*(card_width+gap)
             y = 202 if selected or two_boxes else 220
             card_height = height-214-y

@@ -36,8 +36,9 @@ text: |
   card, and arrows have no effect. Each page shall show its own full-width hints.
   The language card shall show the saved language's flag. Language choices
   shall reuse those flags alongside native names. Language and ringtone choices
-  shall use five-card wrapping carousels with the draft centred, even when a
-  short ringtone list repeats. Portrait count shall use two cards showing
+  shall use wrapping carousels with at most five cards and no repeated items.
+  Lists shorter than five shall show each item once in a centred group; longer
+  lists shall centre the selected draft. Portrait count shall use two cards showing
   miniature contact-screen previews of three and five portraits. Automatic
   framing shall use two cards showing matched cartoon examples before and after
   reframing within the 2x zoom limit, labelled No and Yes in the selected language. Volumes and delays
@@ -53,3 +54,4 @@ verification: |
   every language at 900x620 and 1280x720; check icons, values and controls fit.
   Verify all language flags, draft/cancel flag changes, two-choice boxes,
   numerical bars at both endpoints, and the persistent corner logo.
+  Verify one to four choices appear once each and navigation still wraps.

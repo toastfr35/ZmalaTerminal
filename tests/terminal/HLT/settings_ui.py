@@ -169,7 +169,7 @@ try:
     app.press('green')
     assert app.settings_canvas.find_withtag('settings-choice-0')
     assert app.settings_canvas.find_withtag('settings-choice-1')
-    assert len(app.settings_canvas.find_withtag('settings-choice')) == 6  # Five cards plus selected outline.
+    assert len(app.settings_canvas.find_withtag('settings-choice')) == 3  # Two unique cards plus selected outline.
     app.tick_ringtone(1000); app.root.update()
     app.usb_power.preview_tone.assert_called_once()
     assert app.settings_canvas.find_withtag('ringtone-preview')

@@ -127,6 +127,23 @@ class SettingsWorkflowTests(unittest.TestCase):
                     self.assertEqual(values[0].kwargs['image'].text,v.settings_value(key,SettingsDraft.value(v.model.config,key)))
                     self.assertGreater(values[0].args[1],height*.4)
 
+    def test_short_choice_carousels_never_repeat_items_and_still_wrap(self):
+        for count in range(1, 7):
+            v=self.view(); d=v.settings_draft; d.row=FIELDS.index('ringtone')
+            v.text_renderer.photo.side_effect=lambda text,*args:SimpleNamespace(height=lambda:24,text=text)
+            v.model.config['ringtones']=[{'id':str(index),'name':f'Tone {index}'} for index in range(count)]
+            d.open(v.model.config)
+            for selected in range(count):
+                d.index=selected; v.settings_canvas.reset_mock(); v.draw_setting_choices(1280,720)
+                labels=[call for call in v.settings_canvas.create_image.call_args_list
+                        if call.kwargs.get('tags') in ('settings-draft-value','settings-choice-value')]
+                self.assertEqual(len(labels),min(5,count))
+                self.assertEqual(sum(call.kwargs['tags']=='settings-draft-value' for call in labels),1)
+                values=[call.kwargs['image'].text for call in labels]
+                self.assertEqual(len(set(values)),len(values))
+            d.index=0; d.move(-1); self.assertEqual(d.index,count-1)
+            d.move(1); self.assertEqual(d.index,0)
+
     def test_hold_progress_bounded_labels_and_localized_values(self):
         v=self.view(); v.settings_open=False; v.settings_hold.start(100); v.settings_hold.update(103.5)
         with patch.object(settings.tk.Misc,'lift'): self.assertTrue(v.render_settings())
