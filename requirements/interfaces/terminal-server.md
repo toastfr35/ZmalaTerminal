@@ -14,7 +14,7 @@ traces remain in each repository's Doorstop documents.
   and device_token. GET /api/setup/server.pdf?id=ACCOUNT embeds the equivalent
   credentials in a private QR. Administrative credentials never belong on the
   Terminal.
-- The Terminal server QR is a JSON object with type "family-call-server",
+- The default Terminal server QR is a JSON object with type "family-call-server",
   integer version 1, and those three bootstrap fields. The Terminal admits up
   to 4,096 characters, a server_url of at most 512 characters, a device_id
   matching [A-Za-z0-9_-]{1,80}, and a device_token matching
@@ -23,6 +23,20 @@ traces remain in each repository's Doorstop documents.
   fragments are invalid. The Terminal validates the first configuration
   before committing the enrollment. The account ID, device serial, device
   bearer token and SIP password have different roles.
+- GET /api/setup/server.pdf?id=ACCOUNT&format=compact is an administrator-only
+  opt-in download for Terminal accounts. It encodes the same enrollment as
+  `ZMS1:` followed by [RFC 9285 Base45](https://www.rfc-editor.org/rfc/rfc9285.html)
+  text, using QR error correction M. Preserve all spaces in the Base45 text.
+  Use the default JSON download for Terminals without compact QR support.
+- The decoded compact bytes are one flag byte, a two-byte big-endian authority
+  length, the ASCII URL authority (host and optional port, including IPv6
+  brackets if present), the device ID, and the token. Flag bit 0 selects HTTPS
+  (clear means HTTP). Bit 1 means the ID is 16 raw UUID bytes, restored as
+  `ZM-` plus the lowercase hyphenated UUID. When clear, read one ID length
+  byte followed by that many ASCII ID bytes. Bit 2 means the rest of the bytes
+  are a raw token to restore as unpadded Base64URL. When clear, read the token
+  as literal ASCII. Reject reserved flag bits, invalid Base45 and invalid
+  field lengths. Apply the same enrollment validation as for the default QR.
 - Local Wi-Fi setup accepts the escaped WIFI QR format or the Server's
   FAMILY-WIFI:1: compact format. The Server generates Wi-Fi QR PDFs with POST /api/setup/wifi.pdf (4,096-byte
   JSON body with ssid, security, password and hidden). The compact format

@@ -5,6 +5,7 @@ from pathlib import Path
 from zmala_terminal.common.json_storage import write_json
 import re
 from urllib.parse import urlsplit
+from uuid import UUID
 
 
 # @llr LLR-TERM-NET-003
@@ -54,14 +55,67 @@ def parse_wifi(text):
     return dict(ssid=ssid, password=password, security=security, hidden=fields.get('H', 'false').lower() == 'true')
 
 
+_BASE45 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:'
+
+
+def _decode_base45(text):
+    if len(text) % 3 == 1:
+        raise ValueError('Invalid compact server QR code')
+    data = bytearray()
+    for start in range(0, len(text), 3):
+        chunk = text[start:start+3]
+        value = sum(_BASE45.index(char) * 45**i for i, char in enumerate(chunk))
+        if len(chunk) == 3 and value <= 65535:
+            data.extend(value.to_bytes(2, 'big'))
+        elif len(chunk) == 2 and value <= 255:
+            data.append(value)
+        else:
+            raise ValueError('Invalid compact server QR code')
+    return bytes(data)
+
+
+# @llr LLR-TERM-SETUP-030
+def _compact_server_fields(text):
+    data = _decode_base45(text)
+    if len(data) < 3 or data[0] & ~7:
+        raise ValueError('Invalid compact server QR header')
+    flags = data[0]
+    authority_size = int.from_bytes(data[1:3], 'big')
+    offset = 3 + authority_size
+    if not authority_size or offset >= len(data):
+        raise ValueError('Invalid compact server authority')
+    authority = data[3:offset].decode('ascii')
+    if any(not 33 <= ord(char) <= 126 or char in '/\\@?#' for char in authority):
+        raise ValueError('Invalid compact server authority')
+    if flags & 2:
+        id_size = 16
+    else:
+        id_size = data[offset]
+        offset += 1
+    end = offset + id_size
+    if not id_size or end >= len(data):
+        raise ValueError('Invalid compact server identity')
+    identity = data[offset:end]
+    token = data[end:]
+    return {
+        'server_url': ('https://' if flags & 1 else 'http://') + authority,
+        'device_id': 'ZM-' + str(UUID(bytes=identity)) if flags & 2 else identity.decode('ascii'),
+        'device_token': base64.urlsafe_b64encode(token).decode('ascii').rstrip('=')
+        if flags & 4 else token.decode('ascii'),
+    }
+
+
 # @llr LLR-TERM-SETUP-030
 def parse_server(text):
     """Accept a bounded enrollment document with a plain HTTP(S) base URL and device credentials."""
     if not isinstance(text, str) or len(text) > 4096:
         raise ValueError('Invalid server QR code')
-    value = json.loads(text)
-    if not isinstance(value, dict) or value.get('type') != 'family-call-server' or type(value.get('version')) is not int or value['version'] != 1:
-        raise ValueError('Not a Zmala server QR code')
+    if text.startswith('ZMS1:'):
+        value = _compact_server_fields(text[5:])
+    else:
+        value = json.loads(text)
+        if not isinstance(value, dict) or value.get('type') != 'family-call-server' or type(value.get('version')) is not int or value['version'] != 1:
+            raise ValueError('Not a Zmala server QR code')
     url = value.get('server_url')
     if not isinstance(url, str) or len(url) > 512:
         raise ValueError('Invalid server address')

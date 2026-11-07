@@ -29,9 +29,11 @@ reviewed: null
 scope: Core
 text: |
   A new terminal shall obtain its device ID and token from a version 1 family-call-
-  server code. The URL shall use HTTP or HTTPS without user information, query or
+  server code or a ZMS1 compact Base45 code. Both formats shall validate the
+  same enrollment fields. The URL shall use HTTP or HTTPS without user information, query or
   fragment. Enrollment shall be saved only after authenticated configuration passes
   validation.
 verification: |
-  Decode valid and malformed identities and URLs. Reject failed authentication and
+  Decode both formats, including Server-generated compact UUID and literal field
+  vectors. Reject malformed compact headers, encodings, identities and URLs. Reject failed authentication and
   wrong-device configuration without saving credentials.
