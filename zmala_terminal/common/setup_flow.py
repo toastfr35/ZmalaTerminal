@@ -103,6 +103,9 @@ class ProvisioningFlow:
             self.tv_check = None
         (self.enrollment.path.parent / 'tv-check.json').unlink(missing_ok=True)
         (self.enrollment.path.parent / 'tv-profile.json').unlink(missing_ok=True)
+        self.tv_profile_saved = 'samsung'
+        self.tv_profile_page = None
+        self.tv_control.select_driver('samsung')
         self.setup_feedback = False
         self.missed_calls_store.clear()
         self.model = TerminalModel()
