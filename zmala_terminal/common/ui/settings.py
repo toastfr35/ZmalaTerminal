@@ -121,9 +121,10 @@ class SettingsView:
         visible = min(7, len(FIELDS))
         start = max(0, min(draft.row-visible//2, len(FIELDS)-visible))
         row_height = min(88, (height-230-6*(visible-1))/visible)
+        value_offset = int(row_height) // 2
         for index in range(start, start+visible):
             key = FIELDS[index]
-            y = 112+(index-start)*(row_height+6)
+            y = round(112+(index-start)*(row_height+6))
             selected = draft.row == index
             fill = '#303b50' if selected else PANEL
             self.settings_panel(margin, y, left_width, row_height, fill,
@@ -131,8 +132,8 @@ class SettingsView:
             self.settings_label(self.settings_text(key), margin+14, y+(row_height*.3 if key == 'reset' else 1), left_width-28,
                                 22, color=RED if key == 'reset' else FG, background=fill, bold=True, max_height=row_height/2-1)
             value = self.settings_value(key, SettingsDraft.value(config, key))
-            self.settings_label(value, margin+14, y+row_height/2, left_width-28,
-                                19, MUTED, fill, max_height=row_height/2-3, tags=('settings-value', key))
+            self.settings_label(value, margin+14, y+value_offset, left_width-28,
+                                19, MUTED, fill, max_height=int(row_height)-value_offset, tags=('settings-value', key))
         key = draft.key
         self.settings_label(self.settings_text(key), right_x, 28, right_width, 30, bold=True, max_height=72)
         shown = draft

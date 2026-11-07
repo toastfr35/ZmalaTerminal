@@ -4,7 +4,6 @@ This repository contains the Zmala Pi terminal.
 
 - [Technical guide](docs/terminal.md)
 - [Development and requirements](docs/general.md)
-- [Migration provenance](docs/migration/provenance.json)
 - [Downloads](https://github.com/toastfr35/ZmalaTerminal/releases)
 
 ## Related repositories

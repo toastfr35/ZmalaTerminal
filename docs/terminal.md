@@ -289,18 +289,18 @@ current. Local logs are under /var/log/zmalacall-install/.
 
 ### Manual package installation
 
-Download the archive and its SHA-256 sidecar from [Terminal releases](https://github.com/toastfr35/ZmalaTerminal/releases), or build them from a clean checkout with `make package`. The commands use version 0.3.103 as an example. Copy both files to the Pi:
+Download the archive and its SHA-256 sidecar from [Terminal releases](https://github.com/toastfr35/ZmalaTerminal/releases), or build them from a clean checkout with `make package`. The commands use version 0.4.0 as an example. Copy both files to the Pi:
 
 ```sh
-scp ZmalaTerminal-0.3.103-linux-arm64.tar.gz* zmala@zmala.local:~/
+scp ZmalaTerminal-0.4.0-linux-arm64.tar.gz* zmala@zmala.local:~/
 ```
 
 Over Ethernet on the Pi:
 
 ```sh
-sha256sum --check ZmalaTerminal-0.3.103-linux-arm64.tar.gz.sha256
+sha256sum --check ZmalaTerminal-0.4.0-linux-arm64.tar.gz.sha256
 mkdir -p ~/zmala-install
-tar -xzf ~/ZmalaTerminal-0.3.103-linux-arm64.tar.gz -C ~/zmala-install
+tar -xzf ~/ZmalaTerminal-0.4.0-linux-arm64.tar.gz -C ~/zmala-install
 cd ~/zmala-install
 sudo ./install.sh --argon-one
 sudo reboot
@@ -454,8 +454,9 @@ icons are hidden, and the terminal serial appears at the bottom. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 After reconciliation, retry expectations use the editor defaults for optional
 fields omitted by older valid configurations.
-The label renderer reduces the font to fit each settings region. If a long
-translation still wraps beyond the region, it uses an ellipsis and keeps
+The label renderer reduces the font to fit each settings region. Saved values
+can use the lower half of the row so short labels fit with the installed fonts.
+If a long translation still wraps beyond the region, it uses an ellipsis and keeps
 combining marks with their preceding character. This also keeps the button hints
 inside the small-window layout.
 
@@ -1357,7 +1358,7 @@ record their IDs/platform/results; a portable pass does not qualify them.
 Long idle/repeated calls, USB reconnect/power faults, network loss, CEC across TV
 models, echo/listening and intended-user readability still need physical acceptance.
 Keep failures distinct from old tests on different hardware. Remaining engineering
-work is in [the historical engineering notes](https://github.com/toastfr35/ZmalaCall/blob/0731446f8cd6fcbafb93bbda104a2c3a6765b5fb/astra.md).
+work is in [the historical engineering notes](https://github.com/toastfr35/ZmalaCall/blob/main/astra.md).
 
 
 ## Secure relay transport

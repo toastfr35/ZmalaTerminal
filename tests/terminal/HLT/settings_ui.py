@@ -2,7 +2,7 @@
 # @requirements HLR-TERM-CONFIG-016, HLR-TERM-AUDIO-001
 # @environment display
 # @plan Render settings on the real Tk UI and drive selection/draft transitions; assert only the active pane shows controls and cancellation preserves configuration.
-# At both sizes, render French short values with the real Pango font and assert their final images retain the full text without ellipsis and stay inside their rows.
+# At both sizes, render French short values with the installed Pango fonts and assert their final images retain the full text without ellipsis and stay inside their rows.
 # Render the exit confirmation in every supported language at both sizes; verify bounded question/buttons, red returns to the same selection and green exits without modifying configuration.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
 # Render the ringtone editor and exercise its debounced preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
