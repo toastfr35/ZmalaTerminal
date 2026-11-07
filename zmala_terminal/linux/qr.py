@@ -9,6 +9,7 @@ import time
 import tkinter as tk
 import cv2
 from PIL import Image, ImageDraw, ImageTk
+from zmala_terminal.common.theme import BG
 
 
 # @llr LLR-TERM-SETUP-027
@@ -92,8 +93,8 @@ class NativeQRScanner:
             self.root = tk.Tk()
             self.root.withdraw()
             self.root.overrideredirect(True)
-            self.root.configure(bg='#0d121c')
-            self.label = tk.Label(self.root, bg='#0d121c', borderwidth=0)
+            self.root.configure(bg=BG)
+            self.label = tk.Label(self.root, bg=BG, borderwidth=0)
             self.label.pack(fill='both', expand=True)
             self.root.geometry('640x480')
             # Realize the wrapper without mapping it, so it can be embedded invisibly.

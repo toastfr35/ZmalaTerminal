@@ -25,9 +25,10 @@ reviewed: null
 scope: Core
 text: |
   Settings shall hide the normal status icons and show the assigned terminal ID
-  in small text at the bottom. The carousel order shall be language, automatic
-  answer, automatic framing, ringtone, ringtone volume, button sounds volume,
+  and the running Terminal software version in small text at the bottom.
+  The carousel order shall be language, automatic answer, automatic framing,
+  ringtone, ringtone volume, button sounds volume,
   portraits shown, return to TV, TV setup, Updates, and reset to factory defaults.
 verification: |
-  Render Settings at supported sizes. Check the identifier, absence of status
-  icons, five setting icons and the order of TV setup, Updates and reset.
+  Render Settings at supported sizes. Check the identifier, software version,
+  absence of status icons, five setting icons and the order of TV setup, Updates and reset.

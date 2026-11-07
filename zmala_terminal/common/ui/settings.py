@@ -1,6 +1,7 @@
 """Five-card settings carousel and focused, remote-only setting pages."""
 import json
 from pathlib import Path
+import re
 import tkinter as tk
 import unicodedata
 from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
@@ -25,6 +26,17 @@ UPDATE_MESSAGES = {
 }
 
 
+def terminal_version(root):
+    for name in ('update-release.json', 'build_tools/linux/release-info.json', 'VERSION.json'):
+        try:
+            version = json.loads((root / name).read_text(encoding='utf-8'))['version']
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if isinstance(version, str) and re.fullmatch(r'\d+\.\d+\.\d+', version):
+            return version
+    return None
+
+
 class SettingsView:
     def settings_text(self, key):
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
@@ -34,6 +46,7 @@ class SettingsView:
         self.settings_canvas.bind('<Configure>', lambda event: self.draw_settings())
         self.settings_images = []
         self.settings_signature = None
+        self.settings_version = terminal_version(Path(__file__).resolve().parents[3])
 
     def settings_value(self, key, value):
         if key == 'tv_setup':
@@ -129,9 +142,10 @@ class SettingsView:
         c, config = self.settings_canvas, self.model.config
         width, height = max(900, c.winfo_width()), max(620, c.winfo_height())
         draft = self.settings_draft
+        device_id = config.get('device_id', '')
         update_signature = (draft.updates.state, draft.updates.version) if draft.updates else None
         signature = (width, height, self.language, self.settings_open, int(self.settings_hold.progress*100),
-                     draft.row, draft.editing, draft.index,
+                     device_id, draft.row, draft.editing, draft.index,
                      draft.busy, draft.error, draft.confirm_exit, update_signature, getattr(self, 'ringtone_preview_state', ''),
                      tuple(SettingsDraft.value(config, key) for key in FIELDS),
                      tuple((item['id'], item.get('name', '')) for item in config.get('ringtones', [])))
@@ -141,7 +155,10 @@ class SettingsView:
         c.delete('all')
         self.settings_images = []
         c.create_image(42, 40, image=self.corner_logo, tags='zmala-logo')
-        self.settings_label('ID : ' + config.get('device_id', ''), width/2, height-17,
+        footer = f'ID : {device_id}'
+        if self.settings_version:
+            footer += f'  ·  v{self.settings_version}'
+        self.settings_label(footer, width/2, height-17,
                             width-64, 11, MUTED, anchor='center', tags='settings-serial')
         if not self.settings_open:
             self.settings_label(self.settings_text('settings'), width/2, height*.35, width-80,

@@ -1,6 +1,6 @@
 """Shared display colors; notification red is stronger for white-handset contrast."""
 
-BG, FG, MUTED = '#0d121c', '#edf1fb', '#90a0b9'
+BG, FG, MUTED = '#000000', '#edf1fb', '#90a0b9'
 GREEN, RED = '#78ddb5', '#ef909e'
 PANEL, ACCENT = '#192230', '#b8a6fa'
 BADGE_RED, BADGE_WHITE = '#e52330', '#ffffff'

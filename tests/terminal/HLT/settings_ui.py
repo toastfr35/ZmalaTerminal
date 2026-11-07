@@ -5,12 +5,15 @@
 # At both sizes, render French short values with the installed Pango fonts and assert their final images retain the full text without ellipsis and stay inside their cards.
 # Render the exit confirmation in every supported language at both sizes; verify bounded question/buttons, red returns to the same selection and green exits without modifying configuration.
 # Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-card portrait/framing previews, five-card language/ringtone carousels and the persistent corner logo.
+# Verify the Settings footer shows the terminal ID and running app version on a black background at both supported sizes.
+# Verify the corner logo blends into the black background.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
 # Render the ringtone editor and exercise its immediate preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Real Tk settings navigation/layout without SIP, camera or enrollment side effects."""
 from pathlib import Path
+import json
 import sys
 import time
 from unittest.mock import patch, Mock
@@ -66,6 +69,13 @@ try:
         with patch.object(app.text_renderer, 'photo', side_effect=record_photo):
             app.settings_signature = None
             app.render(); app.root.update()
+            c = app.settings_canvas
+            footer, = c.find_withtag('settings-serial')
+            version = json.loads((Path(__file__).resolve().parents[3]/'VERSION.json').read_text())['version']
+            assert rendered[c.itemcget(footer, 'image')] == f'ID : ZM-TEST-123456  ·  v{version}'
+            assert c.cget('bg') == '#000000'
+            assert c.tk.call(str(app.corner_logo), 'get', 0, 0) == (0, 0, 0)
+            assert c.bbox('settings-hint')[3] < c.bbox(footer)[1] < c.bbox(footer)[3] <= c.winfo_height()
             for key in ('language', 'ringtone_volume', 'ringtone', 'carousel_portraits'):
                 app.settings_draft.row = FIELDS.index(key)
                 app.settings_signature = None
