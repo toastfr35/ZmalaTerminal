@@ -1077,8 +1077,8 @@ Source archives omit downloaded models/runtime; calls never download them.
 ## Appliance services, storage and peripherals
 
 The proposed image-installed system update path is tracked in
-[the update/upgrade plan](../update_upgrade.md).
-[Image development tools](../zmala_images/README.md) now build locked
+[the update/upgrade plan](https://github.com/toastfr35/Zmala/blob/main/update_upgrade.md).
+[Image development tools](https://github.com/toastfr35/Zmala/tree/main/zmala_images) now build locked
 OS-package roots and package experimental host-storage archives. They do not
 change installed terminal services or the application-only updater described below.
 Boot-probe assembly uses the emitted project's `-S` source directory and its
@@ -1357,7 +1357,7 @@ record their IDs/platform/results; a portable pass does not qualify them.
 Long idle/repeated calls, USB reconnect/power faults, network loss, CEC across TV
 models, echo/listening and intended-user readability still need physical acceptance.
 Keep failures distinct from old tests on different hardware. Remaining engineering
-work is in [astra.md](../astra.md).
+work is in [the historical engineering notes](https://github.com/toastfr35/ZmalaCall/blob/0731446f8cd6fcbafb93bbda104a2c3a6765b5fb/astra.md).
 
 
 ## Secure relay transport
@@ -1402,7 +1402,7 @@ certificates, coturn configuration and network limitations.
 
 ## Android companion accounts
 
-Zmala Phone uses the same palette and logo with an **App** account. Pi enrollment still requires a **Terminal** account. An account cannot belong to both; changing its type revokes its previous device and SIP credentials and requires a fresh setup QR. Zmala Phone supports LAN or encrypted relay calls and Firebase incoming alerts while closed. A blue App contact can be reached through push without an active SIP registration; delivery still depends on notification permission and connectivity. Both clients must use HTTPS enrollment when secure mode is enabled. See [Android implementation](android.md) for build and qualification status.
+Zmala Phone uses the same palette and logo with an **App** account. Pi enrollment still requires a **Terminal** account. An account cannot belong to both; changing its type revokes its previous device and SIP credentials and requires a fresh setup QR. Zmala Phone supports LAN or encrypted relay calls and Firebase incoming alerts while closed. A blue App contact can be reached through push without an active SIP registration; delivery still depends on notification permission and connectivity. Both clients must use HTTPS enrollment when secure mode is enabled. See [Android implementation](https://github.com/toastfr35/ZmalaApp/blob/main/docs/android.md) for build and qualification status.
 
 
 ### Contact presence colours
