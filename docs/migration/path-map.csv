@@ -760,17 +760,17 @@ tests/adhoc/terminal/audio_profile.py,,,,,archive-only or replaced
 tests/adhoc/terminal/terminal_ui_smoke.py,,,,,archive-only or replaced
 tests/adhoc/terminal/test_camera_feed_live.py,,,,,archive-only or replaced
 tests/adhoc/terminal/test_source_layout.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/__init__.py,,,,,archive-only or replaced
+tests/adhoc/terminal_installer/__init__.py,,tests/adhoc/terminal_installer/__init__.py,,,copied
 tests/adhoc/terminal_installer/test_appliance_installation.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_boot_branding.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_framing_download.py,,,,,archive-only or replaced
+tests/adhoc/terminal_installer/test_boot_branding.py,,tests/adhoc/terminal_installer/test_boot_branding.py,,,copied
+tests/adhoc/terminal_installer/test_framing_download.py,,tests/adhoc/terminal_installer/test_framing_download.py,,,copied
 tests/adhoc/terminal_installer/test_headless_installer.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_host_preparation.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_install_runner.py,,,,,archive-only or replaced
+tests/adhoc/terminal_installer/test_host_preparation.py,,tests/adhoc/terminal_installer/test_host_preparation.py,,,copied
+tests/adhoc/terminal_installer/test_install_runner.py,,tests/adhoc/terminal_installer/test_install_runner.py,,,copied
 tests/adhoc/terminal_installer/test_installer_ui.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_linux_package.py,,,,,archive-only or replaced
+tests/adhoc/terminal_installer/test_linux_package.py,,tests/adhoc/terminal_installer/test_linux_package.py,,,copied
 tests/adhoc/terminal_installer/test_ssh_transport.py,,,,,archive-only or replaced
-tests/adhoc/terminal_installer/test_updater_installation.py,,,,,archive-only or replaced
+tests/adhoc/terminal_installer/test_updater_installation.py,,tests/adhoc/terminal_installer/test_updater_installation.py,,,copied
 tests/adhoc/terminal_installer/test_windows_installer.py,,,,,archive-only or replaced
 tests/adhoc/test_android_release.py,,,tests/adhoc/test_android_release.py,,copied
 tests/adhoc/test_desktop_platform_services.py,,,,,archive-only or replaced

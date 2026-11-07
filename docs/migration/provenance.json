@@ -1,6 +1,6 @@
 {
   "commit": "0731446f8cd6fcbafb93bbda104a2c3a6765b5fb",
-  "path_map_sha256": "e52a927dd294cf85dd13ece4f95f9076f13c219bd582b69e3be2e058f6686623",
+  "path_map_sha256": "fd83144cbb715501ee1c07cf423c3f2895c3dcf266f75a449d5bd0a516dfb2f6",
   "shared_source_copies": {
     "docs/branding/Android-mask-preview.png": {
       "from": "docs/branding/Android-mask-preview.png",

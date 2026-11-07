@@ -25,11 +25,9 @@ def release_info(source):
     if record.is_file():
         value = json.loads(record.read_text())
     else:
-        # Developer checkout installation uses the same committed version policy.
-        gradle = (source/'zmala_phone/app/build.gradle').read_text()
-        value = {'version': re.search(r"versionName '([^']+)'", gradle)[1],
-                 'sequence': int(re.search(r'versionCode (\d+)', gradle)[1]),
-                 'commit': command('git', '-C', str(source), 'rev-parse', 'HEAD')}
+        # Developer checkouts use the terminal's own committed version policy.
+        value = json.loads((source/'VERSION.json').read_text(encoding='utf-8'))
+        value['commit'] = command('git', '-C', str(source), 'rev-parse', 'HEAD')
     if (not re.fullmatch(r'\d+\.\d+\.\d+', value['version'])
             or type(value['sequence']) is not int or value['sequence'] <= 0
             or not re.fullmatch('[a-f0-9]{40}', value['commit'])):
