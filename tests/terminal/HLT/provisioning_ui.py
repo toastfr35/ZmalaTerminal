@@ -2,6 +2,7 @@
 # @requirements HLR-TERM-SETUP-020, HLR-TERM-SETUP-021, HLR-TERM-MAINT-011
 # @environment display
 # @plan Connect the real setup controller and UI to an isolated HTTP service. Scan valid/invalid enrollment payloads over the existing test network; assert English setup prompts, the Wi-Fi success interval, canonical enrollment and camera cleanup. Execute a leased shell job, then cancel and confirm reset and reopen the profile to check persistent scoped cleanup. This does not test an actual Wi-Fi join.
+# Feed compact Base45 enrollment for the isolated peer through the setup controller.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Isolated setup/reset UI and real outbound maintenance polling integration."""
@@ -20,6 +21,7 @@ from zmala_terminal.common.local_settings import FIELDS
 from zmala_terminal.common.model import State
 
 from tests.support.terminal.http_fixture import http_server_fixture
+from tests.support.terminal.compact_qr import compact_qr
 
 with http_server_fixture() as server:
     base, admin = f"http://127.0.0.1:{server['http_port']}", server['admin_token']
@@ -90,7 +92,7 @@ with http_server_fixture() as server:
             'configuration_version': state['configuration_version'], 'command_shell': 'sh',
         })
         bootstrap = api('/api/terminal-bootstrap?id='+account)
-        bootstrap['server_url'] = base  # The isolated service listens on loopback only.
+        server_qr = compact_qr(base.removeprefix('http://'), bootstrap['device_id'], bootstrap['device_token'])
         app = main.Terminal(profile='onboard-verification', unconfigured=True)
 
         def wait(condition, seconds=10):
@@ -115,7 +117,7 @@ with http_server_fixture() as server:
         assert app.title.cget('text') == app.text('wifi_connected')
         assert app.name.cget('text') == app.text('server_qr_next')
         assert not app.video.winfo_ismapped(), 'Camera preview must be hidden during confirmation'
-        app.qr_found(json.dumps({'type': 'family-call-server', 'version': 1, **bootstrap}))
+        app.qr_found(server_qr)
         assert app.setup_stage == 'wifi_ready' and not app.setup_busy and app.configuration is None, 'Server QR bypassed the confirmation pause'
         app.root.geometry('900x620')
         app.root.update_idletasks()
@@ -130,7 +132,7 @@ with http_server_fixture() as server:
         wait(lambda: app.setup_stage == 'server', 12)
         assert app.scanner is not None and app.setup_continue_at is None
         assert app.title.cget('text') == 'Scan the server QR code'
-        app.qr_found(json.dumps({'type': 'family-call-server', 'version': 1, **bootstrap}))
+        app.qr_found(server_qr)
         wait(lambda: app.setup_stage is None)
         assert app.model.config['sip']['username'] == account and app.engine
 

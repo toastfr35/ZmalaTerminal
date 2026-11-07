@@ -2,6 +2,7 @@
 # @requirements LLR-TERM-SETUP-028, LLR-TERM-SETUP-030, LLR-TERM-SETUP-031, LLR-TERM-SETUP-033, LLR-TERM-SETUP-034, LLR-TERM-SETUP-035, LLR-TERM-NET-003
 # @environment portable
 # @plan Decode valid and invalid enrollment/Wi-Fi payloads and reset temporary enrollment files; assert canonical server identity, scoped language retention, restart behavior and stale-write rejection. Reject compact QR length/type/SSID/port violations and recover corrupt or obsolete local enrollment files to fresh setup without credentials.
+# Decode Server-generated compact vectors for UUIDs, tokens and legacy IDs. Reject invalid Base45, headers and truncated enrollment.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 import json
@@ -13,9 +14,30 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from zmala_terminal.common.provisioning import Enrollment, parse_wifi, parse_server
 from zmala_terminal.common.configuration import Configuration
+from tests.support.terminal.compact_qr import compact_qr
 
 
 class ProvisioningTests(unittest.TestCase):
+    def test_compact_server_qr_preserves_the_server_identity(self):
+        # Shared synthetic vectors from the Server QR encoder test.
+        packed = 'ZMS1:$*09$15$CO/EPJEB$CBECP9EV C-P0+%CY:I4$AD13OP0M$K5IR.NUUW6ZSJCBFE7J/UQB-M4*6S5'
+        self.assertEqual(parse_server(packed), {
+            'server_url': 'https://server.example',
+            'device_id': 'ZM-5f048e65-c296-4055-9f17-f5047da4cbd8',
+            'device_token': 'wvGDNTSbWniil5TTG7VGNlX9',
+        })
+        literal = 'ZMS1:000-D1BG7$A69G7E46C36TVD53D+PCN1CJB6FAFFAFFAFFAFFAFFAFFAFFAFFAFFAF'
+        self.assertEqual(parse_server(literal), {
+            'server_url': 'http://[::1]:8080',
+            'device_id': 'legacy_01',
+            'device_token': 'x'*21,
+        })
+        # N01 begins a header with a reserved flag. 000:: encodes an
+        # out-of-range final byte. Other cases fail framing or the alphabet.
+        for text in ('ZMS1:N01000', 'ZMS1:000::', 'ZMS1::::', 'ZMS1:!', packed[:17], packed+'\n'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                parse_server(text)
+
     def test_malformed_qr_fields_and_saved_state_recover_without_reusing_credentials(self):
         for text in ['FAMILY-WIFI:1:', 'FAMILY-WIFI:1:!', 'FAMILY-WIFI:1:'+'x'*161,
                      'WIFI:S:;;', 'WIFI:S:'+'é'*17+';;', 'WIFI:S:bad\x7f;;']:
@@ -24,10 +46,8 @@ class ProvisioningTests(unittest.TestCase):
         for packed in [b'\0\0', b'\4\1x', b'\0\33x', b'\0\4x']:
             with self.assertRaises(ValueError):
                 parse_wifi('FAMILY-WIFI:1:'+base64.urlsafe_b64encode(packed).decode().rstrip('='))
-        good = {'type':'family-call-server', 'version':1, 'server_url':'http://unit',
-                'device_id':'term', 'device_token':'a'*40}
-        for text in [None, 'x'*4097, json.dumps(good | {'server_url':None}),
-                     json.dumps(good | {'server_url':'http://unit:0'})]:
+        for text in [None, 'x'*4097, compact_qr('', 'term', 'a'*40),
+                     compact_qr('unit:0', 'term', 'a'*40)]:
             with self.assertRaises(ValueError):
                 parse_server(text)
         with tempfile.TemporaryDirectory() as directory:
@@ -101,11 +121,15 @@ class ProvisioningTests(unittest.TestCase):
         for bad in ['not wifi', 'WIFI:T:WPA;S:One;P:short;;', 'WIFI:T:WEP;S:One;;', 'WIFI:S:One;S:Two;;', 'WIFI:S:One', 'WIFI:T:nopass;S:One;P:secret;;']:
             with self.assertRaises(ValueError):
                 parse_wifi(bad)
-        bootstrap = {'type': 'family-call-server', 'version': 1, 'server_url': 'http://127.0.0.1:8080/', 'device_id': 'terminal-1', 'device_token': 'a'*40}
-        self.assertEqual(parse_server(json.dumps(bootstrap))['server_url'], 'http://127.0.0.1:8080')
-        for bad in [{'version': True}, {'type': 'wifi'}, {'server_url': 'file:///tmp/a'}, {'server_url': 'http://user:pass@host'}, {'device_token': 'short'}, {'device_id': '../escape'}]:
+        self.assertEqual(parse_server(compact_qr('127.0.0.1:8080', 'terminal-1', 'a'*40))['server_url'],
+                         'http://127.0.0.1:8080')
+        for bad in ('ZMS2:000', '{"type":"family-call-server","version":1}',
+                    compact_qr('unit/path', 'term', 'a'*40),
+                    compact_qr('user:pass@host', 'term', 'a'*40),
+                    compact_qr('unit', 'term', 'short'),
+                    compact_qr('unit', '../escape', 'a'*40)):
             with self.assertRaises(ValueError):
-                parse_server(json.dumps(bootstrap | bad))
+                parse_server(bad)
 
     def test_reset_blocks_stale_configuration_writes(self):
         with tempfile.TemporaryDirectory() as directory:
