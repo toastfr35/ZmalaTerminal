@@ -485,7 +485,7 @@ inside the small-window layout.
 | Portraits | Three/five; short contact lists retain three positions |
 | Return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |
-| Reset | Confirmed local reset and re-enrollment |
+| Reset to factory defaults | Confirmed local reset and re-enrollment |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
 Preview starts after 400 ms without another selection and plays for at most ten

@@ -11,13 +11,11 @@ from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GRE
 MESSAGES = json.loads((Path(__file__).resolve().parents[1] / 'shared/settings-messages.json').read_text(encoding='utf-8'))
 KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume',
         'carousel_portraits', 'never', 'open', 'accept', 'exit', 'current', 'tv_idle_seconds', 'ringtone', 'action_sound_volume',
-        'tv_setup', 'tv_unavailable')
+        'tv_setup', 'tv_unavailable', 'reset')
 
 
 class SettingsView:
     def settings_text(self, key):
-        if key == 'reset':
-            return self.text('reset')
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
 
     def build_settings(self):

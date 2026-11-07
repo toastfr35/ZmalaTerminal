@@ -137,7 +137,7 @@ class SettingsWorkflowTests(unittest.TestCase):
         v.text_renderer.photo.reset_mock(); v.settings_label('',0,0,200); v.text_renderer.photo.assert_not_called()
         self.assertEqual(v.settings_value('auto_answer',None),'Never'); self.assertEqual(v.settings_value('tv_idle_seconds',120),'2 min')
         self.assertEqual(v.settings_value('auto_answer',10),'10 s'); self.assertEqual(v.settings_value('auto_framing',False),'no')
-        v.language='unsupported'; self.assertEqual(v.settings_text('settings'),'Settings'); self.assertEqual(v.settings_text('reset'),'reset')
+        v.language='unsupported'; self.assertEqual(v.settings_text('settings'),'Settings'); self.assertEqual(v.settings_text('reset'),'Reset to factory defaults')
         v.settings_hold.clear(); self.assertFalse(v.render_settings()); self.assertIsNone(v.settings_signature)
 
 

@@ -15,7 +15,8 @@
     "Klingelton",
     "Tastenton-Lautstärke",
     "TV einrichten",
-    "Die TV-Einrichtung ist am Raspberry-Pi-Terminal verfügbar."
+    "Die TV-Einrichtung ist am Raspberry-Pi-Terminal verfügbar.",
+    "Auf Werkseinstellungen zurücksetzen"
   ],
   "en": [
     "Settings",
@@ -33,7 +34,8 @@
     "Ringtone",
     "Button sounds volume",
     "TV setup",
-    "TV setup is available on the Raspberry Pi terminal."
+    "TV setup is available on the Raspberry Pi terminal.",
+    "Reset to factory defaults"
   ],
   "es": [
     "Ajustes",
@@ -51,7 +53,8 @@
     "Tono de llamada",
     "Volumen de botones",
     "Configurar TV",
-    "La configuración de TV está disponible en el terminal Raspberry Pi."
+    "La configuración de TV está disponible en el terminal Raspberry Pi.",
+    "Restablecer los valores de fábrica"
   ],
   "fr": [
     "Réglages",
@@ -69,7 +72,8 @@
     "Sonnerie",
     "Volume des boutons",
     "Réglage du téléviseur",
-    "Le réglage TV est disponible sur le terminal Raspberry Pi."
+    "Le réglage TV est disponible sur le terminal Raspberry Pi.",
+    "Rétablir les paramètres d’usine"
   ],
   "pl": [
     "Ustawienia",
@@ -87,7 +91,8 @@
     "Dzwonek",
     "Głośność przycisków",
     "Konfiguracja TV",
-    "Konfiguracja TV jest dostępna na terminalu Raspberry Pi."
+    "Konfiguracja TV jest dostępna na terminalu Raspberry Pi.",
+    "Przywróć ustawienia fabryczne"
   ],
   "pt": [
     "Definições",
@@ -105,7 +110,8 @@
     "Toque de chamada",
     "Volume dos botões",
     "Configurar TV",
-    "A configuração da TV está disponível no terminal Raspberry Pi."
+    "A configuração da TV está disponível no terminal Raspberry Pi.",
+    "Repor as definições de fábrica"
   ],
   "el": [
     "Ρυθμίσεις",
@@ -123,7 +129,8 @@
     "Ήχος κλήσης",
     "Ένταση ήχων κουμπιών",
     "Ρύθμιση TV",
-    "Η ρύθμιση TV είναι διαθέσιμη στο τερματικό Raspberry Pi."
+    "Η ρύθμιση TV είναι διαθέσιμη στο τερματικό Raspberry Pi.",
+    "Επαναφορά εργοστασιακών ρυθμίσεων"
   ],
   "ru": [
     "Настройки",
@@ -141,7 +148,8 @@
     "Мелодия звонка",
     "Громкость кнопок",
     "Настройка ТВ",
-    "Настройка ТВ доступна на терминале Raspberry Pi."
+    "Настройка ТВ доступна на терминале Raspberry Pi.",
+    "Сбросить до заводских настроек"
   ],
   "ur": [
     "ترتیبات",
@@ -159,7 +167,8 @@
     "رنگ ٹون",
     "بٹنوں کی آواز",
     "ٹی وی کی ترتیب",
-    "ٹی وی کی ترتیب Raspberry Pi ٹرمینل پر دستیاب ہے۔"
+    "ٹی وی کی ترتیب Raspberry Pi ٹرمینل پر دستیاب ہے۔",
+    "فیکٹری کی ترتیبات بحال کریں"
   ],
   "ar": [
     "الإعدادات",
@@ -177,7 +186,8 @@
     "نغمة الرنين",
     "مستوى صوت الأزرار",
     "إعداد التلفاز",
-    "إعداد التلفاز متاح على طرفية Raspberry Pi."
+    "إعداد التلفاز متاح على طرفية Raspberry Pi.",
+    "استعادة إعدادات المصنع"
   ],
   "hi": [
     "सेटिंग्स",
@@ -195,7 +205,8 @@
     "रिंगटोन",
     "बटन की आवाज़",
     "टीवी सेटअप",
-    "टीवी सेटअप Raspberry Pi टर्मिनल पर उपलब्ध है।"
+    "टीवी सेटअप Raspberry Pi टर्मिनल पर उपलब्ध है।",
+    "फ़ैक्टरी सेटिंग बहाल करें"
   ],
   "bn": [
     "সেটিংস",
@@ -213,7 +224,8 @@
     "রিংটোন",
     "বোতামের শব্দের মাত্রা",
     "টিভি সেটআপ",
-    "টিভি সেটআপ Raspberry Pi টার্মিনালে উপলব্ধ।"
+    "টিভি সেটআপ Raspberry Pi টার্মিনালে উপলব্ধ।",
+    "কারখানার সেটিং ফিরিয়ে আনুন"
   ],
   "th": [
     "การตั้งค่า",
@@ -231,7 +243,8 @@
     "เสียงเรียกเข้า",
     "ระดับเสียงปุ่ม",
     "ตั้งค่าทีวี",
-    "ตั้งค่าทีวีได้บนเครื่อง Raspberry Pi"
+    "ตั้งค่าทีวีได้บนเครื่อง Raspberry Pi",
+    "คืนค่าเริ่มต้นจากโรงงาน"
   ],
   "ko": [
     "설정",
@@ -249,7 +262,8 @@
     "벨소리",
     "버튼 소리 음량",
     "TV 설정",
-    "TV 설정은 Raspberry Pi 단말기에서 사용할 수 있습니다."
+    "TV 설정은 Raspberry Pi 단말기에서 사용할 수 있습니다.",
+    "공장 초기 설정으로 복원"
   ],
   "ja": [
     "設定",
@@ -267,7 +281,8 @@
     "着信音",
     "ボタン音量",
     "テレビ設定",
-    "テレビ設定は Raspberry Pi 端末で利用できます。"
+    "テレビ設定は Raspberry Pi 端末で利用できます。",
+    "工場出荷時の設定に戻す"
   ],
   "zh-Hans": [
     "设置",
@@ -285,6 +300,7 @@
     "铃声",
     "按键音量",
     "电视设置",
-    "电视设置可在 Raspberry Pi 终端上使用。"
+    "电视设置可在 Raspberry Pi 终端上使用。",
+    "恢复出厂设置"
   ]
 }
