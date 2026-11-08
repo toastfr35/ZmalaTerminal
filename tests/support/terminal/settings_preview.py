@@ -89,10 +89,7 @@ class Preview(Terminal):
         return 'simulated'
 
     def factory_reset(self):
-        self.setup_stage = None
-        self.settings_open = True
         self.settings_draft.maintenance_status = 'simulated'
-        self.render()
 
     def preview_tick(self):
         self.tick_settings_access(time.monotonic())

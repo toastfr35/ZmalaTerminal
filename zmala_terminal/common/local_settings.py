@@ -1,7 +1,7 @@
 """Settings drafts and the deliberate red-button hold; no native I/O."""
 from zmala_terminal.common.localization import LANGUAGES
 
-SETTINGS_PAGES = ('tv_setup', 'updates', 'information', 'maintenance')
+SETTINGS_PAGES = ('tv_setup', 'maintenance', 'updates', 'information')
 FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone', 'ringtone_volume',
           'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', *SETTINGS_PAGES)
 MAINTENANCE_ACTIONS = ('shutdown', 'reboot', 'reset')

@@ -32,7 +32,7 @@ text: |
   and the running Terminal software version in small text at the bottom.
   The carousel order shall be language, automatic answer, automatic framing,
   ringtone, ringtone volume, button sounds volume,
-  portraits shown, return to TV, TV setup, Updates, Information and Maintenance.
+  portraits shown, return to TV, TV setup, Maintenance, Updates and Information.
   Information shall show the terminal ID, OS version, running software version
   and local IP address alongside the enrolled account ID, name and portrait.
   Show a placeholder when no portrait is available and a localized unavailable

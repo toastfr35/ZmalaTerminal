@@ -162,7 +162,6 @@ class LocalSettingsTests(unittest.TestCase):
         self.assertEqual(actions, [None, 'dial'])
 
     def test_reset_requires_opening_settings_entry_then_separate_confirmation(self):
-        from zmala_terminal.common.main import Terminal
         app = self.controller()
         app.settings_open = True; app.settings_draft = SettingsDraft(); app.settings_draft.row = FIELDS.index('maintenance')
         app.factory_reset = Mock()
@@ -170,14 +169,15 @@ class LocalSettingsTests(unittest.TestCase):
         self.assertEqual(app.settings_draft.page, 'maintenance')
         app.press('left')
         app.press('green')
-        self.assertEqual(app.setup_stage, 'reset')
+        self.assertTrue(app.settings_draft.maintenance_confirm)
         app.factory_reset.assert_not_called()
-        Terminal._press_action(app, 'red')
+        app.press('red')
         self.assertIsNone(app.setup_stage); self.assertTrue(app.settings_open)
         self.assertEqual(app.settings_draft.page, 'maintenance')
+        self.assertFalse(app.settings_draft.maintenance_confirm)
+        app.factory_reset.assert_not_called()
         app.press('green')
-        app.setup_busy = False
-        Terminal._press_action(app, 'green')
+        app.press('green')
         app.factory_reset.assert_called_once()
 
     def test_only_accepted_incoming_call_interrupts_settings(self):

@@ -9,6 +9,8 @@ links:
 normative: true
 ref: ''
 references:
+- path: build_tools/linux/49-zmalacall-power.rules
+  type: file
 - path: tests/terminal/LLT/test_local_settings.py
   type: file
 - path: tests/terminal/LLT/test_settings_workflows.py
@@ -53,7 +55,8 @@ text: |
   background rectangle.
   Maintenance shall offer shutdown, reboot and reset to factory defaults.
   Left and right shall select an action, green shall open a separate
-  confirmation, and red shall return to the carousel. Red on a confirmation
+  confirmation using the same layout for all three actions, and red shall
+  return to the carousel. Red on a confirmation
   shall return to the same action without executing it. Confirmed host
   shutdown and reboot shall request the corresponding orderly system action.
   The Windows acceptance fixture shall simulate all three actions.

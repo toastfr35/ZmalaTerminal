@@ -499,9 +499,9 @@ inside the small-window layout.
 | Portraits | Three/five; short contact lists retain three positions |
 | Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |
+| Maintenance | Shut down, reboot or reset to factory defaults, each with a separate confirmation |
 | Updates | Check now and choose whether to apply the offered version |
 | Information | Terminal ID, OS version, software version, IP address, and enrolled account ID, name and portrait |
-| Maintenance | Shut down, reboot or reset to factory defaults, each with a separate confirmation |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
 Preview starts as soon as the highlighted audio is ready and plays for at most ten

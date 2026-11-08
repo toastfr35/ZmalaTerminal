@@ -90,7 +90,7 @@ class DisplayStateTests(unittest.TestCase):
     def test_build_keeps_two_native_surfaces_and_routes_resize_events(self):
         v = fixture()
         for name in ('draw_corner_notification', 'build_remote_help', 'build_settings', 'build_usb_setup',
-                     'build_tv_setup', 'draw_reset', 'draw_wifi_confirmation', 'draw_avatar', 'draw_confirmation'):
+                     'build_tv_setup', 'draw_wifi_confirmation', 'draw_avatar', 'draw_confirmation'):
             setattr(v, name, Mock())
         v.usb_power = SimpleNamespace(enabled=True)
         with patch.object(display.tk, 'Frame', side_effect=lambda *a, **k: widget(**k)), \
@@ -101,7 +101,7 @@ class DisplayStateTests(unittest.TestCase):
         self.assertIsNot(v.video, v.local_video)
         v.video.winfo_id.assert_called_once(); v.local_video.winfo_id.assert_called_once()
         callback = v.avatar.bind.call_args.args[1]
-        for stage, target in [('reset', v.draw_reset), ('wifi_ready', v.draw_wifi_confirmation), (None, v.draw_avatar)]:
+        for stage, target in [('wifi_ready', v.draw_wifi_confirmation), (None, v.draw_avatar)]:
             v.setup_stage = stage; callback(None); target.assert_called_once()
         v.confirmation.bind.call_args.args[1](None)
         v.draw_confirmation.assert_called_once()
@@ -259,16 +259,13 @@ class DisplayStateTests(unittest.TestCase):
         self.assertEqual(v.setup_confirmation_seconds, 3)
         with patch.object(display.time, 'monotonic', return_value=110): v.draw_wifi_confirmation()
         self.assertEqual(v.setup_confirmation_seconds, 0)
-        v.draw_reset()
-        self.assertEqual(len(v.current_text_images), 2)
-        self.assertEqual([c.args[0] for c in v.text_renderer.photo.call_args_list[-2:]], ['reset', 'keep_configuration'])
 
     def test_render_precedence_and_call_setup_surface_selection(self):
         v = fixture()
         for name in ('update_usb_setup', 'update_pairing_page', 'render_tv_setup', 'render_settings'):
             setattr(v, name, Mock(return_value=False))
         for name in ('update_remote_help', 'render_setup_feedback', 'draw_corner_notification', 'fit_text',
-                     'draw_connectivity', 'draw_avatar', 'draw_reset', 'draw_wifi_confirmation', 'draw_confirmation'):
+                     'draw_connectivity', 'draw_avatar', 'draw_wifi_confirmation', 'draw_confirmation'):
             setattr(v, name, Mock())
         v.settings_hold = Mock(); v.settings_open = False; v.notice = ''; v.callback_alert = None
         v.contact_online = Mock(return_value=True)
@@ -297,7 +294,7 @@ class DisplayStateTests(unittest.TestCase):
         self.assertEqual(v.subtitle.cget('text'), 'connecting')
         v.model.configure(config() | {'contacts': []}); v.render()
         self.assertEqual(v.subtitle.cget('text'), 'empty')
-        for stage, title in [('reset', 'factory_reset'), ('wifi_ready', 'wifi_connected'),
+        for stage, title in [('wifi_ready', 'wifi_connected'),
                              ('wifi', 'Scan the Wi-Fi QR code'), ('server', 'Scan the server QR code')]:
             v.setup_stage = stage; v.render(); self.assertEqual(v.title.cget('text'), title)
         v.video.destroy.assert_not_called(); v.engine.end.assert_not_called()

@@ -22,7 +22,7 @@ class SettingsWorkflowTests(unittest.TestCase):
 
     def test_navigation_draft_cancel_accept_and_busy_guard(self):
         c=self.controller(); d=c.settings_draft
-        c.settings_button('left'); self.assertEqual(d.key,'maintenance')
+        c.settings_button('left'); self.assertEqual(d.key,'information')
         c.settings_button('right'); self.assertEqual(d.key,'language')
         c.settings_button('right'); self.assertEqual(d.key,'auto_answer')
         c.settings_button('green'); self.assertTrue(d.editing)

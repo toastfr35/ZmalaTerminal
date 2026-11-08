@@ -177,13 +177,6 @@ class InputControl:
         self.last_button = time.monotonic()
         self.callback_alert = None
         if self.setup_stage:
-            if self.setup_stage == 'reset' and button == 'red':
-                self.setup_stage = None
-                self.settings_open = True
-                self.settings_hold.clear()
-                self.render()
-            elif self.setup_stage == 'reset' and button == 'green' and not self.setup_busy:
-                self.factory_reset()
             return
         moving = self.model.state == State.HOME and button in ('left', 'right') and len(self.model.contacts) > 1
         if moving:

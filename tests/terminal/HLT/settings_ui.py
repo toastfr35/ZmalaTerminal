@@ -139,7 +139,7 @@ try:
         assert c.bbox('information-value')[3] <= c.bbox('information-panel')[3]
         app.press('red')
         assert app.settings_draft.row == FIELDS.index('information')
-        app.press('right'); app.press('green')
+        app.press('left'); app.press('left'); app.press('green')
         assert all(c.find_withtag('maintenance-'+key) for key in ('shutdown', 'reboot', 'reset'))
         with patch.object(app, 'perform_host_power', return_value='simulated') as power:
             app.press('green')
@@ -229,7 +229,8 @@ try:
     app.press('green')
     app.press('left')
     app.press('green')
-    assert app.setup_stage == 'reset' and not app.settings_open
+    assert app.settings_canvas.find_withtag('maintenance-confirmation') and app.settings_open
+    assert len(app.settings_canvas.find_withtag('settings-hint')) == 2
     app.press('red')
     assert app.setup_stage is None and app.settings_open and app.settings_draft.page == 'maintenance'
     app.press('red')

@@ -200,8 +200,11 @@ class SettingsControl:
             elif button == 'green' and self.model.state == State.HOME:
                 action = MAINTENANCE_ACTIONS[draft.maintenance_index]
                 draft.maintenance_confirm = False
-                draft.busy = True
-                self.start_system_settings_work(draft, 'power', lambda: self.perform_host_power(action))
+                if action == 'reset':
+                    self.factory_reset()
+                else:
+                    draft.busy = True
+                    self.start_system_settings_work(draft, 'power', lambda: self.perform_host_power(action))
             return
         if button in ('left', 'right'):
             direction = -1 if button == 'left' else 1
@@ -209,13 +212,7 @@ class SettingsControl:
         elif button == 'red':
             draft.page = None
         elif button == 'green':
-            if MAINTENANCE_ACTIONS[draft.maintenance_index] == 'reset':
-                self.settings_open = False
-                self.setup_stage = 'reset'
-                self.settings_hold.clear()
-                self.carousel_motion = None
-            else:
-                draft.maintenance_confirm = True
+            draft.maintenance_confirm = True
 
     def start_system_settings_work(self, draft, kind, action):
         generation = self.generation

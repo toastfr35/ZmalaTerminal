@@ -48,7 +48,7 @@ class IdleReturn:
     def tick_tv_idle(self, now):
         session = self.tv_control.browsing_session()
         config = self.model.config or {}
-        eligible = (bool(config) and session is not None and self.setup_stage in (None, 'reset') and
+        eligible = (bool(config) and session is not None and self.setup_stage is None and
                     not getattr(self, 'pairing_page_visible', False) and
                     not self.setup_busy and not self.settings_draft.busy and
                     not self.keys_down and self.model.state in

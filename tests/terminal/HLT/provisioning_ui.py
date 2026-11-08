@@ -175,7 +175,7 @@ with http_server_fixture() as server:
         app.press('green')
         app.press('left')
         app.press('green')
-        assert app.setup_stage=='reset'
+        assert app.settings_draft.maintenance_confirm and app.settings_open
 
         # Confirmation fits every language at the minimum terminal window size.
         app.root.geometry('900x620')
@@ -185,7 +185,8 @@ with http_server_fixture() as server:
             app.font_family = font_family(code, app.available_fonts)
             app.render()
             app.root.update_idletasks()
-            assert app.title.winfo_height()<180, code
+            bounds = app.settings_canvas.bbox('maintenance-confirmation')
+            assert bounds and 0 <= bounds[0] < bounds[2] <= app.settings_canvas.winfo_width(), code
         app.press('red')
         assert app.setup_stage is None and app.model.config
         assert app.settings_open and app.settings_draft.page == 'maintenance'

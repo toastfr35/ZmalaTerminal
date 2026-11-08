@@ -25,7 +25,7 @@ references:
   type: file
 - path: zmala_terminal/common/setup_flow.py
   type: file
-- path: zmala_terminal/common/ui/display.py
+- path: zmala_terminal/common/ui/system_settings.py
   type: file
 - path: zmala_terminal/linux/wifi.py
   type: file

@@ -258,7 +258,7 @@ class ViewContractTests(unittest.TestCase):
         serial = next(c for c in v.settings_label.call_args_list if c.kwargs.get('tags') == 'settings-serial')
         self.assertEqual(serial.args[0], 'ID : test  ·  v1.2.3')
         self.assertEqual(serial.args[2:5], (703, 1216, 11))
-        self.assertEqual(FIELDS[-2:], ('information', 'maintenance'))
+        self.assertEqual(FIELDS[-3:], ('maintenance', 'updates', 'information'))
         v.draw_connectivity.assert_not_called()
         hints = [c for c in v.settings_panel.call_args_list if c.kwargs.get('tags') == 'settings-hint']
         self.assertEqual(len(hints), 3)

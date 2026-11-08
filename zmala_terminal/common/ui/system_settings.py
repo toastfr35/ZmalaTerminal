@@ -49,7 +49,7 @@ class SystemSettingsView:
         self.settings_label(value, x, y+29, width, 21, FG, PANEL, True,
                             max_height=row_height-30, tags=('information-value', 'information-'+key))
 
-    # @llr LLR-TERM-CONFIG-019
+    # @llr LLR-TERM-CONFIG-019, LLR-TERM-SETUP-032
     def draw_maintenance(self, width, height):
         draft = self.settings_draft
         action = MAINTENANCE_ACTIONS[draft.maintenance_index]
@@ -64,10 +64,12 @@ class SystemSettingsView:
             self.settings_hints(width, height, [back])
         elif draft.maintenance_confirm:
             self.settings_icon(action, width/2, height*.38, 96, BG)
-            self.settings_label(self.settings_text('confirm_'+action), width/2, height*.61, width-140,
+            question = self.text('factory_reset') if action == 'reset' else self.settings_text('confirm_'+action)
+            confirm = self.text('reset') if action == 'reset' else self.settings_text(action)
+            self.settings_label(question, width/2, height*.61, width-140,
                                 32, bold=True, anchor='center', max_height=height*.22,
                                 tags='maintenance-confirmation')
-            self.settings_hints(width, height, [('✓ ' + self.settings_text(action), BUTTON_GREEN),
+            self.settings_hints(width, height, [('✓ ' + confirm, BUTTON_GREEN),
                                                 ('× ' + self.text('cancel').capitalize(), BUTTON_RED)])
         else:
             gap, margin, y = 20, 54, 174
