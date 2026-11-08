@@ -23,9 +23,29 @@ MESSAGES = {
  'zh-Hans': ('正在更新 Zmala，请稍候。', '正在检查更新，请稍候。', '正在恢复 Zmala，请稍候。', 'Zmala 需要帮助。请联系为您设置设备的人。'),
 }
 STATES = {'updating': 0, 'checking': 1, 'rollback': 2, 'recovery_failed': 3}
+DOWNLOAD_MESSAGES = {
+    'en': 'Downloading the update. Please wait.',
+    'fr': 'Téléchargement de la mise à jour. Veuillez patienter.',
+    'de': 'Das Update wird heruntergeladen. Bitte warten.',
+    'es': 'Descargando la actualización. Espere, por favor.',
+    'pt': 'A descarregar a atualização. Aguarde, por favor.',
+    'pl': 'Pobieranie aktualizacji. Proszę czekać.',
+    'el': 'Λήψη της ενημέρωσης. Παρακαλώ περιμένετε.',
+    'ru': 'Загрузка обновления. Пожалуйста, подождите.',
+    'ur': 'اپ ڈیٹ ڈاؤن لوڈ ہو رہی ہے۔ براہ کرم انتظار کریں۔',
+    'ar': 'جارٍ تنزيل التحديث. يُرجى الانتظار.',
+    'hi': 'अपडेट डाउनलोड हो रहा है। कृपया प्रतीक्षा करें।',
+    'bn': 'আপডেট ডাউনলোড হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।',
+    'th': 'กำลังดาวน์โหลดการอัปเดต โปรดรอสักครู่',
+    'ko': '업데이트를 다운로드 중입니다. 잠시 기다려 주세요.',
+    'ja': '更新をダウンロードしています。しばらくお待ちください。',
+    'zh-Hans': '正在下载更新，请稍候。',
+}
 
 
 def message(language, phase):
+    if phase == 'downloading':
+        return DOWNLOAD_MESSAGES.get(language, DOWNLOAD_MESSAGES['en'])
     return MESSAGES.get(language, MESSAGES['en'])[STATES[phase]]
 
 
@@ -75,24 +95,41 @@ def main(state_file='/run/zmalacall-updater/state.json'):
     canvas = tk.Canvas(root, bg='#000000', highlightthickness=0)
     canvas.pack(fill='both', expand=True)
     previous = None
+    last_percent = None
+
     def refresh():
-        nonlocal previous
+        nonlocal previous, last_percent
         try:
             path = Path(state_file)
             if path.stat().st_size > 8192:
                 raise ValueError('Invalid state')
             value = json.loads(path.read_text(encoding='utf-8'))
             phase, language = value.get('phase'), value.get('language', 'en')
+            percent = value.get('download_percent')
+            if phase != 'updating' or type(percent) is not int or not 0 <= percent <= 100:
+                percent = None
             if phase not in STATES:
                 root.withdraw()
                 previous = None
             else:
-                if (phase, language) != previous:
-                    data, _ = render_message(message(language, phase), language, width, height)
+                display_phase = 'downloading' if percent is not None else phase
+                if (display_phase, language) != previous:
+                    data, _ = render_message(message(language, display_phase), language, width, height)
                     root.image = tk.PhotoImage(master=root, data=data, format='PNG')
                     canvas.delete('all')
                     canvas.create_image(width//2, height//2, image=root.image)
-                    previous = phase, language
+                    previous = display_phase, language
+                    last_percent = None
+                if percent is not None and percent != last_percent:
+                    left, right, top = width * .25, width * .75, height * .63
+                    canvas.delete('download')
+                    canvas.create_rectangle(left, top, right, top + 14, fill='#1b2330', width=0, tags='download')
+                    if percent:
+                        canvas.create_rectangle(left, top, left + (right - left) * percent / 100, top + 14,
+                                                fill='#73dbbf', width=0, tags='download')
+                    canvas.create_text(width / 2, top + 42, text=f'{percent}%', fill='#edf1fb',
+                                       font=('Noto Sans', 20), tags='download')
+                    last_percent = percent
                 root.deiconify()
                 root.lift()
         except (OSError, ValueError, TypeError, KeyError):

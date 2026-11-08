@@ -19,3 +19,7 @@ Standalone and appliance hosts have one updater owner each.
   manual offer. This waives the inactivity timer. All other call, setup, worker,
   peripheral and input guards remain in force. The owner validates the fresh
   lease and process identity before activation. Old requests omit this field.
+- During the appliance bundle transfer, the root-owned `state.json` can include
+  `download_percent`, an integer from 0 to 100, with phase `updating`. The
+  display uses it for transfer progress and falls back to the normal update
+  message when it is absent. The field has no effect on the activation lease.

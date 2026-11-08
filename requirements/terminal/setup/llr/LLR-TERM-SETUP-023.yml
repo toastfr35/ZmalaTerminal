@@ -28,8 +28,8 @@ references:
 reviewed: null
 scope: Core
 text: |
-  Without a usable paired remote, setup shall show the rear Bluetooth button and
-  flashing-light instructions. Pairing shall select an eligible advertising Presenter
+  When pairing is required, setup or recovery shall show the rear Bluetooth button
+  and flashing-light instructions. Pairing shall select an eligible advertising Presenter
   device. More than one candidate shall require resolution before pairing.
 verification: |
   Supply zero, one and multiple advertising devices. Check guidance and absence of

@@ -13,6 +13,8 @@ references:
   type: file
 - path: tests/terminal/LLT/test_pairing_setup.py
   type: file
+- path: tests/terminal/LLT/test_pi_install.py
+  type: file
 - path: tests/terminal/LLT/test_remote_test.py
   type: file
 - path: tests/terminal/LLT/test_setup_views.py
@@ -30,7 +32,13 @@ scope: Core
 text: |
   A saved Bluetooth bond shall not complete remote setup. The input device shall
   become available and the physical button test shall pass. Recoverable bond failures
-  shall leave setup active with retry guidance.
+  shall leave setup active with retry guidance. When the saved Presenter is
+  disconnected at startup, show a 60-second power-on countdown before the
+  pairing instructions appear.
+  Expiring the countdown shall keep the saved bond eligible to reconnect. A
+  successful new pairing shall replace the previous bond and require its own
+  physical button test.
 verification: |
   Supply a bond without input, a stale bond and a working device. Check that only
-  verified operation permits progress.
+  verified operation permits progress. Check expiry, late reconnection without
+  another button test, and replacement by a single newly advertising Presenter.

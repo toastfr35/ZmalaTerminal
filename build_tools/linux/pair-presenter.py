@@ -1,11 +1,12 @@
-"""First-run Presenter+ pairing on BlueZ; no desktop or working remote needed.
+"""Presenter+ pairing and reconnect recovery without a desktop.
 
-Discover only while there is no saved Presenter. Pair one matching advertised
-device at a time; the agent rejects authorization for every other device.
+Allow the saved Presenter to reconnect before looking for a replacement. Pair
+one matching advertised device at a time; the agent rejects all others.
 Runs outside Tk/media, with bounded D-Bus calls and retry backoff.
 """
 import json
 import logging
+import math
 import os
 from pathlib import Path
 import time
@@ -16,16 +17,24 @@ HID = '00001812-0000-1000-8000-00805f9b34fb'
 STATUS = Path('/run/zmalacall-pairing/status.json')
 AGENT = '/org/zmalacall/PresenterAgent'
 BOND = Path('/var/lib/zmalacall-pairing/bond.json')
+RECONNECT_SECONDS = 60
+
+
+def saved_bond():
+    try:
+        saved = json.loads(BOND.read_text())
+        if isinstance(saved, dict):
+            return saved
+    except (OSError, ValueError):
+        pass
+    return {}
 
 
 def bond_token(device, renew=False):
     """An opaque test identity, never a Bluetooth key; stable across reboots."""
-    try:
-        saved = json.loads(BOND.read_text())
-        if not renew and saved.get('device') == device and isinstance(saved.get('token'), str):
-            return saved['token']
-    except (OSError, ValueError, AttributeError):
-        pass
+    saved = saved_bond()
+    if not renew and saved.get('device') == device and isinstance(saved.get('token'), str):
+        return saved['token']
     token = uuid.uuid4().hex
     temp = BOND.with_suffix('.tmp')
     temp.write_text(json.dumps({'device': device, 'token': token}))
@@ -59,6 +68,9 @@ class Pairing:
         self.Gio, self.GLib = Gio, GLib
         self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
         self.target = None
+        self.replacing = None
+        self.reconnect_until = None
+        self.startup_reconnect = True
         self.retry_at = 0
         self.state = None
         self.discovery = None
@@ -87,16 +99,19 @@ class Pairing:
         else:
             invocation.return_dbus_error('org.bluez.Error.Rejected', 'Only the selected Presenter can pair')
 
-    def publish(self, state, bond=None):
+    def publish(self, state, bond=None, reconnect_seconds=None):
         payload = {'state': state}
         if bond:
             payload['bond'] = bond
+        if reconnect_seconds is not None:
+            payload['reconnect_seconds'] = reconnect_seconds
         if payload != self.state:
             temp = STATUS.with_suffix('.tmp')
             temp.write_text(json.dumps(payload) + '\n')
             temp.chmod(0o644)
             os.replace(temp, STATUS)
-            logging.info('Remote setup: %s', state)
+            if self.state is None or self.state['state'] != state:
+                logging.info('Remote setup: %s', state)
             self.state = payload
 
     def paired(self, connection, result, unused):
@@ -104,17 +119,27 @@ class Pairing:
         try:
             connection.call_finish(result)
             self.set_property(target, 'org.bluez.Device1', 'Trusted', True)
+            token = bond_token(target, renew=True)
+            if self.replacing:
+                try:
+                    self.call(self.discovery, 'org.bluez.Adapter1', 'RemoveDevice', '(o)', (self.replacing,))
+                except self.GLib.Error as error:
+                    logging.warning('Could not remove previous Presenter pairing: %s', error.message)
             # Pair normally connects HID too. Do not block agent dispatch while
             # waiting for Connect; the normal BlueZ reconnection policy applies.
             self.bus.call('org.bluez', target, 'org.bluez.Device1', 'Connect', None, None,
                           self.Gio.DBusCallFlags.NONE, 10000, None, self.connected, None)
-            self.publish('paired', bond_token(target, renew=True))
+            self.reconnect_until = None
+            self.startup_reconnect = False
+            self.publish('paired', token)
         except self.GLib.Error as error:
             logging.warning('Pairing did not finish: %s', error.message)
             self.retry_at = time.monotonic() + 10
-            self.publish('unpaired')
+            if not self.replacing:
+                self.publish('unpaired')
         finally:
             self.target = None
+            self.replacing = None
 
     def connected(self, connection, result, unused):
         try:
@@ -135,29 +160,49 @@ class Pairing:
             adapter, props = next(iter(adapters.items()))
             if not props.get('Powered'):
                 self.set_property(adapter, 'org.bluez.Adapter1', 'Powered', True)
-            saved = [path for path, props in devices.items() if is_presenter(props) and props.get('Paired')]
-            if saved:
-                for path in saved:
-                    if not devices[path].get('Trusted') and not devices[path].get('Blocked'):
-                        self.set_property(path, 'org.bluez.Device1', 'Trusted', True)
-                if self.discovery:
-                    self.call(self.discovery, 'org.bluez.Adapter1', 'StopDiscovery')
-                    self.discovery = None
-                self.publish('paired', bond_token(saved[0]))
-                return True
             if self.target:
                 return True
-            self.publish('unpaired')
+            saved = [path for path, props in devices.items() if is_presenter(props) and props.get('Paired')]
+            previous = None
+            now = time.monotonic()
+            if saved:
+                preferred = saved_bond().get('device')
+                previous = preferred if preferred in saved else saved[0]
+                remote = devices[previous]
+                if not remote.get('Trusted') and not remote.get('Blocked'):
+                    self.set_property(previous, 'org.bluez.Device1', 'Trusted', True)
+                connected = remote.get('Connected')
+                if connected:
+                    self.reconnect_until = None
+                    self.startup_reconnect = False
+                if not self.startup_reconnect:
+                    seconds = None
+                else:
+                    if self.reconnect_until is None:
+                        self.reconnect_until = now + RECONNECT_SECONDS
+                    seconds = max(0, math.ceil(self.reconnect_until - now))
+                self.publish('paired', bond_token(previous), seconds)
+                if seconds != 0:
+                    if self.discovery:
+                        self.call(self.discovery, 'org.bluez.Adapter1', 'StopDiscovery')
+                        self.discovery = None
+                    return True
+            else:
+                self.reconnect_until = None
+                self.publish('unpaired')
             if not self.discovery:
                 self.call(adapter, 'org.bluez.Adapter1', 'SetDiscoveryFilter', '(a{sv})',
                           ({'Transport': self.GLib.Variant('s', 'le'),
                             'UUIDs': self.GLib.Variant('as', [HID])},))
                 self.call(adapter, 'org.bluez.Adapter1', 'StartDiscovery')
                 self.discovery = adapter
+                return True
             target = candidate(devices)
-            if target and time.monotonic() >= self.retry_at:
+            if target and now >= self.retry_at:
                 self.target = target
-                self.publish('pairing')
+                self.replacing = previous
+                if not previous:
+                    self.publish('pairing')
                 self.bus.call('org.bluez', target, 'org.bluez.Device1', 'Pair', None, None,
                               self.Gio.DBusCallFlags.NONE, 45000, None, self.paired, None)
         except self.GLib.Error as error:
@@ -176,7 +221,7 @@ def main():
     pairing = Pairing()
     if not pairing.tick():
         raise SystemExit(1)
-    pairing.GLib.timeout_add_seconds(2, pairing.tick)
+    pairing.GLib.timeout_add_seconds(1, pairing.tick)
     pairing.loop.run()
     if pairing.failed:
         raise SystemExit(1)
