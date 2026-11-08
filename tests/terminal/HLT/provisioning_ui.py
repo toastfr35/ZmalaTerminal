@@ -171,7 +171,9 @@ with http_server_fixture() as server:
         app.tick_settings_access(app.settings_hold.started+10.02)
         app.keyrelease('red')
         assert app.settings_open and app.setup_stage is None
-        app.settings_draft.row = FIELDS.index('reset')
+        app.settings_draft.row = FIELDS.index('maintenance')
+        app.press('green')
+        app.press('left')
         app.press('green')
         assert app.setup_stage=='reset'
 
@@ -186,7 +188,7 @@ with http_server_fixture() as server:
             assert app.title.winfo_height()<180, code
         app.press('red')
         assert app.setup_stage is None and app.model.config
-        assert app.settings_open and app.settings_draft.key == 'reset'
+        assert app.settings_open and app.settings_draft.page == 'maintenance'
         app.press('green')  # Open reset again.
         app.press('green')  # Confirm only in this isolated test profile.
         assert app.setup_stage=='wifi' and app.title.cget('text')=='Scan the Wi-Fi QR code'

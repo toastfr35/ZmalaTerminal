@@ -1,7 +1,10 @@
 """Settings drafts and the deliberate red-button hold; no native I/O."""
 from zmala_terminal.common.localization import LANGUAGES
 
-FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone', 'ringtone_volume', 'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', 'tv_setup', 'updates', 'reset')
+SETTINGS_PAGES = ('tv_setup', 'updates', 'information', 'maintenance')
+FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone', 'ringtone_volume',
+          'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', *SETTINGS_PAGES)
+MAINTENANCE_ACTIONS = ('shutdown', 'reboot', 'reset')
 TV_IDLE_DELAYS = (30, 60, 120, 300, 600, 1200, 1800, 0)
 ANSWER_DELAYS = (0, 10, 30, 60, 120, 300, 600)
 
@@ -44,6 +47,11 @@ class SettingsDraft:
         self.index = 0
         self.expected = {}
         self.updates = None
+        self.page = None
+        self.information = None
+        self.maintenance_index = 0
+        self.maintenance_confirm = False
+        self.maintenance_status = None
 
     @property
     def key(self):
@@ -60,7 +68,7 @@ class SettingsDraft:
 
     # @llr LLR-TERM-CONFIG-021, LLR-TERM-AUDIO-009
     def open(self, config):
-        if self.key in ('reset', 'tv_setup', 'updates'):
+        if self.key in SETTINGS_PAGES:
             raise ValueError('Actions use their own pages')
         self.editing, self.error = True, False
         key, value = self.key, self.value(config, self.key)

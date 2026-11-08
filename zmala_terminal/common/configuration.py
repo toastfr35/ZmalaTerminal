@@ -99,7 +99,7 @@ class Configuration:
             raise RuntimeError('Enrollment was reset')
         previous = self.current or self.cached()
         route = '/api/config'
-        if previous:
+        if previous and 'account_photo' in previous:
             route += '?delta=1&version=' + str(previous['configuration_version'])
         reply = json.loads(self.request(route))
         if isinstance(reply, dict) and 'live' in reply:
@@ -140,7 +140,10 @@ class Configuration:
         self.current = stable
         # Enrollment candidates do not start background work until committed.
         if persist:
-            self.photos.schedule(config['contacts'])
+            portraits = config['contacts']
+            if config.get('account_photo'):
+                portraits = [{'photo': config['account_photo']}, *portraits]
+            self.photos.schedule(portraits)
             # @llr LLR-TERM-AUDIO-009
             self.ringtones.configure(config)
         return config

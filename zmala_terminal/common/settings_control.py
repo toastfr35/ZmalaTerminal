@@ -1,8 +1,9 @@
 """Local settings navigation and authenticated, acknowledged server updates."""
 import threading
 import time
-from zmala_terminal.common.local_settings import SettingsDraft
+from zmala_terminal.common.local_settings import MAINTENANCE_ACTIONS, SettingsDraft
 from zmala_terminal.common.model import State
+from zmala_terminal.common.system_settings import host_information, request_host_power
 
 
 class SettingsControl:
@@ -144,7 +145,11 @@ class SettingsControl:
             self.render()
             return
         if draft.busy:
-            return  # An accepted write may already have reached the server.
+            return  # An accepted operation may already be in progress.
+        if draft.page:
+            self.system_settings_button(draft, button)
+            self.render()
+            return
         if draft.confirm_exit:
             if button == 'green':
                 draft.confirm_exit = False
@@ -165,16 +170,78 @@ class SettingsControl:
             elif draft.key == 'updates':
                 from zmala_terminal.common.update_menu import UpdateMenu
                 draft.updates = UpdateMenu()
-            elif draft.key == 'reset':
-                self.settings_open = False
-                self.setup_stage = 'reset'
-                self.settings_hold.clear()
-                self.carousel_motion = None
+            elif draft.key == 'information':
+                draft.page = 'information'
+                draft.information = None
+                self.start_system_settings_work(draft, 'information', self.read_host_information)
+            elif draft.key == 'maintenance':
+                draft.page = 'maintenance'
+                draft.maintenance_index = 0
+                draft.maintenance_status = None
             elif draft.editing:
                 self.save_local_setting()
             else:
                 draft.open(self.model.config)
         self.render()
+
+    # @llr LLR-TERM-CONFIG-019, LLR-TERM-SETUP-032
+    def system_settings_button(self, draft, button):
+        if draft.page == 'information':
+            if button == 'red':
+                draft.page = None
+            return
+        if draft.maintenance_status:
+            if button == 'red':
+                draft.maintenance_status = None
+            return
+        if draft.maintenance_confirm:
+            if button == 'red':
+                draft.maintenance_confirm = False
+            elif button == 'green' and self.model.state == State.HOME:
+                action = MAINTENANCE_ACTIONS[draft.maintenance_index]
+                draft.maintenance_confirm = False
+                draft.busy = True
+                self.start_system_settings_work(draft, 'power', lambda: self.perform_host_power(action))
+            return
+        if button in ('left', 'right'):
+            direction = -1 if button == 'left' else 1
+            draft.maintenance_index = (draft.maintenance_index + direction) % len(MAINTENANCE_ACTIONS)
+        elif button == 'red':
+            draft.page = None
+        elif button == 'green':
+            if MAINTENANCE_ACTIONS[draft.maintenance_index] == 'reset':
+                self.settings_open = False
+                self.setup_stage = 'reset'
+                self.settings_hold.clear()
+                self.carousel_motion = None
+            else:
+                draft.maintenance_confirm = True
+
+    def start_system_settings_work(self, draft, kind, action):
+        generation = self.generation
+
+        def worker():
+            result = action()
+            self.messages.put(('system-settings', (generation, draft, kind, result)))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def read_host_information(self):
+        return host_information()
+
+    def perform_host_power(self, action):
+        return request_host_power(action)
+
+    def system_settings_result(self, generation, draft, kind, result):
+        if generation != self.generation or self.closed or draft is not self.settings_draft:
+            return
+        if kind == 'information':
+            draft.information = result
+        else:
+            draft.busy = False
+            draft.maintenance_status = result
+        if self.settings_open:
+            self.render()
 
     def tick_settings_updates(self):
         menu = self.settings_draft.updates

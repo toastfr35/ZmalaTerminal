@@ -236,6 +236,8 @@ polkit.addRule(function(action, subject) {
         return polkit.Result.YES;
 });
 EOF
+sed "s/@USER@/$task_user/g" "$task_root/build_tools/linux/49-zmalacall-power.rules" \
+    > /etc/polkit-1/rules.d/49-zmalacall-power.rules
 if [ "$splash" = yes ]; then
     task_step 'Installing boot screen and rebuilding boot images'
     theme_changed=no

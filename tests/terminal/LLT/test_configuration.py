@@ -1,7 +1,7 @@
 # @test T-LLT-011
 # @requirements LLR-TERM-COM-003, LLR-TERM-COM-006, LLR-TERM-COM-008
 # @environment portable
-# @plan Inject settings and polling replies, older revisions and redirects; assert cached configuration never rolls back, photo policy stays consistent and enrollment credentials are not forwarded to redirects.
+# @plan Inject settings and polling replies, older revisions and redirects; assert cached configuration never rolls back, a pre-portrait snapshot triggers a full refresh and enrollment credentials are not forwarded to redirects.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
 
 """Enrollment HTTP/cache boundaries; all endpoints and files are isolated fixtures."""
@@ -56,6 +56,21 @@ class ConfigurationTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     client.fetch()
                 client.request.assert_not_called()
+
+    def test_older_cache_refreshes_and_queues_account_portrait(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client = Configuration({'device_id': 'test'}, Path(folder) / 'cache.json')
+            previous = config()
+            previous.pop('account_photo')
+            client.persist(previous)
+            photo = '/photos/aabb.png'
+            reply = config() | {'account_photo': photo}
+            client.photos = Mock()
+            client.request = Mock(return_value=json.dumps(reply))
+            client.fetch()
+            client.request.assert_called_once_with('/api/config')
+            client.photos.schedule.assert_called_once_with([{'photo': photo}, *reply['contacts']])
+            self.assertEqual(client.cached()['account_photo'], photo)
 
     def test_redirect_does_not_forward_enrollment_token(self):
         received = []

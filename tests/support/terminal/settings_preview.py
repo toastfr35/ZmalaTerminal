@@ -3,7 +3,6 @@
 Run through run_display.py to isolate all profile files. Settings acknowledgements
 are in memory; no server, camera, microphone, network or TV commands are used.
 """
-import queue
 import time
 import json
 import os
@@ -11,7 +10,9 @@ from pathlib import Path
 from zmala_terminal.common.ringtones import RingtoneCache, DEFAULT_CHOICES
 
 from zmala_terminal.common.main import Terminal
+from zmala_terminal.common.local_settings import FIELDS
 from zmala_terminal.common.localization import font_family
+from zmala_terminal.common.theme import PANEL
 from tests.terminal.LLT.test_terminal import config
 
 
@@ -41,15 +42,24 @@ class MemoryConfiguration:
 
 
 class Preview(Terminal):
+    portrait_url = '/photos/a11ce.png'
+
     def restore_enrollment(self, *args):
         self.setup_stage = None
 
     def start_services(self):
-        self.configuration = MemoryConfiguration(config() | {
+        portrait = os.environ.get('ZMALA_PREVIEW_ACCOUNT_PORTRAIT')
+        self.preview_portrait = Path(portrait) if portrait else None
+        value = config()
+        value['sip']['username'] = 'demo_terminal'
+        self.configuration = MemoryConfiguration(value | {
             'device_id': 'WINDOWS-ACCEPTANCE', 'language': 'en', 'ringtone_volume': 50,
+            'display_name': 'Family Room',
+            'account_photo': self.portrait_url if self.preview_portrait else '',
             'auto_answer': False, 'auto_answer_seconds': 30}, self.enrollment.path.parent/'ringtones')
         self.apply_config(self.configuration.value)
         self.settings_open = True
+        self.settings_draft.row = FIELDS.index('information')
         self.render()
         self.root.after(30, self.preview_tick)
 
@@ -64,18 +74,32 @@ class Preview(Terminal):
     def make_maintenance(self, configuration):
         return None
 
+    def read_host_information(self):
+        return 'Raspberry Pi OS (64-bit) · Debian 13', '192.0.2.42'
+
+    def contact_image(self, contact, size, background=PANEL):
+        if contact and contact.get('photo') == self.portrait_url and self.preview_portrait:
+            try:
+                return self.text_renderer.portrait(self.preview_portrait, size, background)
+            except (OSError, ValueError):
+                return None
+        return super().contact_image(contact, size, background)
+
+    def perform_host_power(self, action):
+        return 'simulated'
+
+    def factory_reset(self):
+        self.setup_stage = None
+        self.settings_open = True
+        self.settings_draft.maintenance_status = 'simulated'
+        self.render()
+
     def preview_tick(self):
         self.tick_settings_access(time.monotonic())
         self.tick_ringtone(time.monotonic())
         self.tick_tv_setup()
         self.tick_settings_updates()
-        try:
-            while True:
-                kind, args = self.messages.get_nowait()
-                if kind == 'local-settings':
-                    self.local_settings_result(*args)
-        except queue.Empty:
-            pass
+        self.drain_messages()
         self.root.after(30, self.preview_tick)
 
 

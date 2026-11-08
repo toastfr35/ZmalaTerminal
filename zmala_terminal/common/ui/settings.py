@@ -8,11 +8,16 @@ from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
 from zmala_terminal.common.settings_artwork import artwork_path
 from zmala_terminal.common.localization import LANGUAGES, font_family
 from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GREEN, BUTTON_RED, RED
+from zmala_terminal.common.ui.system_settings import SystemSettingsView
 
 MESSAGES = json.loads((Path(__file__).resolve().parents[1] / 'shared/settings-messages.json').read_text(encoding='utf-8'))
 KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume',
         'carousel_portraits', 'never', 'open', 'accept', 'exit', 'current', 'tv_idle_seconds', 'ringtone', 'action_sound_volume',
-        'tv_setup', 'tv_unavailable', 'reset', 'updates')
+        'tv_setup', 'tv_unavailable', 'reset', 'updates', 'information', 'maintenance',
+        'terminal_details', 'device_id', 'os_version', 'software_version', 'ip_address',
+        'account', 'account_id', 'account_name', 'no_portrait', 'unavailable',
+        'shutdown', 'reboot', 'confirm_shutdown', 'confirm_reboot', 'back',
+        'power_requested', 'power_failed', 'power_unavailable', 'simulated')
 
 UPDATE_MESSAGES = {
     'en': {'checking': 'Checking for updates…', 'current': 'Your software is up to date.',
@@ -37,7 +42,7 @@ def terminal_version(root):
     return None
 
 
-class SettingsView:
+class SettingsView(SystemSettingsView):
     def settings_text(self, key):
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
 
@@ -53,7 +58,7 @@ class SettingsView:
             from zmala_terminal.common.tv_profiles import DRIVERS
             profile = DRIVERS[getattr(self, 'tv_profile_saved', 'samsung')]
             return profile.model_family if profile.brand == 'Generic' else profile.brand
-        if key in ('reset', 'updates'):
+        if key in ('updates', 'information', 'maintenance'):
             return ''
         if key == 'language':
             return LANGUAGES[value]['native']
@@ -119,16 +124,17 @@ class SettingsView:
         tags = ('settings-icon', 'settings-flag-'+language) if key == 'language' else ('settings-icon',)
         self.settings_canvas.create_image(x, y, image=picture, tags=tags)
 
-    def settings_hints(self, width, height):
+    def settings_hints(self, width, height, labels=None):
         draft = self.settings_draft
         if draft.busy:
             return
-        back = self.text('cancel').capitalize() if draft.editing else self.settings_text('exit')
-        labels = [('‹ › ' + self.text('select').capitalize(), PANEL),
-                  ('✓ ' + self.settings_text('accept' if draft.editing else 'open'), BUTTON_GREEN),
-                  ('× ' + back, BUTTON_RED)]
+        if labels is None:
+            back = self.text('cancel').capitalize() if draft.editing else self.settings_text('exit')
+            labels = [('‹ › ' + self.text('select').capitalize(), PANEL),
+                      ('✓ ' + self.settings_text('accept' if draft.editing else 'open'), BUTTON_GREEN),
+                      ('× ' + back, BUTTON_RED)]
         margin, gap = 40, 16
-        part = (width-2*margin-2*gap)/3
+        part = (width-2*margin-(len(labels)-1)*gap)/len(labels)
         for index, (label, fill) in enumerate(labels):
             x, y = margin+index*(part+gap), height-86
             self.settings_panel(x, y, part, 48, fill, tags='settings-hint')
@@ -143,10 +149,14 @@ class SettingsView:
         width, height = max(900, c.winfo_width()), max(620, c.winfo_height())
         draft = self.settings_draft
         device_id = config.get('device_id', '')
+        system_signature = (draft.page, draft.information, draft.maintenance_index, draft.maintenance_confirm,
+                            draft.maintenance_status, config.get('display_name'), config.get('account_photo'),
+                            config.get('sip', {}).get('username'))
         update_signature = (draft.updates.state, draft.updates.version) if draft.updates else None
         signature = (width, height, self.language, self.settings_open, int(self.settings_hold.progress*100),
                      device_id, draft.row, draft.editing, draft.index,
-                     draft.busy, draft.error, draft.confirm_exit, update_signature, getattr(self, 'ringtone_preview_state', ''),
+                     draft.busy, draft.error, draft.confirm_exit, update_signature, system_signature,
+                     getattr(self, 'ringtone_preview_state', ''),
                      tuple(SettingsDraft.value(config, key) for key in FIELDS),
                      tuple((item['id'], item.get('name', '')) for item in config.get('ringtones', [])))
         if signature == self.settings_signature:
@@ -176,6 +186,12 @@ class SettingsView:
         if draft.updates:
             self.draw_update_menu(width, height, draft.updates)
             return
+        if draft.page == 'information':
+            self.draw_information(width, height)
+            return
+        if draft.page == 'maintenance':
+            self.draw_maintenance(width, height)
+            return
         if draft.editing:
             self.draw_setting_editor(width, height)
         else:
@@ -193,7 +209,7 @@ class SettingsView:
                 self.settings_icon(key, x+card_width/2, y+card_height*.25, min(112,card_width*.76),
                                    fill, SettingsDraft.value(config, key))
                 self.settings_label(self.settings_text(key), x+card_width/2, y+card_height*.57,
-                                    card_width-18, min(22, int(card_width*.12)), RED if key == 'reset' else FG, fill, True,
+                                    card_width-18, min(22, int(card_width*.12)), FG, fill, True,
                                     anchor='center', max_height=card_height*.27, tags=('settings-card-label',key))
                 self.settings_label(self.settings_value(key, SettingsDraft.value(config,key)),
                                     x+card_width/2, y+card_height*.83, card_width-18, 23,

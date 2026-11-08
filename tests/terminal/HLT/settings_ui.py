@@ -7,6 +7,7 @@
 # Verify packaged flags match every language draft and cancel restores the saved flag; verify numerical endpoints, two-card portrait/framing previews, five-card language/ringtone carousels and the persistent corner logo.
 # Verify the Settings footer shows the terminal ID and running app version on a black background at both supported sizes.
 # Verify the corner logo blends into the black background.
+# Open Information and Maintenance at both sizes. Check all six values, the portrait placeholder and three action cards. Verify power confirmation, cancellation and the success result with a simulated host action.
 # Open ringtone volume at 50%, navigate right/left to 55%/50% and cancel; the saved value stays unchanged.
 # Render the ringtone editor and exercise its immediate preview request through substituted playback; verify left/right wrap selects the last/first visible choice without saving, and cancel and incoming-call interruption stop it without changing the selected ringtone.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
@@ -19,7 +20,7 @@ import time
 from unittest.mock import patch, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from zmala_terminal.common import main as main
-from zmala_terminal.common.local_settings import FIELDS
+from zmala_terminal.common.local_settings import FIELDS, SETTINGS_PAGES
 from zmala_terminal.common.model import State
 from zmala_terminal.common.localization import LANGUAGES, font_family
 from zmala_terminal.common.settings_artwork import LANGUAGE_FLAGS, artwork_path
@@ -93,7 +94,7 @@ try:
             app.font_family = font_family(language, app.available_fonts)
             for row,key in enumerate(FIELDS):
                 app.settings_draft.row = row
-                for editing in ((False,) if key in ('reset','tv_setup','updates') else (False,True)):
+                for editing in ((False,) if key in SETTINGS_PAGES else (False,True)):
                     if editing:
                         app.settings_draft.open(app.model.config)
                     else:
@@ -123,6 +124,34 @@ try:
                 assert bounds and bounds[0] >= 0 and bounds[2] <= c.winfo_width(), (language, size, tag, bounds)
                 assert bounds[1] >= 0 and bounds[3] <= c.winfo_height(), (language, size, tag, bounds)
             app.settings_draft.confirm_exit = False
+        app.settings_draft.row = FIELDS.index('information')
+        app.language = 'en'
+        with (patch.object(app, 'read_host_information', return_value=('Raspberry Pi OS', '192.0.2.42')),
+              patch.object(app.text_renderer, 'photo', side_effect=record_photo)):
+            app.press('green')
+            app.handle_worker_message(*app.messages.get(timeout=2))
+            for tag in ('device_id', 'os_version', 'software_version', 'ip_address', 'account_id', 'account_name'):
+                item, = c.find_withtag('information-label-'+tag)
+                assert rendered[c.itemcget(item, 'image')] == app.settings_text(tag), (size, tag)
+        app.root.update()
+        assert len(c.find_withtag('information-value')) == 6
+        assert c.find_withtag('information-no-portrait')
+        assert c.bbox('information-value')[3] <= c.bbox('information-panel')[3]
+        app.press('red')
+        assert app.settings_draft.row == FIELDS.index('information')
+        app.press('right'); app.press('green')
+        assert all(c.find_withtag('maintenance-'+key) for key in ('shutdown', 'reboot', 'reset'))
+        with patch.object(app, 'perform_host_power', return_value='simulated') as power:
+            app.press('green')
+            assert c.find_withtag('maintenance-confirmation')
+            app.press('red')
+            power.assert_not_called()
+            app.press('right'); app.press('green'); app.press('green')
+            app.handle_worker_message(*app.messages.get(timeout=2))
+            power.assert_called_once_with('reboot')
+            assert c.find_withtag('maintenance-result')
+            app.press('red'); app.press('red')
+        assert app.settings_draft.row == FIELDS.index('maintenance')
         # Flags follow the candidate language, without changing the saved flag
         # or UI language until acknowledgement. Exercise the actual draft input.
         app.settings_draft.row = FIELDS.index('language')
@@ -196,11 +225,14 @@ try:
     app.model.state = State.RINGING; app.tick_ringtone(1003)
     assert app.ringtone_preview_token is None
     app.model.state = State.HOME; app.settings_draft.editing = False; app.settings_open = True
-    app.settings_draft.row = FIELDS.index('reset')
+    app.settings_draft.row = FIELDS.index('maintenance')
+    app.press('green')
+    app.press('left')
     app.press('green')
     assert app.setup_stage == 'reset' and not app.settings_open
     app.press('red')
-    assert app.setup_stage is None and app.settings_open and app.settings_draft.row == FIELDS.index('reset')
+    assert app.setup_stage is None and app.settings_open and app.settings_draft.page == 'maintenance'
+    app.press('red')
     app.language = 'fr'
     app.settings_draft.row = 1
     app.settings_draft.open(app.model.config)

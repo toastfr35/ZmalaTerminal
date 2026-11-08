@@ -21,12 +21,16 @@ references:
   type: file
 - path: zmala_terminal/common/ui/settings.py
   type: file
+- path: zmala_terminal/common/ui/system_settings.py
+  type: file
+- path: zmala_terminal/common/system_settings.py
+  type: file
 - path: zmala_terminal/common/settings_artwork.py
   type: file
 reviewed: null
 scope: Core
 text: |
-  Settings shall present all settings and actions in one wrapping carousel with
+  Settings shall present setting and action pages in one wrapping carousel with
   five visible icon cards. The selected card shall be centred, and each setting's
   current value shall appear below its icon. Left/right shall select a card;
   green shall open its individual page. In an editor, left/right shall change
@@ -47,6 +51,12 @@ text: |
   letter in scripts with letter case. The Zmala logo
   shall remain visible at the top left throughout Settings without a mismatched
   background rectangle.
+  Maintenance shall offer shutdown, reboot and reset to factory defaults.
+  Left and right shall select an action, green shall open a separate
+  confirmation, and red shall return to the carousel. Red on a confirmation
+  shall return to the same action without executing it. Confirmed host
+  shutdown and reboot shall request the corresponding orderly system action.
+  The Windows acceptance fixture shall simulate all three actions.
 verification: |
   Navigate every setting and both carousel wrap boundaries. Verify five visible
   icon cards with saved values, green acknowledgement, red cancellation and the
@@ -55,3 +65,6 @@ verification: |
   Verify all language flags, draft/cancel flag changes, two-choice boxes,
   numerical bars at both endpoints, and the persistent corner logo.
   Verify one to four choices appear once each and navigation still wraps.
+  Exercise confirmation and cancellation for maintenance actions. Use a
+  substituted host action for Windows acceptance. Qualify host authorization
+  and the actual power transition on the Pi.
