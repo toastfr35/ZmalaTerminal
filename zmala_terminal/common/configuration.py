@@ -99,7 +99,7 @@ class Configuration:
             raise RuntimeError('Enrollment was reset')
         previous = self.current or self.cached()
         route = '/api/config'
-        if previous and 'account_photo' in previous:
+        if previous and 'account_photo' in previous and 'usb_power' in previous:
             route += '?delta=1&version=' + str(previous['configuration_version'])
         reply = json.loads(self.request(route))
         if isinstance(reply, dict) and 'live' in reply:

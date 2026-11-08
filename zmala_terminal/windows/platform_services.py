@@ -121,6 +121,9 @@ class DesktopPower:
     def require(self, urgent=False):
         return True
 
+    def set_mode(self, mode):
+        pass
+
     def refresh(self, engine):
         pass
 

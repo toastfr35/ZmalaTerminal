@@ -1,9 +1,10 @@
 """Settings drafts and the deliberate red-button hold; no native I/O."""
 from zmala_terminal.common.localization import LANGUAGES
+from zmala_terminal.common.usb_policy import USB_POWER_MODES
 
 SETTINGS_PAGES = ('tv_setup', 'maintenance', 'updates', 'information')
 FIELDS = ('language', 'auto_answer', 'auto_framing', 'ringtone', 'ringtone_volume',
-          'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', *SETTINGS_PAGES)
+          'action_sound_volume', 'carousel_portraits', 'tv_idle_seconds', 'usb_power', *SETTINGS_PAGES)
 MAINTENANCE_ACTIONS = ('shutdown', 'reboot', 'reset')
 TV_IDLE_DELAYS = (30, 60, 120, 300, 600, 1200, 1800, 0)
 ANSWER_DELAYS = (0, 10, 30, 60, 120, 300, 600)
@@ -64,7 +65,8 @@ class SettingsDraft:
         if key == 'auto_answer':
             return config.get('auto_answer_seconds', 10) if config.get(key) else 0
         return config.get(key, {'language': 'en', 'auto_framing': False,
-                               'action_sound_volume': 20, 'ringtone': 'nokia', 'carousel_portraits': 3, 'tv_idle_seconds': 1800}.get(key))
+                               'action_sound_volume': 20, 'ringtone': 'nokia', 'carousel_portraits': 3,
+                               'tv_idle_seconds': 1800, 'usb_power': 'always_on'}.get(key))
 
     # @llr LLR-TERM-CONFIG-021, LLR-TERM-AUDIO-009
     def open(self, config):
@@ -76,6 +78,7 @@ class SettingsDraft:
                         else [item['id'] for item in config.get('ringtones', [{'id': 'nokia'}])] if key == 'ringtone'
                         else list(ANSWER_DELAYS) if key == 'auto_answer'
                         else list(TV_IDLE_DELAYS) if key == 'tv_idle_seconds'
+                        else list(USB_POWER_MODES) if key == 'usb_power'
                         else [False, True] if key == 'auto_framing'
                         else list(range(0, 101, 5)) if key in ('ringtone_volume', 'action_sound_volume') else [3, 5])
         self.index = self.options.index(value) if value in self.options else 0
@@ -96,7 +99,7 @@ class SettingsDraft:
     # @llr LLR-TERM-CONFIG-019, LLR-TERM-AUDIO-009
     def move(self, direction):
         if self.editing:
-            self.index = ((self.index+direction) % len(self.options) if self.key in ('ringtone', 'language')
+            self.index = ((self.index+direction) % len(self.options) if self.key in ('ringtone', 'language', 'usb_power')
                           else max(0, min(len(self.options)-1, self.index+direction)))
         else:
             self.row = (self.row+direction) % len(FIELDS)

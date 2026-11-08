@@ -34,6 +34,11 @@ text: |
   Reopening completed checks shall allow retesting while retaining attempt counts.
   An incompatible binding change shall invalidate results. Missing
   EDID during standby shall not alone identify a different TV.
+  Save the selected model and completed outcome summary to the enrolled
+  Server. Confirm the acknowledgement or show a retryable save error. Keep
+  TV identity and connection details local. Server outcomes alone shall
+  never enable TV control on the Terminal.
 verification: |
   Fail saving, restart mid-test and vary identity and address. Check retained
-  attempts, invalidation and the standby case.
+  attempts, invalidation and the standby case. Check that the Server receives
+  the selected model and separate power and source outcomes after a test.

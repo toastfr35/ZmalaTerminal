@@ -10,15 +10,9 @@ import time
 import wave
 from zmala_terminal.linux.nuroum import supported_name, playback_device
 from zmala_terminal.linux.sound_levels import ToneLevels, playback_environment
+from zmala_terminal.common.usb_policy import should_power_off
 
-IDLE_SECONDS = 300
 HELPER = '/usr/local/libexec/zmala-usb-power'
-
-
-# @llr LLR-TERM-POWER-013, LLR-TERM-POWER-014
-def should_power_off(now, last_use, active, battery):
-    return (not active and type(battery) is int and 25 <= battery <= 100
-            and now - last_use >= IDLE_SECONDS)
 
 
 def media_present():
@@ -44,6 +38,7 @@ class UsbPower:
         self.deferred = defer
         self.preserve_shutdown = defer
         self.active, self.battery, self.ringing = True, None, False
+        self.mode = 'always_on'
         self.updated = self.last_use = time.monotonic()
         self.state = 'starting' if self.enabled else 'unsupported'
         self.powered = None  # Confirmed supply state, independent of camera readiness.
@@ -89,6 +84,16 @@ class UsbPower:
     def power_state(self):
         with self.lock:
             return self.powered
+
+    # @llr LLR-TERM-POWER-013
+    def set_mode(self, mode):
+        with self.lock:
+            if mode == self.mode:
+                return
+            self.mode = mode
+            self.last_use = time.monotonic()
+            self.wake_serial += 1
+        self.changed.set()
 
     def update(self, active, battery, ringing=False):
         if active and self.deferred:
@@ -259,8 +264,10 @@ class UsbPower:
 
     def command(self, action):
         try:
+            # Each hub takes two bounded commands. Off may also need to roll back
+            # both hubs, so the caller must leave time for the helper's rollback.
             subprocess.run(['sudo', '-n', HELPER, action], check=True,
-                       capture_output=True, timeout=30, text=True)
+                           capture_output=True, timeout=110 if action == 'off' else 55, text=True)
         except subprocess.CalledProcessError as error:
             # The helper can restore power after a failed off; don't hide that
             # explanation inside captured stderr.
@@ -287,9 +294,11 @@ class UsbPower:
                         next_attempt = 0  # New user/call activity bypasses a failed attempt's backoff.
                     # A stalled UI or stale battery must never leave the charger off.
                     active = self.active or now - self.updated > 10
-                    off = should_power_off(now, self.last_use, active, self.battery)
-                    desired = 'off' if off else 'on'
+                    off = should_power_off(now, self.last_use, active, self.battery, self.mode)
                     state = self.state
+                    # Recover confirmed power after a failed or interrupted
+                    # transition before considering another idle shutdown.
+                    desired = 'off' if off and state in ('on', 'off') else 'on'
                     if now >= next_status:
                         folder = os.environ.get('ZMALA_RUNTIME_DIR')
                         if folder:
@@ -309,7 +318,7 @@ class UsbPower:
                         # A call may request wake after this worker's snapshot.
                         # Claim the transition under the same lock as require().
                         if desired == 'off' and not should_power_off(time.monotonic(), self.last_use,
-                                self.active or time.monotonic() - self.updated > 10, self.battery):
+                                self.active or time.monotonic() - self.updated > 10, self.battery, self.mode):
                             continue
                         self.state = 'switching'
                         self.powered = None
@@ -337,7 +346,9 @@ class UsbPower:
                             # Keep wake retryable even if rollback left the C20 visible.
                             self.state = 'error'
                             self.revision += 1
-                        next_attempt = time.monotonic() + 10
+                            if desired == 'off':
+                                self.last_use = time.monotonic()
+                        next_attempt = 0 if desired == 'off' else time.monotonic() + 10
                     continue
                 self.play_tone(now)
                 self.changed.wait(.2)

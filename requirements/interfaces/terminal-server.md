@@ -103,13 +103,26 @@ traces remain in each repository's Doorstop documents.
   same-revision TURN credential renewal still arrives.
 - Settings writable by the Terminal are language, auto_answer,
   auto_answer_seconds, auto_framing, c20_speaker_volume, ringtone_volume,
-  action_sound_volume, carousel_portraits, tv_idle_seconds and ringtone.
+  action_sound_volume, carousel_portraits, tv_idle_seconds, ringtone,
+  usb_power, tv_profile and tv_test_results.
   The shared language catalogue supplies allowed language codes. Volume
   values are integer 0–100, portrait counts are 3 or 5, and TV idle delay
   is 0, 30, 60, 120, 300, 600, 1200 or 1800 seconds. Zero means disabled.
   Video resolutions are 360p, 480p, 720p or 1080p and frame rates are
   10, 15, 20, 25 or 30. These video fields are profile inputs, outside the
   device-write allowlist. The audio profile is normal or speech.
+- USB power is always_on, camera or camera_and_dock. The Server defaults to
+  always_on for existing profiles. On supported Pi 4 terminals, the two
+  automatic modes switch the shared USB supply after 60 seconds idle. Camera
+  and dock mode retains or restores power below 25% battery or when the
+  reading is unavailable.
+- The TV profile is samsung, cec or an empty value for a local selection.
+  TV test results are null or a completed summary containing device_id,
+  profile, power and source outcomes (passed, failed or skipped) and
+  power_attempts and source_attempts as nonnegative integers. The Server
+  binds results to the enrolled device and current model. A model change
+  clears them. Results are for reporting. Physical TV identity, pairing
+  details and capability verification stay on the Terminal.
 - ring_timeout is in seconds. The default is 60. A target with enabled
   auto-answer gets max(60, auto_answer_seconds + 30). The Terminal accepts
   60–660 and uses 60 if the field is missing or invalid.

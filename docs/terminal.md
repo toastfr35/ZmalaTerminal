@@ -216,9 +216,10 @@ reconnection. It controls the supported case fan during connected calls. Device
 work that can block runs separately from display updates.
 
 Optional USB power control can turn off the shared camera and charger supply
-when the terminal is inactive and the remote battery has sufficient charge.
-User activity or an incoming call requests power restoration. Unknown device or
-battery state favors retaining power. The webcam indicator reports confirmed hub power.
+after 60 seconds of inactivity. Camera-only mode ignores the battery. Camera
+and dock mode keeps power on when the battery is below 25% or unknown.
+A button press or an incoming call requests power restoration. The webcam
+indicator reports confirmed hub power.
 
 ### 15. Maintenance and diagnostics
 
@@ -498,7 +499,8 @@ inside the small-window layout.
 | Button sounds volume | 0–100%, in 5% steps; idle navigation feedback |
 | Portraits | Three/five; short contact lists retain three positions |
 | Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
-| TV setup | Guided TV power and input checks, opened explicitly from the carousel |
+| USB power | Always on, automatic for camera activity, or automatic with remote charging protection |
+| TV setup | Guided TV power and input checks. The model and completed outcomes are saved to the Server |
 | Maintenance | Shut down, reboot or reset to factory defaults, each with a separate confirmation |
 | Updates | Check now and choose whether to apply the offered version |
 | Information | Terminal ID, OS version, software version, IP address, and enrolled account ID, name and portrait |
@@ -1314,21 +1316,24 @@ continues to drive the camera indicator and server status. The temporary wake-ca
 tracing and periodic wake monitor have been removed; kernel USB disconnect and
 re-enumeration events remain available in the kernel journal.
 
-This experiment is not enabled by the regular installer. The Pi 4's external USB
-ports switch together, including the C20 and charger. It cuts power only after
-five minutes without terminal activity with a fresh remote battery reading of at
-least 25%. Every button press (even consumed or debounced), volume adjustment and
+The Pi 4's external USB ports switch together, including the camera and charger.
+The Server stores the selected mode and defaults to Always on. Both automatic
+modes switch the shared supply after 60 seconds idle. Camera only follows
+camera activity. Camera and remote dock also keeps power on when the remote
+battery is below 25% or the battery reading is unavailable.
+Every button press (even consumed or debounced), volume adjustment and
 accepted incoming call wakes the worker immediately, before TV routing or answer
-timers. Calls/ringing/setup/settings, held buttons, low/unknown battery or a stale
+timers. Calls, ringing, setup, ringtone previews, held buttons and a stale
 app heartbeat restore or retain power. The idle interval starts when ongoing
 activity ends. Another peripheral or open media handles blocks shutdown.
 Do not use with USB storage; disable before attaching extra equipment to an
 unpowered port, where it cannot yet be detected.
 
-Enable on a matching installed release:
+Automatic switching requires the Pi 4 host helper. Enable it on a matching installed release:
 
 ```sh
-sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh zmala
+terminal_user=$(systemctl show -p User --value zmalacall-terminal.service)
+sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh "$terminal_user"
 sudo systemctl restart zmalacall-terminal
 ```
 
@@ -1337,6 +1342,8 @@ audio enumeration, refreshes SDK devices on their owning thread and reapplies
 volume. Operations run off-thread and fail toward power-on. A stop hook restores
 power after app exit. Status is `/run/zmalacall/usb-power.json`. Wake adds device
 startup latency before auto-answer; no electrical energy-saving claim is made.
+After a failed shutdown attempt, the worker restores power and waits for a new
+idle interval before trying again.
 
 The webcam icon immediately left of the battery represents shared USB power. Its
 gap before the battery matches the gap after Bluetooth. It uses the compact status
@@ -1749,10 +1756,10 @@ python tests/support/terminal/run_display.py tests/support/terminal/settings_pre
 ```
 
 Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
-The fixture opens Settings on Information. It shows sample OS, IP and account
+The fixture opens Settings on USB power. Information shows sample OS, IP and account
 details. Set `ZMALA_PREVIEW_ACCOUNT_PORTRAIT` to a local image to show a portrait.
-Maintenance simulates shutdown, reboot and factory reset. Settings saves stay
-in memory. Verify five visible setting icons and saved values, each editor's
+Maintenance simulates shutdown, reboot and factory reset. USB power and TV setup
+save to the in-memory Server substitute. Verify five visible setting icons and saved values, each editor's
 accept/cancel return to the same card, exit confirmation and the seven-second
 Escape hold from Home. TV setup offers the real model selector and test question,
 then simulates standby/wake and input changes, labelled Windows TV simulation.

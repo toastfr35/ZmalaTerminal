@@ -255,12 +255,14 @@ class SettingsControl:
         if changes == draft.expected:
             draft.editing = False
             return
-        configuration, generation = self.configuration, self.generation
-        if not configuration:
+        if not self.configuration:
             draft.error = True
             return
         draft.busy, draft.error = True, False
-        expected = dict(draft.expected)
+        self.submit_settings_write(changes, dict(draft.expected), 'local-settings', draft)
+
+    def submit_settings_write(self, changes, expected, message, owner):
+        configuration, generation = self.configuration, self.generation
 
         def worker():
             config, success = None, False
@@ -274,7 +276,7 @@ class SettingsControl:
                     success = all(config.get(key) == value for key, value in changes.items())
                 except Exception:
                     pass
-            self.messages.put(('local-settings', (generation, draft, success, config)))
+            self.messages.put((message, (generation, owner, success, config)))
         threading.Thread(target=worker, daemon=True).start()
 
     # @llr LLR-TERM-CONFIG-022

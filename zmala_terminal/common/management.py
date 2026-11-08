@@ -12,6 +12,7 @@ from zmala_terminal.common.connectivity import wifi_link_available
 POLL_SECONDS = 2
 PRESENCE_STALE_SECONDS = 6
 TICK_MILLISECONDS = 20
+USB_CALL_STATES = (State.CALLING, State.RINGING, State.CONNECTING, State.IN_CALL, State.STOPPING)
 
 
 def defer_auto_answer(model, tv, now):
@@ -45,8 +46,9 @@ class ManagementLoop:
             return
         power = getattr(self, 'usb_power', None)
         if power and power.enabled:
-            active = bool(self.setup_stage or self.scanner or self.model.state != State.HOME
-                          or self.engine and self.engine.call or self.settings_open
+            power.set_mode((self.model.config or {}).get('usb_power', 'always_on'))
+            active = bool(self.setup_stage or self.scanner or self.model.state in USB_CALL_STATES
+                          or self.engine and self.engine.call or power.ringtone_preview_status in ('waiting', 'playing')
                           or getattr(self, 'keys_down', None))
             power.update(active, self.presenter_input.battery, self.model.state == State.RINGING)
             power.refresh(self.engine)
@@ -103,6 +105,8 @@ class ManagementLoop:
             # or act on an enrollment that has since been replaced.
             if not self.closed and generation == self.generation and state == self.model.state:
                 self.physical_press(button)
+        elif kind == 'tv-settings':
+            self.tv_settings_result(*value)
         elif kind == 'dial-ready':
             self.dial_ready(*value)
         elif kind == 'callback-result':

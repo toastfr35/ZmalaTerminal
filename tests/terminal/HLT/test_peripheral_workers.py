@@ -1,7 +1,7 @@
 # @test T-HLT-025
 # @requirements HLR-TERM-POWER-008, HLR-TERM-POWER-009
 # @environment display
-# @plan Run USB and fan worker threads alongside the real Tk terminal. Substitute only privileged USB commands, media enumeration and I2C writes. Age the idle timestamp, vary battery/activity, block wake, reject native refresh and inject helper failure. Drive a button and incoming call through application controllers. Check native refresh thread ownership and fan transitions.
+# @plan Run USB and fan worker threads alongside the real Tk terminal. Substitute only privileged USB commands, media enumeration and I2C writes. Select camera and dock mode, age the idle timestamp through 60 seconds, vary battery/activity, block wake, reject native refresh and inject helper failure. Drive a button and incoming call through application controllers. Check native refresh thread ownership and fan transitions.
 # @pass USB sleeps only after eligible idle time, user/call activity requests wake immediately, and readiness waits for enumeration plus native refresh. Slow/failing hardware work does not block navigation; fan runs during calls and stops afterwards. Physical C20 readiness, hub switching and thermal performance remain hardware acceptance tests.
 
 import os
@@ -42,8 +42,10 @@ class PeripheralWorkerTests(unittest.TestCase):
                 patch('zmala_terminal.linux.c20_volume.status', return_value=(0, 0, False)):
             app.usb_power.close()
             power = app.usb_power = usb_power.UsbPower(directory)
+            app.model.config['usb_power'] = 'camera_and_dock'
+            power.set_mode('camera_and_dock')
 
-            def idle(battery, seconds=301):
+            def idle(battery, seconds=61):
                 power.update(False, battery)
                 with power.lock:
                     power.last_use = time.monotonic() - seconds
@@ -59,7 +61,7 @@ class PeripheralWorkerTests(unittest.TestCase):
                 app.engine.refresh_usb_devices.side_effect = lambda: refresh_threads.append(threading.get_ident()) or True
                 power.refresh(app.engine)
                 self.assertTrue(power.ready)
-                for battery, seconds in [(24, 301), (None, 301), (100, 299)]:
+                for battery, seconds in [(24, 61), (None, 61), (100, 59)]:
                     idle(battery, seconds)
                     deadline = time.monotonic() + .25
                     pump(app, lambda: time.monotonic() >= deadline)
@@ -84,6 +86,12 @@ class PeripheralWorkerTests(unittest.TestCase):
                 self.assertTrue(power.ready)
                 self.assertEqual(set(refresh_threads), {ui_thread})
                 self.assertTrue(all(thread != ui_thread for _, thread in commands))
+
+                idle(75)
+                pump(app, lambda: power.state == 'off')
+                power.update(False, 24)
+                pump(app, lambda: power.state == 'on')
+                self.assertIs(power.power_state, True)
 
                 idle(75)
                 pump(app, lambda: power.state == 'off')
