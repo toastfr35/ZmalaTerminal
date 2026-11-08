@@ -133,6 +133,13 @@ class PiInstallTests(unittest.TestCase):
 
             remote['Connected'] = False
             agent.tick()
+            self.assertEqual(agent.state, {'state': 'paired', 'bond': token})
+
+            # A later disconnection keeps the normal help page. Restarting the
+            # service simulates the next boot with the same saved bond.
+            agent, bus, glib = self.pairing()
+            bus.call_sync.return_value.unpack.side_effect = lambda: (objects,)
+            agent.tick()
             clock.return_value = 220
             agent.tick()
             objects['/new'] = {'org.bluez.Device1': {'Name': pair.NAME, 'UUIDs': [pair.HID], 'RSSI': -45}}

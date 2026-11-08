@@ -70,6 +70,7 @@ class Pairing:
         self.target = None
         self.replacing = None
         self.reconnect_until = None
+        self.startup_reconnect = True
         self.retry_at = 0
         self.state = None
         self.discovery = None
@@ -129,6 +130,7 @@ class Pairing:
             self.bus.call('org.bluez', target, 'org.bluez.Device1', 'Connect', None, None,
                           self.Gio.DBusCallFlags.NONE, 10000, None, self.connected, None)
             self.reconnect_until = None
+            self.startup_reconnect = False
             self.publish('paired', token)
         except self.GLib.Error as error:
             logging.warning('Pairing did not finish: %s', error.message)
@@ -172,6 +174,8 @@ class Pairing:
                 connected = remote.get('Connected')
                 if connected:
                     self.reconnect_until = None
+                    self.startup_reconnect = False
+                if not self.startup_reconnect:
                     seconds = None
                 else:
                     if self.reconnect_until is None:

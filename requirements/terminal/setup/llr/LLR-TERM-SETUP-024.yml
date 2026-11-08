@@ -32,8 +32,9 @@ scope: Core
 text: |
   A saved Bluetooth bond shall not complete remote setup. The input device shall
   become available and the physical button test shall pass. Recoverable bond failures
-  shall leave setup active with retry guidance. A saved disconnected Presenter
-  shall get a 60-second power-on countdown before the pairing instructions appear.
+  shall leave setup active with retry guidance. When the saved Presenter is
+  disconnected at startup, show a 60-second power-on countdown before the
+  pairing instructions appear.
   Expiring the countdown shall keep the saved bond eligible to reconnect. A
   successful new pairing shall replace the previous bond and require its own
   physical button test.
