@@ -114,3 +114,14 @@ class DeveloperTerminalTests(unittest.TestCase):
                 ('usermod', '-p', '*', 'zmala'),
             ])
             self.assertFalse((helper.RUNTIME/'client.json').exists())
+
+    def test_activation_and_disable_each_request_a_privileged_refresh(self):
+        bootstrap = {'server_url': 'https://example.test', 'device_id': 'serial', 'device_token': 'fixture'}
+        with patch.object(Path, 'exists', return_value=True), \
+                patch.object(Path, 'read_text', return_value='{"password_operator":true}'), \
+                patch.object(developer_access.subprocess, 'run', return_value=Mock(returncode=0)) as run:
+            for config in (None, None, self.config(), self.config(), None):
+                developer_access.apply(config, bootstrap)
+            self.assertEqual(run.call_count, 3)
+            for call in run.call_args_list:
+                self.assertEqual(json.loads(call.kwargs['input']), {'enrollment': bootstrap})

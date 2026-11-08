@@ -30,7 +30,9 @@ def apply(config, bootstrap):
         enrollment = {key: bootstrap[key] for key in ('server_url', 'device_id', 'device_token')}
         request = {'enrollment': enrollment}
     payload = json.dumps(request, sort_keys=True)
-    signature = hashlib.sha256(payload.encode()).digest()
+    # A new activation or revocation must trigger a fresh approval even
+    # though the privileged request carries only the enrollment.
+    signature = hashlib.sha256(json.dumps([request, config], sort_keys=True).encode()).digest()
     if signature == _applied:
         return  # systemd owns reconnects; do not spawn sudo on every settings poll.
     result = subprocess.run(['/usr/bin/sudo', '-n', str(HELPER), 'apply'],
