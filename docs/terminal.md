@@ -216,9 +216,10 @@ reconnection. It controls the supported case fan during connected calls. Device
 work that can block runs separately from display updates.
 
 Optional USB power control can turn off the shared camera and charger supply
-when the terminal is inactive and the remote battery has sufficient charge.
-User activity or an incoming call requests power restoration. Unknown device or
-battery state favors retaining power. The webcam indicator reports confirmed hub power.
+after 60 seconds of inactivity. Camera-only mode ignores the battery. Camera
+and dock mode keeps power on when the battery is below 25% or unknown.
+A button press or an incoming call requests power restoration. The webcam
+indicator reports confirmed hub power.
 
 ### 15. Maintenance and diagnostics
 
