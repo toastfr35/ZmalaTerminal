@@ -93,6 +93,8 @@ class ManagementLoop:
     def handle_worker_message(self, kind, value):
         if kind == 'local-settings':
             self.local_settings_result(*value)
+        elif kind == 'system-settings':
+            self.system_settings_result(*value)
         elif kind == 'tv-pointer':
             self.pointer_visible(*value)
         elif kind == 'tv-button':
@@ -232,6 +234,7 @@ class ManagementLoop:
             self.tick_settings_updates()
             if self.configuration and self.configuration.photos.changed():
                 if self.model.state == State.HOME:
+                    self.settings_signature = None
                     self.render()
             now = time.monotonic()
             self.update_timers(now)

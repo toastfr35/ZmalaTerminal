@@ -171,9 +171,11 @@ with http_server_fixture() as server:
         app.tick_settings_access(app.settings_hold.started+10.02)
         app.keyrelease('red')
         assert app.settings_open and app.setup_stage is None
-        app.settings_draft.row = FIELDS.index('reset')
+        app.settings_draft.row = FIELDS.index('maintenance')
         app.press('green')
-        assert app.setup_stage=='reset'
+        app.press('left')
+        app.press('green')
+        assert app.settings_draft.maintenance_confirm and app.settings_open
 
         # Confirmation fits every language at the minimum terminal window size.
         app.root.geometry('900x620')
@@ -183,10 +185,11 @@ with http_server_fixture() as server:
             app.font_family = font_family(code, app.available_fonts)
             app.render()
             app.root.update_idletasks()
-            assert app.title.winfo_height()<180, code
+            bounds = app.settings_canvas.bbox('maintenance-confirmation')
+            assert bounds and 0 <= bounds[0] < bounds[2] <= app.settings_canvas.winfo_width(), code
         app.press('red')
         assert app.setup_stage is None and app.model.config
-        assert app.settings_open and app.settings_draft.key == 'reset'
+        assert app.settings_open and app.settings_draft.page == 'maintenance'
         app.press('green')  # Open reset again.
         app.press('green')  # Confirm only in this isolated test profile.
         assert app.setup_stage=='wifi' and app.title.cget('text')=='Scan the Wi-Fi QR code'

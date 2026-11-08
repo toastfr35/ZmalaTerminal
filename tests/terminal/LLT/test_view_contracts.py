@@ -246,7 +246,7 @@ class ViewContractTests(unittest.TestCase):
                 self.assertGreaterEqual(call.args[0], 0); self.assertLessEqual(call.args[0], width)
                 self.assertLess(call.args[1], height)
 
-    def test_settings_serial_and_reset_are_present_without_connectivity_draws(self):
+    def test_settings_serial_and_system_pages_are_present_without_connectivity_draws(self):
         v = SettingsView(); v.model = TerminalModel(); v.model.configure(config())
         v.settings_open = True; v.settings_hold = SimpleNamespace(capturing=False, progress=0)
         v.settings_signature = None; v.settings_draft = SettingsDraft(); v.language = 'en'
@@ -258,7 +258,7 @@ class ViewContractTests(unittest.TestCase):
         serial = next(c for c in v.settings_label.call_args_list if c.kwargs.get('tags') == 'settings-serial')
         self.assertEqual(serial.args[0], 'ID : test  ·  v1.2.3')
         self.assertEqual(serial.args[2:5], (703, 1216, 11))
-        self.assertEqual(FIELDS[-1], 'reset')
+        self.assertEqual(FIELDS[-3:], ('maintenance', 'updates', 'information'))
         v.draw_connectivity.assert_not_called()
         hints = [c for c in v.settings_panel.call_args_list if c.kwargs.get('tags') == 'settings-hint']
         self.assertEqual(len(hints), 3)

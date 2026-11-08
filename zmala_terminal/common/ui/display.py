@@ -80,7 +80,8 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.home.grid_rowconfigure(0, weight=1)
         self.avatar = tk.Canvas(self.home, width=940, height=370, bg=BG, highlightthickness=0)
         self.avatar.grid(row=0, column=0, sticky='nsew', pady=(5, 0))
-        self.avatar.bind('<Configure>', lambda event: self.draw_reset() if self.setup_stage == 'reset' else self.draw_wifi_confirmation() if self.setup_stage == 'wifi_ready' else self.draw_avatar(self.model.contact or self.model.selected))
+        self.avatar.bind('<Configure>', lambda event: self.draw_wifi_confirmation()
+                         if self.setup_stage == 'wifi_ready' else self.draw_avatar(self.model.contact or self.model.selected))
         self.name = tk.Label(self.home, text='', font=('Segoe UI', 36, 'bold'), bg=BG, fg=FG)
         self.name.grid(row=1, column=0, pady=(0, 5))
         self.subtitle = tk.Label(self.home, text='', font=('Segoe UI', 19), bg=BG, fg=MUTED, wraplength=850)
@@ -241,20 +242,6 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
             self.missing_video.place_forget()
             self.missing_video_bottom.place_forget()
 
-    # @llr LLR-TERM-SETUP-032
-    def draw_reset(self):
-        self.avatar.delete('all')
-        self.current_text_images = []
-        width, height = max(700, self.avatar.winfo_width()), max(120, self.avatar.winfo_height())
-        for x, color, label, symbol in [(width*.3, GREEN, self.text('reset'), '✓'),
-                                        (width*.7, RED, self.text('keep_configuration'), '×')]:
-            y = height*.42
-            self.avatar.create_oval(x-54, y-54, x+54, y+54, outline=color, width=4)
-            self.avatar.create_text(x, y, text=symbol, fill=color, font=('Segoe UI', 48))
-            image = self.text_renderer.photo(label, self.font_family, 22, BG, color, int(width*.4), True)
-            self.current_text_images.append(image)
-            self.avatar.create_image(x, y+90, image=image)
-
     # @llr LLR-TERM-SETUP-029
     def draw_wifi_confirmation(self):
         self.avatar.delete('all')
@@ -362,12 +349,7 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         if self.setup_stage:
             self.name.configure(text='')
             self.subtitle.configure(text='')
-            if self.setup_stage == 'reset':
-                self.video.pack_forget()
-                self.home.pack(fill='both', expand=True)
-                self.title.configure(text=self.text('factory_reset'))
-                self.draw_reset()
-            elif self.setup_stage == 'wifi_ready':
+            if self.setup_stage == 'wifi_ready':
                 self.video.pack_forget()
                 self.home.pack(fill='both', expand=True)
                 self.title.configure(text=self.text('wifi_connected'))

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 from zmala_terminal.common import settings_control
-from zmala_terminal.common.local_settings import FIELDS, SettingsDraft, SettingsHold
+from zmala_terminal.common.local_settings import FIELDS, SETTINGS_PAGES, SettingsDraft, SettingsHold
 from zmala_terminal.common.ui import settings
 from tests.terminal.LLT import test_local_settings
 from tests.terminal.LLT.test_display_states import widget
@@ -22,7 +22,7 @@ class SettingsWorkflowTests(unittest.TestCase):
 
     def test_navigation_draft_cancel_accept_and_busy_guard(self):
         c=self.controller(); d=c.settings_draft
-        c.settings_button('left'); self.assertEqual(d.key,'reset')
+        c.settings_button('left'); self.assertEqual(d.key,'information')
         c.settings_button('right'); self.assertEqual(d.key,'language')
         c.settings_button('right'); self.assertEqual(d.key,'auto_answer')
         c.settings_button('green'); self.assertTrue(d.editing)
@@ -97,7 +97,7 @@ class SettingsWorkflowTests(unittest.TestCase):
     def test_settings_render_five_cards_and_each_field_with_three_controls(self):
         v=self.view(); c=v.settings_canvas
         for row,key in enumerate(FIELDS):
-            for editing in ([False] if key in ('reset','tv_setup','updates') else [False,True]):
+            for editing in ([False] if key in SETTINGS_PAGES else [False,True]):
                 v.settings_draft=SettingsDraft(); d=v.settings_draft; d.row=row
                 if editing: d.open(v.model.config)
                 v.settings_signature=None; c.reset_mock(); v.draw_settings()
@@ -120,7 +120,7 @@ class SettingsWorkflowTests(unittest.TestCase):
                 v.settings_draft.row=row; v.settings_canvas.reset_mock(); v.draw_settings()
                 values=[call for call in v.settings_canvas.create_image.call_args_list
                         if 'settings-value' in call.kwargs.get('tags',()) and key in call.kwargs['tags']]
-                if key in ('reset', 'updates'):
+                if key in ('information', 'maintenance', 'updates'):
                     self.assertFalse(values)
                 else:
                     self.assertEqual(len(values),1)

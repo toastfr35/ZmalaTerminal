@@ -79,6 +79,11 @@ traces remain in each repository's Doorstop documents.
   emits account_type="terminal", call_photo_sharing, optional secure_calls,
   mutable setting values and administrative profile fields. Keep passwords
   and the proof key private.
+- Full Terminal configuration includes account_photo, the authenticated
+  account's own portrait. It is empty when no portrait is assigned, or a
+  same-origin path matching /photos/[a-f0-9]+\.(png|jpg|gif), fetched using the
+  existing authenticated photo route. Older Terminals ignore the added field.
+  The live-only response keeps the cached portrait for the matching revision.
 - Contacts are an array of at most 40 unique IDs matching
   [a-z][a-z0-9_-]{0,30}. Each has a nonempty name of at most 80 characters,
   sip_uri equal to sip:ID@SIP_DOMAIN, and Boolean can_call, can_receive and

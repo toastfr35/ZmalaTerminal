@@ -25,15 +25,16 @@ references:
   type: file
 - path: zmala_terminal/common/setup_flow.py
   type: file
-- path: zmala_terminal/common/ui/display.py
+- path: zmala_terminal/common/ui/system_settings.py
   type: file
 - path: zmala_terminal/linux/wifi.py
   type: file
 reviewed: null
 scope: Core
 text: |
-  Settings shall provide a reset action with a separate confirmation page. Green shall
-  confirm reset. Red shall return without deleting enrollment.
+  Settings shall provide a reset action under Maintenance with a separate
+  confirmation page. Green shall confirm reset. Red shall return to Maintenance
+  without deleting enrollment.
 verification: |
-  Open reset from Settings and exercise both answers. Check that cancellation
+  Open reset from Maintenance and exercise both answers. Check that cancellation
   preserves the saved identity.

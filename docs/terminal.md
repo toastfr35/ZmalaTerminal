@@ -58,7 +58,7 @@ until a replacement pairs successfully. The button test runs for the new pairing
 Setup shows an error when an operation fails. It continues only when that step
 has completed. Enrollment then goes to the contact screen. Optional TV tests
 are available on the TV setup card in Settings and use the selected language.
-The user can reset the terminal from Settings after a separate confirmation.
+The user can reset the terminal from Settings → Maintenance after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
 
 ### 3. Network connection
@@ -499,8 +499,9 @@ inside the small-window layout.
 | Portraits | Three/five; short contact lists retain three positions |
 | Automatic return to TV | 30 seconds, 1, 2, 5, 10, 20, 30 minutes (default), Never |
 | TV setup | Guided TV power and input checks, opened explicitly from the carousel |
+| Maintenance | Shut down, reboot or reset to factory defaults, each with a separate confirmation |
 | Updates | Check now and choose whether to apply the offered version |
-| Reset to factory defaults | Confirmed local reset and re-enrollment |
+| Information | Terminal ID, OS version, software version, IP address, and enrolled account ID, name and portrait |
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
 Preview starts as soon as the highlighted audio is ready and plays for at most ten
@@ -1748,8 +1749,10 @@ python tests/support/terminal/run_display.py tests/support/terminal/settings_pre
 ```
 
 Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
-The fixture opens Settings immediately. Saves are acknowledged in memory and
-reset when the window closes. Verify five visible setting icons and saved values, each editor's
+The fixture opens Settings on Information. It shows sample OS, IP and account
+details. Set `ZMALA_PREVIEW_ACCOUNT_PORTRAIT` to a local image to show a portrait.
+Maintenance simulates shutdown, reboot and factory reset. Settings saves stay
+in memory. Verify five visible setting icons and saved values, each editor's
 accept/cancel return to the same card, exit confirmation and the seven-second
 Escape hold from Home. TV setup offers the real model selector and test question,
 then simulates standby/wake and input changes, labelled Windows TV simulation.

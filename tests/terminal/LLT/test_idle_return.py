@@ -188,11 +188,16 @@ class IdleTests(unittest.TestCase):
         app.tv_control.restore_browsing.assert_not_called()
 
     def test_expiry_discards_draft_and_confirmation_without_saving_or_resetting(self):
-        for state, setup in ((State.CONFIRMING, None), (State.CONFIRM_CALLBACK, None), (State.HOME, 'reset')):
+        for state in (State.CONFIRMING, State.CONFIRM_CALLBACK, State.HOME):
             app = self.app()
             app.settings_open = True
-            app.settings_draft.open(app.model.config)
-            app.model.state, app.setup_stage = state, setup
+            if state == State.HOME:
+                app.settings_draft.page = 'maintenance'
+                app.settings_draft.maintenance_confirm = True
+                app.settings_draft.maintenance_index = 2
+            else:
+                app.settings_draft.open(app.model.config)
+            app.model.state = state
             before = dict(app.model.config)
             app.tick_tv_idle(0)
             app.tick_tv_idle(30)

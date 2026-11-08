@@ -45,6 +45,8 @@ def validate(config, device_id):
             raise ValueError('Sound volume must be 0–100 percent')
     if not isinstance(config.get('display_name'), str) or len(config['display_name']) > 80:
         raise ValueError('Invalid display name')
+    if not valid_photo_path(config.get('account_photo', '')):
+        raise ValueError('Invalid account portrait path')
     if not isinstance(config.get('language', 'en'), str) or config.get('language', 'en') not in LANGUAGES:
         raise ValueError('Unsupported terminal language')
     if type(config.get('auto_answer_seconds')) is not int or not 5 <= config['auto_answer_seconds'] <= 600:
@@ -91,8 +93,12 @@ def validate_contacts(contacts, sip):
         # Only an omitted path or an empty string means "no portrait". Testing
         # truthiness would admit null, false, zero and empty collections.
         photo = c.get('photo', '')
-        if not isinstance(photo, str) or (photo and not re.fullmatch(r'/photos/[a-f0-9]+\.(png|jpg|gif)', photo)):
+        if not valid_photo_path(photo):
             raise ValueError('Invalid photo path')
+
+
+def valid_photo_path(photo):
+    return isinstance(photo, str) and (not photo or re.fullmatch(r'/photos/[a-f0-9]+\.(png|jpg|gif)', photo) is not None)
 
 
 # @llr LLR-TERM-COM-005
