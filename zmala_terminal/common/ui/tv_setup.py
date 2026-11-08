@@ -21,16 +21,22 @@ class TVSetupView:
         self.tv_check_images = []
         self.tv_check_restore = False
         self.tv_profile_page = None
+        self.tv_save_request = None
         self.tv_profiles = tuple(DRIVERS)
         self.tv_profile_index = 0
         self.tv_profile_saved = read_profile(self.enrollment.path.parent / 'tv-profile.json')
 
     # @llr LLR-TERM-TV-019, LLR-TERM-TV-024
-    def restore_tv_capabilities(self):
+    def restore_tv_capabilities(self, profile=None):
         """Validate saved TV identity in the background, without a setup screen."""
         if not getattr(self.tv_control, 'supports_setup', True):
             return
-        profile = read_profile(self.enrollment.path.parent / 'tv-profile.json')
+        profile = profile or read_profile(self.enrollment.path.parent / 'tv-profile.json')
+        if self.tv_check:
+            self.tv_check.close()
+            self.tv_check = None
+        self.tv_check_restore = False
+        self.tv_profile_saved = profile
         self.tv_control.select_driver(profile)
         self.tv_control.power_enabled = self.tv_control.source_enabled = False
         path = self.enrollment.path.parent / 'tv-check.json'
@@ -59,17 +65,48 @@ class TVSetupView:
         self.tv_check_config = config
         self.setup_stage = 'tv'
         self.tv_profile_page = 'models'
-        self.tv_profile_saved = read_profile(self.enrollment.path.parent / 'tv-profile.json')
+        self.tv_profile_saved = config.get('tv_profile') or read_profile(self.enrollment.path.parent / 'tv-profile.json')
         self.tv_profile_index = self.tv_profiles.index(self.tv_profile_saved)
         return True
 
     def accept_tv_profile(self, test):
         profile = self.tv_profiles[self.tv_profile_index]
+        if self.configuration and 'tv_profile' in self.tv_check_config:
+            self.save_tv_settings(profile, test)
+        else:
+            self.apply_tv_selection(profile, test)
+
+    # @llr LLR-TERM-TV-024
+    def save_tv_settings(self, profile, test=False, results=None):
+        changes = {'tv_profile': profile}
+        if test or results is not None:
+            changes['tv_test_results'] = results
+        expected = {key: self.tv_check_config.get(key) for key in changes}
+        self.tv_save_request = (profile, test, results)
+        self.tv_profile_page = 'profile_saving'
+        self.submit_settings_write(changes, expected, 'tv-settings', self.tv_save_request)
+
+    def tv_settings_result(self, generation, request, success, config):
+        if (self.closed or generation != self.generation or self.setup_stage != 'tv'
+                or request is not self.tv_save_request):
+            return
+        profile, test, results = request
+        if not success:
+            self.tv_profile_page = 'profile_save_error'
+        else:
+            self.tv_check_config = config
+            if results is None:
+                self.apply_tv_selection(profile, test)
+            else:
+                self.finish_tv_setup()
+        self.render()
+
+    def apply_tv_selection(self, profile, test):
         try:
             write_profile(self.enrollment.path.parent / 'tv-profile.json', profile)
         except OSError:
             self.tv_profile_page = 'profile_save_error'
-            self.tv_profile_test = test
+            self.tv_save_request = (profile, test, None)
             return
         if profile != self.tv_profile_saved or test:
             self.tv_control.power_enabled = self.tv_control.source_enabled = False
@@ -85,10 +122,12 @@ class TVSetupView:
 
     def finish_tv_setup(self):
         self.tv_profile_page = None
+        self.tv_save_request = None
         self.setup_stage = None
         self.last_button = time.monotonic()
         self.settings_open = True
-        self.apply_config(self.pending_config or self.tv_check_config)
+        configs = [config for config in (self.pending_config, self.tv_check_config) if config]
+        self.apply_config(max(configs, key=lambda config: config['configuration_version']))
         self.tv_check_config = None
         self.maintenance = self.make_maintenance(self.configuration)
         self.settings_signature = None
@@ -119,7 +158,15 @@ class TVSetupView:
             self.tv_control.source_enabled = record['source']['status'] == 'passed'
             check.close()
             self.tv_check = None
-            self.finish_tv_setup()
+            if self.configuration and 'tv_profile' in self.tv_check_config:
+                results = {'device_id': self.tv_check_config['device_id'], 'profile': check.profile,
+                           'power': record['power']['status'], 'source': record['source']['status'],
+                           'power_attempts': record['power']['attempts'],
+                           'source_attempts': record['source']['attempts']}
+                self.save_tv_settings(check.profile, results=results)
+                self.render()
+            else:
+                self.finish_tv_setup()
 
     def tv_setup_button(self, button):
         if self.setup_stage == 'tv' and self.tv_profile_page:
@@ -133,10 +180,17 @@ class TVSetupView:
             elif self.tv_profile_page == 'test_controls' and button in ('green', 'red'):
                 self.accept_tv_profile(button == 'green')
             elif self.tv_profile_page == 'profile_save_error':
+                profile, test, results = self.tv_save_request
                 if button == 'green':
-                    self.accept_tv_profile(self.tv_profile_test)
+                    if self.configuration and 'tv_profile' in self.tv_check_config:
+                        self.save_tv_settings(profile, test, results)
+                    else:
+                        self.apply_tv_selection(profile, test)
                 elif button == 'red':
-                    self.tv_profile_page = 'models'
+                    if results is None:
+                        self.tv_profile_page = 'models'
+                    else:
+                        self.finish_tv_setup()
             self.render()
             return True
         if self.setup_stage == 'tv' and self.tv_check:
@@ -240,6 +294,9 @@ class TVSetupView:
     def draw_tv_profiles(self, w, h, label, text):
         c = self.tv_check_page
         profile = DRIVERS[self.tv_profiles[self.tv_profile_index]]
+        if self.tv_profile_page == 'profile_saving':
+            label(self.text('wait'), .45)
+            return
         if self.tv_profile_page == 'models':
             label(text('models'), .20, 24, maximum=70)
             gap, margin = 16, 34

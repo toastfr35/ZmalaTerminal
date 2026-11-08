@@ -3,6 +3,7 @@ import re
 from zmala_terminal.common.localization import LANGUAGES
 from zmala_terminal.common.local_settings import TV_IDLE_DELAYS
 from zmala_terminal.common.video_settings import FRAME_RATES
+from zmala_terminal.common.usb_policy import USB_POWER_MODES
 
 
 # @llr LLR-TERM-COM-004
@@ -34,6 +35,20 @@ def validate(config, device_id):
     if 'tv_idle_seconds' in config and (type(config['tv_idle_seconds']) is not int
                                         or config['tv_idle_seconds'] not in TV_IDLE_DELAYS):
         raise ValueError('Unsupported TV idle timeout')
+    if config.get('usb_power', 'always_on') not in USB_POWER_MODES:
+        raise ValueError('Unsupported USB power mode')
+    if config.get('tv_profile', '') not in ('', 'samsung', 'cec'):
+        raise ValueError('Unsupported TV model')
+    results = config.get('tv_test_results')
+    if results is not None:
+        if (not isinstance(results, dict) or results.get('device_id') != device_id
+                or results.get('profile') != config.get('tv_profile')
+                or results.get('profile') not in ('samsung', 'cec')):
+            raise ValueError('TV test results do not match this Terminal and model')
+        for key in ('power', 'source'):
+            attempts = results.get(key+'_attempts')
+            if results.get(key) not in ('passed', 'failed', 'skipped') or type(attempts) is not int or attempts < 0:
+                raise ValueError('Invalid TV test result')
     if 'auto_framing' in config and type(config['auto_framing']) is not bool:
         raise ValueError('Automatic framing must be enabled or disabled')
     if 'c20_speaker_volume' in config and (type(config['c20_speaker_volume']) is not int

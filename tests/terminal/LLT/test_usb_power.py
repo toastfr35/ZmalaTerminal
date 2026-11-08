@@ -1,7 +1,7 @@
 # @test T-LLT-037
 # @requirements LLR-TERM-POWER-012, LLR-TERM-POWER-013, LLR-TERM-POWER-014, LLR-TERM-POWER-015, LLR-TERM-POWER-016, LLR-TERM-POWER-017, LLR-TERM-MAINT-028
 # @environment portable
-# @plan Verify either supported USB identity may power down, but unrelated devices cannot. Control time, remote battery, hub status, input and call events with mocked USB helpers; assert five-minute inactivity and battery boundaries, immediate wake requests, media readiness gating, bounded retries and truthful power indication. Inject applied-volume status and worker time to verify ringing only after nonzero mixer convergence, atomic power telemetry, ringer termination escalation and unconditional shutdown power restoration.
+# @plan Verify either supported USB identity may power down, but unrelated devices cannot. Control time, remote battery, hub status, input and call events with mocked USB helpers; assert the three modes, sixty-second inactivity and battery boundaries, immediate wake requests, media readiness gating, bounded retries and truthful power indication. Inject applied-volume status and worker time to verify ringing only after nonzero mixer convergence, atomic power telemetry, ringer termination escalation and unconditional shutdown power restoration.
 # Verify successful transitions and shutdown are quiet while helper rollback errors
 # remain visible; ordinary power-on emits no helper diagnostics. No real USB is switched.
 # Root cleanup must skip every USB operation while a trusted trial fence exists;
@@ -137,16 +137,20 @@ class UsbPowerTests(unittest.TestCase):
         self.assertIn('power-off failed; restoring power', logs.output[0])
 
     def test_exact_idle_and_battery_boundaries(self):
-        self.assertFalse(should_power_off(299.9, 0, False, 100))
-        self.assertTrue(should_power_off(300, 0, False, 25))
+        self.assertFalse(should_power_off(59.9, 0, False, 100, 'camera'))
+        self.assertFalse(should_power_off(59.9, 0, False, 100, 'camera_and_dock'))
+        self.assertTrue(should_power_off(60, 0, False, 25, 'camera_and_dock'))
+        self.assertFalse(should_power_off(900, 0, False, 100, 'always_on'))
         for battery in (None, 24, 0, True, 101, '100'):
-            self.assertFalse(should_power_off(900, 0, False, battery))
-        self.assertFalse(should_power_off(900, 0, True, 100))
+            self.assertFalse(should_power_off(900, 0, False, battery, 'camera_and_dock'))
+            self.assertTrue(should_power_off(60, 0, False, battery, 'camera'))
+        self.assertFalse(should_power_off(900, 0, True, 100, 'camera'))
 
     def controller(self):
         with patch.dict('os.environ', {}, clear=True):
             power = UsbPower(Path('.'))
         power.enabled = True
+        power.mode = 'camera_and_dock'
         return power
 
     def test_every_press_wakes_before_setup_can_consume_it(self):
@@ -161,7 +165,7 @@ class UsbPowerTests(unittest.TestCase):
                 action()
             self.assertEqual(app.usb_power.last_use, 1000)
             self.assertTrue(app.usb_power.changed.is_set())
-            self.assertFalse(should_power_off(1299, app.usb_power.last_use, False, 95))
+            self.assertFalse(should_power_off(1059, app.usb_power.last_use, False, 95, 'camera_and_dock'))
 
     def test_idle_starts_after_activity_ends(self):
         power = self.controller()
@@ -176,11 +180,12 @@ class UsbPowerTests(unittest.TestCase):
         app = ManagementLoop(); app.callbacks = CallbackController()
         app.usb_power = Mock(enabled=True)
         app.setup_stage = app.scanner = app.engine = None
-        app.model = Mock(state=State.HOME)
+        app.model = Mock(state=State.HOME, config={'usb_power': 'camera'})
         app.settings_open = False
         app.keys_down = {'red'}
         app.presenter_input = Mock(battery=95)
         app.tick_usb()
+        app.usb_power.set_mode.assert_called_once_with('camera')
         app.usb_power.update.assert_called_once_with(True, 95, False)
 
     def test_incoming_call_wakes_before_tv_work(self):

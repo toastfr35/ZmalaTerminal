@@ -19,6 +19,7 @@ def config():
     return {'schema_version': 1, 'configuration_version': 1, 'device_id': 'test',
             'call_auth_key': 'a-long-test-device-secret',
             'display_name': 'Family', 'account_photo': '', 'auto_answer_seconds': 5,
+            'usb_power': 'always_on', 'tv_profile': '', 'tv_test_results': None,
             'sip': {'username': 'terminal', 'password': 'secret', 'domain': 'family.test', 'proxy': 'sip:family.test'},
             'contacts': [{'id': 'alice', 'name': 'Alice', 'sip_uri': 'sip:alice@family.test',
                           'can_call': True, 'can_receive': True, 'auto_answer': True, 'online': True}]}

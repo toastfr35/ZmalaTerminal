@@ -60,6 +60,9 @@ text: |
   shall return to the same action without executing it. Confirmed host
   shutdown and reboot shall request the corresponding orderly system action.
   The Windows acceptance fixture shall simulate all three actions.
+  USB power shall offer three wrapping choices with the saved mode shown in
+  the main carousel. Accept shall save through the authenticated settings
+  endpoint. Cancel shall discard the draft.
 verification: |
   Navigate every setting and both carousel wrap boundaries. Verify five visible
   icon cards with saved values, green acknowledgement, red cancellation and the

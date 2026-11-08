@@ -10,15 +10,9 @@ import time
 import wave
 from zmala_terminal.linux.nuroum import supported_name, playback_device
 from zmala_terminal.linux.sound_levels import ToneLevels, playback_environment
+from zmala_terminal.common.usb_policy import should_power_off
 
-IDLE_SECONDS = 300
 HELPER = '/usr/local/libexec/zmala-usb-power'
-
-
-# @llr LLR-TERM-POWER-013, LLR-TERM-POWER-014
-def should_power_off(now, last_use, active, battery):
-    return (not active and type(battery) is int and 25 <= battery <= 100
-            and now - last_use >= IDLE_SECONDS)
 
 
 def media_present():
@@ -44,6 +38,7 @@ class UsbPower:
         self.deferred = defer
         self.preserve_shutdown = defer
         self.active, self.battery, self.ringing = True, None, False
+        self.mode = 'always_on'
         self.updated = self.last_use = time.monotonic()
         self.state = 'starting' if self.enabled else 'unsupported'
         self.powered = None  # Confirmed supply state, independent of camera readiness.
@@ -89,6 +84,16 @@ class UsbPower:
     def power_state(self):
         with self.lock:
             return self.powered
+
+    # @llr LLR-TERM-POWER-013
+    def set_mode(self, mode):
+        with self.lock:
+            if mode == self.mode:
+                return
+            self.mode = mode
+            self.last_use = time.monotonic()
+            self.wake_serial += 1
+        self.changed.set()
 
     def update(self, active, battery, ringing=False):
         if active and self.deferred:
@@ -287,7 +292,7 @@ class UsbPower:
                         next_attempt = 0  # New user/call activity bypasses a failed attempt's backoff.
                     # A stalled UI or stale battery must never leave the charger off.
                     active = self.active or now - self.updated > 10
-                    off = should_power_off(now, self.last_use, active, self.battery)
+                    off = should_power_off(now, self.last_use, active, self.battery, self.mode)
                     desired = 'off' if off else 'on'
                     state = self.state
                     if now >= next_status:
@@ -309,7 +314,7 @@ class UsbPower:
                         # A call may request wake after this worker's snapshot.
                         # Claim the transition under the same lock as require().
                         if desired == 'off' and not should_power_off(time.monotonic(), self.last_use,
-                                self.active or time.monotonic() - self.updated > 10, self.battery):
+                                self.active or time.monotonic() - self.updated > 10, self.battery, self.mode):
                             continue
                         self.state = 'switching'
                         self.powered = None

@@ -17,7 +17,8 @@ KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume'
         'terminal_details', 'device_id', 'os_version', 'software_version', 'ip_address',
         'account', 'account_id', 'account_name', 'no_portrait', 'unavailable',
         'shutdown', 'reboot', 'confirm_shutdown', 'confirm_reboot', 'back',
-        'power_requested', 'power_failed', 'power_unavailable', 'simulated')
+        'power_requested', 'power_failed', 'power_unavailable', 'simulated',
+        'usb_power', 'usb_always_on', 'usb_camera', 'usb_camera_and_dock', 'usb_power_unavailable')
 
 UPDATE_MESSAGES = {
     'en': {'checking': 'Checking for updates…', 'current': 'Your software is up to date.',
@@ -60,6 +61,8 @@ class SettingsView(SystemSettingsView):
             return profile.model_family if profile.brand == 'Generic' else profile.brand
         if key in ('updates', 'information', 'maintenance'):
             return ''
+        if key == 'usb_power':
+            return self.settings_text('usb_'+value)
         if key == 'language':
             return LANGUAGES[value]['native']
         if key in ('auto_answer', 'tv_idle_seconds'):
@@ -255,6 +258,10 @@ class SettingsView(SystemSettingsView):
         current = self.settings_value(key, SettingsDraft.value(config, key))
         self.settings_label(self.settings_text('current')+' : '+current, width/2, height-155,
                             width-128, 20, MUTED, anchor='center', max_height=42)
+        if (key == 'usb_power' and not getattr(self, 'simulate_usb_power', False)
+                and not getattr(getattr(self, 'usb_power', None), 'enabled', False)):
+            self.settings_label(self.settings_text('usb_power_unavailable'), width/2, height-113,
+                                width-100, 16, MUTED, anchor='center', max_height=34)
         if key == 'ringtone' and not draft.busy and not draft.error:
             preview = getattr(self, 'ringtone_preview_state', '')
             caption = self.text('help') if preview == 'error' else self.text('wait') if preview == 'waiting' else '0 %' if preview == 'muted' else '♫' if preview == 'playing' else ''
@@ -267,7 +274,7 @@ class SettingsView(SystemSettingsView):
         count = 2 if two_boxes else min(5, len(draft.options))
         indices = list(range(count)) if two_boxes or count < 5 else [(draft.index+offset) % len(draft.options) for offset in (-2,-1,0,1,2)]
         gap, available = (24, min(1080, width-144)) if two_boxes else (14, width-112)
-        card_width = (available-gap*(count-1))/count if two_boxes else (available-4*gap)/5
+        card_width = (available-gap*(count-1))/count if two_boxes or key == 'usb_power' else (available-4*gap)/5
         available = count*card_width+(count-1)*gap
         left = (width-available)/2
         for slot, index in enumerate(indices):

@@ -33,6 +33,8 @@ class MemoryConfiguration:
         self.ringtones.configure(self.value)
 
     def update_settings(self, changes, expected):
+        if 'tv_profile' in changes and changes['tv_profile'] != self.value.get('tv_profile'):
+            changes = {'tv_test_results': None, **changes}
         self.value = dict(self.value, **changes,
                           configuration_version=self.value['configuration_version']+1)
         return self.value
@@ -43,6 +45,7 @@ class MemoryConfiguration:
 
 class Preview(Terminal):
     portrait_url = '/photos/a11ce.png'
+    simulate_usb_power = True
 
     def restore_enrollment(self, *args):
         self.setup_stage = None
@@ -59,7 +62,7 @@ class Preview(Terminal):
             'auto_answer': False, 'auto_answer_seconds': 30}, self.enrollment.path.parent/'ringtones')
         self.apply_config(self.configuration.value)
         self.settings_open = True
-        self.settings_draft.row = FIELDS.index('information')
+        self.settings_draft.row = FIELDS.index('usb_power')
         self.render()
         self.root.after(30, self.preview_tick)
 

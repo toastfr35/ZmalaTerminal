@@ -38,6 +38,9 @@ class ConfigurationControl:
             self.render()
             return
         self.carousel_motion = None
+        tv_profile = config.get('tv_profile')
+        if tv_profile and tv_profile != getattr(self, 'tv_profile_saved', tv_profile):
+            self.restore_tv_capabilities(tv_profile)
         if time.monotonic() < getattr(self, 'engine_retry_at', 0):
             self.pending_config = config
             return

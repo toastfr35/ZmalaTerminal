@@ -38,7 +38,12 @@
     "Anforderung gesendet.",
     "Die Aktion ist fehlgeschlagen.",
     "Die Aktion ist auf diesem Computer nicht verfügbar.",
-    "Simulation abgeschlossen."
+    "Simulation abgeschlossen.",
+    "USB-Stromversorgung",
+    "Immer an",
+    "Automatisch für Kamera",
+    "Automatisch für Kamera und Ladestation",
+    "Automatische USB-Stromsteuerung ist hier nicht verfügbar."
   ],
   "en": [
     "Settings",
@@ -79,7 +84,12 @@
     "Power action requested.",
     "The power action failed.",
     "This action is unavailable on this computer.",
-    "Simulation complete."
+    "Simulation complete.",
+    "USB power",
+    "Always on",
+    "Auto on/off for camera only",
+    "Auto on/off for camera and remote dock",
+    "Automatic USB power is unavailable on this terminal."
   ],
   "es": [
     "Ajustes",
@@ -120,7 +130,12 @@
     "Se ha solicitado la acción.",
     "No se pudo realizar la acción.",
     "Esta acción no está disponible en este equipo.",
-    "Simulación completada."
+    "Simulación completada.",
+    "Alimentación USB",
+    "Siempre encendida",
+    "Automática solo para la cámara",
+    "Automática para cámara y base del mando",
+    "El control automático de USB no está disponible."
   ],
   "fr": [
     "Réglages",
@@ -161,7 +176,12 @@
     "Action demandée.",
     "L’action a échoué.",
     "Cette action est indisponible sur cet ordinateur.",
-    "Simulation terminée."
+    "Simulation terminée.",
+    "Alimentation USB",
+    "Toujours allumée",
+    "Automatique pour la caméra seule",
+    "Automatique pour la caméra et le socle de la télécommande",
+    "La gestion automatique de l’alimentation USB est indisponible."
   ],
   "pl": [
     "Ustawienia",
@@ -202,7 +222,12 @@
     "Wysłano żądanie.",
     "Nie udało się wykonać akcji.",
     "Ta akcja jest niedostępna na tym komputerze.",
-    "Symulacja zakończona."
+    "Symulacja zakończona.",
+    "Zasilanie USB",
+    "Zawsze włączone",
+    "Automatycznie tylko dla kamery",
+    "Automatycznie dla kamery i stacji pilota",
+    "Automatyczne zasilanie USB jest niedostępne."
   ],
   "pt": [
     "Definições",
@@ -243,7 +268,12 @@
     "Ação solicitada.",
     "Não foi possível executar a ação.",
     "Esta ação não está disponível neste computador.",
-    "Simulação concluída."
+    "Simulação concluída.",
+    "Alimentação USB",
+    "Sempre ligada",
+    "Automática só para a câmara",
+    "Automática para a câmara e a base do comando",
+    "O controlo automático da alimentação USB está indisponível."
   ],
   "el": [
     "Ρυθμίσεις",
@@ -284,7 +314,12 @@
     "Η ενέργεια ζητήθηκε.",
     "Η ενέργεια απέτυχε.",
     "Η ενέργεια δεν είναι διαθέσιμη σε αυτόν τον υπολογιστή.",
-    "Η προσομοίωση ολοκληρώθηκε."
+    "Η προσομοίωση ολοκληρώθηκε.",
+    "Τροφοδοσία USB",
+    "Πάντα ενεργή",
+    "Αυτόματα μόνο για την κάμερα",
+    "Αυτόματα για κάμερα και βάση τηλεχειριστηρίου",
+    "Η αυτόματη τροφοδοσία USB δεν είναι διαθέσιμη."
   ],
   "ru": [
     "Настройки",
@@ -325,7 +360,12 @@
     "Запрос отправлен.",
     "Не удалось выполнить действие.",
     "Действие недоступно на этом компьютере.",
-    "Симуляция завершена."
+    "Симуляция завершена.",
+    "Питание USB",
+    "Всегда включено",
+    "Автоматически только для камеры",
+    "Автоматически для камеры и зарядной базы пульта",
+    "Автоматическое питание USB недоступно."
   ],
   "ur": [
     "ترتیبات",
@@ -366,7 +406,12 @@
     "درخواست بھیج دی گئی۔",
     "عمل ناکام رہا۔",
     "یہ عمل اس کمپیوٹر پر دستیاب نہیں۔",
-    "آزمائشی عمل مکمل۔"
+    "آزمائشی عمل مکمل۔",
+    "USB پاور",
+    "ہمیشہ آن",
+    "خودکار، صرف کیمرا",
+    "خودکار، کیمرا اور ریموٹ ڈاک",
+    "خودکار USB پاور دستیاب نہیں۔"
   ],
   "ar": [
     "الإعدادات",
@@ -407,7 +452,12 @@
     "تم إرسال الطلب.",
     "تعذّر تنفيذ الإجراء.",
     "هذا الإجراء غير متاح على هذا الكمبيوتر.",
-    "اكتملت المحاكاة."
+    "اكتملت المحاكاة.",
+    "طاقة USB",
+    "تشغيل دائم",
+    "تشغيل وإيقاف تلقائيان للكاميرا فقط",
+    "تشغيل وإيقاف تلقائيان للكاميرا وقاعدة الشحن",
+    "التحكم التلقائي في طاقة USB غير متاح."
   ],
   "hi": [
     "सेटिंग्स",
@@ -448,7 +498,12 @@
     "अनुरोध भेजा गया।",
     "कार्रवाई पूरी नहीं हुई।",
     "यह कार्रवाई इस कंप्यूटर पर उपलब्ध नहीं है।",
-    "सिमुलेशन पूरा हुआ।"
+    "सिमुलेशन पूरा हुआ।",
+    "USB पावर",
+    "हमेशा चालू",
+    "सिर्फ़ कैमरे के लिए स्वचालित",
+    "कैमरे और रिमोट डॉक के लिए स्वचालित",
+    "स्वचालित USB पावर उपलब्ध नहीं है।"
   ],
   "bn": [
     "সেটিংস",
@@ -489,7 +544,12 @@
     "অনুরোধ পাঠানো হয়েছে।",
     "কাজটি সম্পন্ন হয়নি।",
     "এই কম্পিউটারে এই কাজটি করা যায় না।",
-    "সিমুলেশন সম্পন্ন হয়েছে।"
+    "সিমুলেশন সম্পন্ন হয়েছে।",
+    "USB পাওয়ার",
+    "সব সময় চালু",
+    "শুধু ক্যামেরার জন্য স্বয়ংক্রিয়",
+    "ক্যামেরা ও রিমোট ডকের জন্য স্বয়ংক্রিয়",
+    "স্বয়ংক্রিয় USB পাওয়ার উপলব্ধ নয়।"
   ],
   "th": [
     "การตั้งค่า",
@@ -530,7 +590,12 @@
     "ส่งคำขอแล้ว",
     "ดำเนินการไม่สำเร็จ",
     "คอมพิวเตอร์นี้ไม่รองรับการดำเนินการนี้",
-    "การจำลองเสร็จสิ้น"
+    "การจำลองเสร็จสิ้น",
+    "ไฟเลี้ยง USB",
+    "เปิดตลอด",
+    "อัตโนมัติสำหรับกล้องเท่านั้น",
+    "อัตโนมัติสำหรับกล้องและแท่นชาร์จรีโมต",
+    "ไม่สามารถควบคุมไฟเลี้ยง USB อัตโนมัติได้"
   ],
   "ko": [
     "설정",
@@ -571,7 +636,12 @@
     "요청을 보냈습니다.",
     "작업을 완료하지 못했습니다.",
     "이 컴퓨터에서는 이 작업을 수행할 수 없습니다.",
-    "시뮬레이션을 완료했습니다."
+    "시뮬레이션을 완료했습니다.",
+    "USB 전원",
+    "항상 켜기",
+    "카메라만 자동 제어",
+    "카메라 및 리모컨 충전 독 자동 제어",
+    "이 단말기에서는 USB 전원 자동 제어를 사용할 수 없습니다."
   ],
   "ja": [
     "設定",
@@ -612,7 +682,12 @@
     "操作を要求しました。",
     "操作に失敗しました。",
     "このコンピューターではこの操作を実行できません。",
-    "シミュレーションが完了しました。"
+    "シミュレーションが完了しました。",
+    "USB 電源",
+    "常時オン",
+    "カメラのみ自動オン／オフ",
+    "カメラとリモコンの充電台を自動オン／オフ",
+    "この端末では USB 電源の自動制御を利用できません。"
   ],
   "zh-Hans": [
     "设置",
@@ -653,6 +728,11 @@
     "已发送操作请求。",
     "操作失败。",
     "此计算机不支持此操作。",
-    "模拟完成。"
+    "模拟完成。",
+    "USB 电源",
+    "始终开启",
+    "仅按摄像头使用情况自动开关",
+    "按摄像头和遥控器充电座需求自动开关",
+    "此终端不支持自动控制 USB 电源。"
   ]
 }

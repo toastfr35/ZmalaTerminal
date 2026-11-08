@@ -5,7 +5,7 @@ header: |
   USB idle eligibility
 level: 112.0
 links:
-- HLR-TERM-POWER-009: oGYlIu6lXZLPntVWKgFFQbHA7ACQo9BqHMVeUOPF1TI=
+- HLR-TERM-POWER-009: gpfZjPy0B5g9VYPvwSc46yiomB4g0oWmkXJbr4emc_s=
 normative: true
 ref: ''
 references:
@@ -17,13 +17,17 @@ references:
   type: file
 - path: zmala_terminal/linux/usb_power.py
   type: file
+- path: zmala_terminal/common/usb_policy.py
+  type: file
 reviewed: null
 scope: Experimental
 text: |
-  USB power removal shall require five continuous minutes without terminal activity
-  and a fresh remote battery level of at least 25 percent. Calls, ringing, setup,
-  Settings, held buttons, stale application state and low or unknown battery shall
-  retain or restore power. The idle interval shall start when ongoing activity ends.
+  Always on shall retain power. Both automatic modes shall switch the shared
+  supply off after 60 seconds of inactivity. Camera only shall ignore the
+  battery. Camera and dock mode shall retain or restore power below 25 percent
+  or with an unknown battery level. Calls, ringing, active setup, held buttons,
+  ringtone preview and stale application state shall retain or restore power.
+  The idle interval shall start when ongoing activity ends.
 verification: |
-  Exercise the five-minute and battery boundaries and each inhibitor with a controlled
-  clock. Check that stale and unknown data cannot permit power-off.
+  Exercise the 60-second and 25-percent boundaries and each inhibitor with a
+  controlled clock. Check all three modes and the missing battery behavior.
