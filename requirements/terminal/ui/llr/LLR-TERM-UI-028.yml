@@ -19,7 +19,9 @@ scope: Experimental
 text: A separate unprivileged display process shall render activation/check/rollback/error
   messages for every supported locale with Unicode and bidirectional shaping, use
   English for an unknown locale, survive application-process exit, and withdraw for
-  idle/background phases. It shall issue no TV, USB or call-control operations.
+  idle/background phases. When the system updater provides a download percentage,
+  it shall display the transfer message, bar and percentage until the transfer ends.
+  It shall issue no TV, USB or call-control operations.
 verification: Compare language coverage with the catalogue and run display integration
-  to inspect bounds and mapped state across a disposable app exit. Review representative
+  to inspect bounds, progress and mapped state across a disposable app exit. Review representative
   rendered language images separately.

@@ -50,6 +50,11 @@ button test confirms that the remote works before setup continues. The camera
 reads a Wi-Fi code and a server code. The server code supplies the terminal
 identity and access credentials.
 
+If the saved remote is disconnected, the Terminal shows how to switch it on
+with a one-minute countdown. If it still has not connected, hold the Bluetooth
+button as shown on the pairing screen. The previous pairing can still reconnect
+until a replacement pairs successfully. The button test runs for the new pairing.
+
 Setup shows an error when an operation fails. It continues only when that step
 has completed. Enrollment then goes to the contact screen. Optional TV tests
 are available on the TV setup card in Settings and use the selected language.

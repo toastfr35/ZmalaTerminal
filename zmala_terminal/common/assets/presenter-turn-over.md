@@ -1,5 +1,9 @@
 # Turn-over instruction picture
 
+November 2026 background edit (built-in image generation). Remove the textured
+navy background, preserving the canvas, remote artwork, arrows and power highlight.
+The transparent margins let the picture sit on the Terminal's black background.
+
 October 2026 sticker update (built-in image-generation edit): Add plain solid
 green and red round stickers over the front microphone and Teams logos,
 respectively, hiding both symbols completely. Preserve the composition,

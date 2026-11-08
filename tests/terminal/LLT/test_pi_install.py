@@ -1,5 +1,5 @@
 # @test T-LLT-026
-# @requirements LLR-TERM-SETUP-023, LLR-TERM-SETUP-026, LLR-TERM-UI-018, LLR-TERM-NET-006, LLR-TERM-MAINT-013
+# @requirements LLR-TERM-SETUP-023, LLR-TERM-SETUP-024, LLR-TERM-SETUP-026, LLR-TERM-UI-018, LLR-TERM-NET-006, LLR-TERM-MAINT-013
 # @environment portable
 # @plan Feed runtime display, firewall and Bluetooth helpers synthetic observations. Assert supported connected display selection, interface-scoped firewall rules, bounded RAM journal/zram policy and exclusive verified Presenter pairing. Exercise BlueZ initialization, discovery, asynchronous trust/connect, retry backoff and agent restart with fake D-Bus and temporary state files. Effective mounts and reboot persistence require HLT.
 # @pass All named assertion cases must pass; skips and visual/hardware checks are recorded separately.
@@ -105,6 +105,52 @@ class PiInstallTests(unittest.TestCase):
             self.assertTrue(agent.failed)
             agent.loop.quit.assert_called_once()
 
+    def test_recovery_keeps_the_bond_until_a_replacement_pairs(self):
+        agent, bus, glib = self.pairing()
+        remote = {'Name': pair.NAME, 'UUIDs': [pair.HID], 'Paired': True, 'Trusted': True, 'Connected': False}
+        objects = {'/adapter': {'org.bluez.Adapter1': {'Powered': True}},
+                   '/saved': {'org.bluez.Device1': remote}}
+        bus.call_sync.return_value.unpack.side_effect = lambda: (objects,)
+        with tempfile.TemporaryDirectory() as folder, patch.object(pair, 'STATUS', Path(folder)/'status.json'), \
+                patch.object(pair, 'BOND', Path(folder)/'bond.json'), patch.object(pair.time, 'monotonic') as clock:
+            clock.return_value = 100
+            agent.tick()
+            token = agent.state['bond']
+            self.assertEqual(agent.state['reconnect_seconds'], 60)
+            clock.return_value = 159
+            agent.tick()
+            self.assertIsNone(agent.discovery)
+            clock.return_value = 160
+            agent.tick()
+            self.assertEqual(agent.state['reconnect_seconds'], 0)
+            self.assertEqual(pair.saved_bond()['token'], token)
+            self.assertEqual(agent.discovery, '/adapter')
+
+            remote['Connected'] = True
+            agent.tick()
+            self.assertEqual(agent.state, {'state': 'paired', 'bond': token})
+            self.assertIsNone(agent.discovery)
+
+            remote['Connected'] = False
+            agent.tick()
+            clock.return_value = 220
+            agent.tick()
+            objects['/new'] = {'org.bluez.Device1': {'Name': pair.NAME, 'UUIDs': [pair.HID], 'RSSI': -45}}
+            agent.tick()
+            self.assertEqual(agent.target, '/new')
+            bus.call_finish.side_effect = glib.Error()
+            agent.paired(bus, 'failed', None)
+            self.assertEqual(pair.saved_bond()['token'], token)
+            self.assertNotIn('RemoveDevice', [c.args[3] for c in bus.call_sync.call_args_list])
+
+            clock.return_value = 230
+            agent.tick()
+            bus.call_finish.side_effect = None
+            agent.paired(bus, 'paired', None)
+            self.assertEqual(pair.saved_bond()['device'], '/new')
+            self.assertNotEqual(agent.state['bond'], token)
+            self.assertEqual(bus.call_sync.call_args.args[3:5], ('RemoveDevice', ('(o)', ('/saved',))))
+
     def test_pairing_main_exits_on_lost_agent_and_schedules_healthy_agent(self):
         for initial, failed in [(False, False), (True, True), (True, False)]:
             agent = Mock(failed=failed)
@@ -118,7 +164,7 @@ class PiInstallTests(unittest.TestCase):
                     pair.main()
             self.assertEqual(agent.loop.run.called, initial)
             if initial:
-                agent.GLib.timeout_add_seconds.assert_called_once_with(2, agent.tick)
+                agent.GLib.timeout_add_seconds.assert_called_once_with(1, agent.tick)
 
 
     def test_boot_guard_prepares_sshd_directory_before_configuration_probe(self):

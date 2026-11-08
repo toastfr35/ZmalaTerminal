@@ -18,11 +18,11 @@ class UpdateScreenTests(unittest.TestCase):
     def test_all_locales_fit_and_independent_window_survives_app_exit(self):
         for width,height in ((900,620),(1280,720)):
             for language in MESSAGES:
-                for phase in STATES:
+                for phase in (*STATES, 'downloading'):
                     png,(w,h)=render_message(message(language,phase),language,width,height)
                     self.assertTrue(png.startswith(b'\x89PNG'));self.assertLessEqual(w,width*.81);self.assertLessEqual(h,height*.65)
         with tempfile.TemporaryDirectory() as folder:
-            state=Path(folder)/'state';state.write_text(json.dumps({'phase':'updating','language':'fr'}))
+            state=Path(folder)/'state';state.write_text(json.dumps({'phase':'updating','language':'fr','download_percent':0}))
             evidence=Path(folder)/'evidence'
             script="""import tkinter as tk,json,sys
 from pathlib import Path
@@ -32,7 +32,9 @@ def construct():
  root=original()
  def inspect():
   root.update_idletasks()
-  Path(sys.argv[2]).write_text(json.dumps({'mapped':bool(root.winfo_ismapped()),'image':str(getattr(root,'image',''))}))
+  canvas=root.winfo_children()[0]
+  progress=[canvas.itemcget(item,'text') for item in canvas.find_withtag('download') if canvas.type(item)=='text']
+  Path(sys.argv[2]).write_text(json.dumps({'mapped':bool(root.winfo_ismapped()),'image':str(getattr(root,'image','')),'progress':progress}))
   root.after(100,inspect)
  root.after(100,inspect)
  return root
@@ -54,6 +56,11 @@ main(sys.argv[1])
             try:
                 initial=wait_for(lambda:window() if window()['mapped'] else None)
                 app.wait(timeout=5);self.assertIsNone(display.poll())
+                self.assertEqual(initial['progress'], ['0%'])
+                state.write_text(json.dumps({'phase':'updating','language':'fr','download_percent':42}))
+                wait_for(lambda:window()['progress'] == ['42%'])
+                state.write_text(json.dumps({'phase':'updating','language':'fr'}))
+                wait_for(lambda:window()['mapped'] and not window()['progress'])
                 state.write_text(json.dumps({'phase':'rollback','language':'ar'}));time.sleep(.6)
                 wait_for(lambda:window()['mapped'] and window()['image'] != initial['image'])
                 state.write_text(json.dumps({'phase':'idle','language':'ar'}))

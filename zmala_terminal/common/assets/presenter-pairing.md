@@ -1,5 +1,9 @@
 # Presenter Bluetooth pairing illustration
 
+November 2026 background edit (built-in image generation). Remove the textured
+navy background, preserving the canvas, remote artwork, arrows and Bluetooth
+highlight. The transparent margins let the picture sit on the black background.
+
 `presenter-pairing.png` shows the front and back of the remote, with a turn-over
 arrow and a highlight around the rear Bluetooth button. Text is overlaid by
 the terminal using its selected language. The separate power-help illustration

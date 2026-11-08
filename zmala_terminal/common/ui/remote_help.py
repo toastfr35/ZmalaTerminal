@@ -3,7 +3,7 @@ import time
 import tkinter as tk
 from zmala_terminal.common.configuration import ROOT
 from zmala_terminal.common.model import State
-from zmala_terminal.common.theme import BG, FG, MUTED
+from zmala_terminal.common.theme import BG, FG, GREEN, MUTED, PANEL
 from zmala_terminal.common.ui.remote_test import RemoteTestView
 
 
@@ -27,7 +27,28 @@ class RemoteHelpView(RemoteTestView):
         self.remote_help_title.pack(before=self.remote_help_icon, pady=(0, 16))
         self.remote_help_detail = tk.Label(content, bg=BG, fg=MUTED, justify='center')
         self.remote_help_detail.pack()
+        self.remote_countdown = tk.Canvas(content, bg=BG, height=44, highlightthickness=0)
         self.build_remote_test()
+
+    def reconnect_seconds(self):
+        seconds = getattr(getattr(self, 'pairing_status', None), 'reconnect_seconds', None)
+        return seconds if type(seconds) is int else None
+
+    def draw_reconnect_countdown(self, seconds, width):
+        bar = getattr(self, 'remote_countdown', None)
+        if bar is None:
+            return
+        if not seconds:
+            bar.pack_forget()
+            return
+        length = min(420, width // 2)
+        bar.configure(width=length)
+        bar.delete('all')
+        bar.create_rectangle(0, 4, length, 14, fill=PANEL, width=0)
+        bar.create_rectangle(0, 4, length * seconds / 60, 14, fill=GREEN, width=0)
+        bar.create_text(length / 2, 32, text=f'0:{seconds:02d}' if seconds < 60 else '1:00',
+                        fill=FG, font=(self.font_family, 16))
+        bar.pack(pady=(12, 0))
 
     def remote_back_picture(self, height, pairing=False):
         from PIL import Image, ImageTk
@@ -70,7 +91,9 @@ class RemoteHelpView(RemoteTestView):
             self.remote_missing_since = None
         elif self.remote_missing_since is None:
             self.remote_missing_since = now
-        visible = (self.remote_missing_since is not None and now - self.remote_missing_since >= 5
+        seconds = self.reconnect_seconds() if status in ('disconnected', 'unknown') else None
+        visible = (self.remote_missing_since is not None
+                   and (seconds is not None or now - self.remote_missing_since >= 5)
                    and self.model.state == State.HOME and not self.setup_stage
                    and not getattr(self, 'settings_open', False)
                    and not (getattr(self, 'settings_hold', None) and self.settings_hold.capturing))
@@ -79,11 +102,13 @@ class RemoteHelpView(RemoteTestView):
             self.remote_help_signature = None
             return
         width = max(400, self.root.winfo_width() - 100)
-        picture_height = max(160, min(340, int((self.root.winfo_height() - 80) * .5)))
-        signature = (status, width, picture_height, self.language)
+        picture_height = max(150, min(340, int((self.root.winfo_height() - 140) * .5), width * 9 // 16))
+        key = status if status in ('unpaired', 'bluetooth_unavailable', 'blocked', 'input_unavailable') else 'disconnected'
+        if seconds == 0:
+            key = 'unpaired'
+        signature = (key, width, picture_height, self.language)
         if signature != self.remote_help_signature:
             self.remote_help_signature = signature
-            key = status if status in ('unpaired', 'bluetooth_unavailable', 'blocked', 'input_unavailable') else 'disconnected'
             for widget, suffix, size, color in [(self.remote_help_title, 'title', 30, FG),
                                                (self.remote_help_detail, 'detail', 21, MUTED)]:
                 text = self.text('remote_' + key + '_' + suffix)
@@ -91,13 +116,15 @@ class RemoteHelpView(RemoteTestView):
                 widget.configure(text=text, image=picture if picture else '', wraplength=width,
                                  font=(self.font_family, size))
                 widget.image = picture
-            if key in ('disconnected', 'input_unavailable'):
-                picture = self.remote_back_picture(picture_height)
+            if key in ('disconnected', 'input_unavailable', 'unpaired'):
+                picture = self.remote_back_picture(picture_height, pairing=key == 'unpaired')
             else:
                 picture = self.icon_renderer.bluetooth(76, MUTED, BG, False)
             self.remote_help_icon.configure(image=picture)
             self.remote_help_icon.image = picture
-            self.label_remote_picture(picture_height, key in ('disconnected', 'input_unavailable'))
+            self.label_remote_picture(picture_height, key in ('disconnected', 'input_unavailable', 'unpaired'),
+                                      pairing=key == 'unpaired')
+        self.draw_reconnect_countdown(seconds, width)
         self.carousel_motion = None
         # Leave the existing connectivity icons visible. Never wake the TV.
         self.remote_help.place(x=0, y=80, relwidth=1, relheight=1, height=-80)
@@ -139,8 +166,13 @@ class RemoteHelpView(RemoteTestView):
         self.remote_test_page.place_forget()
         width = max(400, self.root.winfo_width() - 100)
         key = 'bluetooth_unavailable' if self.pairing_status.read() == 'bluetooth_unavailable' else 'unpaired'
+        seconds = None
         if self.pairing_status.read() == 'paired':
-            key = 'disconnected' if getattr(self.presenter_input, 'status', None) == 'disconnected' else 'input_unavailable'
+            if getattr(self.presenter_input, 'status', None) in ('disconnected', 'unknown'):
+                seconds = self.reconnect_seconds()
+                key = 'unpaired' if seconds == 0 else 'disconnected'
+            else:
+                key = 'input_unavailable'
         picture_height = max(180, min(300, self.root.winfo_height() - 400))
         signature = ('pairing-page', key, width, picture_height, self.language)
         if signature != self.remote_help_signature:
@@ -152,11 +184,13 @@ class RemoteHelpView(RemoteTestView):
                 widget.configure(text=text, image=picture if picture else '', wraplength=width,
                                  font=(self.font_family, size))
                 widget.image = picture
-            picture = (self.remote_back_picture(picture_height, pairing=True) if key == 'unpaired'
+            picture = (self.remote_back_picture(picture_height, pairing=key == 'unpaired')
+                       if key in ('unpaired', 'disconnected')
                        else self.icon_renderer.bluetooth(100, MUTED, BG, False))
             self.remote_help_icon.configure(image=picture)
             self.remote_help_icon.image = picture
-            self.label_remote_picture(picture_height, key == 'unpaired', pairing=True)
+            self.label_remote_picture(picture_height, key in ('unpaired', 'disconnected'), pairing=key == 'unpaired')
+        self.draw_reconnect_countdown(seconds, width)
         self.remote_help.place(x=0, y=0, relwidth=1, relheight=1)
         self.remote_help.lift()
         return True

@@ -64,6 +64,17 @@ with tempfile.TemporaryDirectory() as folder:
                     y = widget.winfo_rooty() - app.root.winfo_rooty()
                     assert 0 <= x and x + widget.winfo_width() <= width, (language, width, x)
                     assert 0 <= y and y + widget.winfo_height() <= height, (language, height, y)
+        app.presenter_input.status = 'disconnected'
+        for seconds, title in [(60, 'Turn your remote over'), (0, 'Connect your remote')]:
+            status.write_text(json.dumps({'state': 'paired', 'bond': 'layout-bond', 'reconnect_seconds': seconds}))
+            app.pairing_status.next_read = 0
+            app.root.geometry('900x620')
+            app.root.update()
+            app.render()
+            app.root.update()
+            assert app.remote_help_title.cget('text') == title
+            assert bool(app.remote_countdown.winfo_ismapped()) == bool(seconds)
+            assert app.remote_help_detail.winfo_rooty() + app.remote_help_detail.winfo_height() <= app.root.winfo_rooty() + 620
         status.write_text(json.dumps({'state': 'paired', 'bond': 'layout-bond'}))
         app.pairing_status.next_read = 0
         app.presenter_input.status = 'connected'
