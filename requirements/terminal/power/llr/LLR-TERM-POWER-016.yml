@@ -32,6 +32,8 @@ scope: Experimental
 text: |
   One worker shall perform blocking hub operations. Failures and application stop
   shall favor power-on. Hub work shall not block UI iteration.
+  After a failed power-off, the worker shall immediately request power-on and
+  restart the idle timer. Recovery shall attempt both onboard hubs.
   Successful power transitions, routine polling and shutdown restoration shall not
   emit wake-tracing logs. Power-operation and failed-off rollback errors shall
   remain reported without contact identities or enrollment credentials.

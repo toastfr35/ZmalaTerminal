@@ -89,8 +89,10 @@ class UsbPowerTests(unittest.TestCase):
         logged.assert_called_once()
         with patch.object(module.subprocess, 'run') as run:
             power.command('on')
-        self.assertEqual(run.call_args.args[0], ['sudo', '-n', module.HELPER, 'on'])
-        self.assertEqual(run.call_args.kwargs['timeout'], 30)
+            power.command('off')
+        for request, action, budget in zip(run.call_args_list, ('on', 'off'), (48, 101)):
+            self.assertEqual(request.args[0], ['sudo', '-n', module.HELPER, action])
+            self.assertGreater(request.kwargs['timeout'], budget)
 
     def test_media_reenumeration_requires_c20_video_and_alsa_and_handles_disconnect(self):
         import zmala_terminal.linux.usb_power as module
@@ -203,7 +205,7 @@ class UsbPowerTests(unittest.TestCase):
         app.call_event(123, 1, 'term1', 'example.test')
         app.tv_control.wake.assert_called_once()
 
-    def test_button_during_failed_off_restores_without_backoff(self):
+    def test_failed_off_restores_without_waiting_for_input(self):
         power = self.controller()
         power.active, power.battery = False, 95
         power.last_use, power.updated = 0, 1000
@@ -212,7 +214,6 @@ class UsbPowerTests(unittest.TestCase):
         def command(action):
             actions.append(action)
             if action == 'off':
-                power.require(urgent=True)
                 raise RuntimeError('off interrupted')
             power.stopped = True
         power.command = command
@@ -220,6 +221,7 @@ class UsbPowerTests(unittest.TestCase):
             power.run()
         self.assertEqual(actions[:2], ['off', 'on'])
         self.assertTrue(power.power_state)
+        self.assertEqual(power.last_use, 1000)
 
     def test_confirmed_supply_is_independent_of_missing_camera(self):
         power = self.controller()
@@ -353,18 +355,19 @@ class HelperSafetyTests(unittest.TestCase):
             path.unlink();path.symlink_to(Path(directory)/'absent')
             self.assertFalse(h.maintenance_active(path,os.getuid()))
 
-    def test_helper_inventory_checks_board_hub_topology_and_excludes_usb_hubs(self):
+    def test_helper_inventory_checks_board_hub_topology_and_keeps_external_hubs(self):
         h = self.helper
         with tempfile.TemporaryDirectory() as directory, patch.object(h, 'USB', Path(directory)), \
                 patch.object(h.Path, 'read_bytes', return_value=b'Raspberry Pi 4 Model B Rev 1.5'):
             root = Path(directory)
-            for name, vendor, product, kind in [('1-1','2109','3431','09'), ('usb2','1d6b','0003','09'), ('1-1.2','0525','a4ad','ef')]:
+            for name, vendor, product, kind in [('1-1','2109','3431','09'), ('usb2','1d6b','0003','09'),
+                                                ('1-1.2','0525','a4ad','ef'), ('1-1.3','abcd','1234','09')]:
                 device = root/name; device.mkdir()
                 for field, value in [('idVendor',vendor),('idProduct',product),('bDeviceClass',kind)]:
                     (device/field).write_text(value)
             (root/'interface').mkdir()
             h.validate_board()
-            self.assertEqual(h.devices(), [(root/'1-1.2', ('0525','a4ad'))])
+            self.assertCountEqual(h.devices(), [(root/'1-1.2', ('0525','a4ad')), (root/'1-1.3', ('abcd','1234'))])
             (root/'usb2/idProduct').write_text('other')
             with self.assertRaisesRegex(RuntimeError, 'topology'):
                 h.validate_board()
@@ -392,6 +395,7 @@ class HelperSafetyTests(unittest.TestCase):
                 self.assertEqual((camera/'authorized').read_text(), '0')
             switch.side_effect = check_off
             for product in ('a4ad', 'a4b0'):
+                (camera/'authorized').write_text('1')
                 with patch.object(h, 'devices', return_value=[(camera, ('0525',product))]):
                     h.power('off')
             self.assertEqual(switch.call_count, 2)
@@ -404,11 +408,21 @@ class HelperSafetyTests(unittest.TestCase):
                 self.helper.switch('on')
 
     def test_both_hubs_confirm_power(self):
-        for action, state in [('on', '0507 power highspeed enable connect'), ('off', '0080 off')]:
-            output = '\n'.join(f'  Port {i}: {state}' for i in range(1, 5))
-            with patch.object(self.helper, 'run', return_value=Mock(stdout=output)) as run:
+        for action, usb2, usb3 in [('on', '0507 power highspeed enable connect', '02a0 power'),
+                                  ('off', '0000', '0080 off'),
+                                  ('off', '0200 low speed', '0100 off')]:
+            statuses = [Mock(stdout='\n'.join(f'  Port {i}: {state}' for i in range(1, 5)))
+                        for state in (usb2, usb3)]
+            with patch.object(self.helper, 'run', side_effect=[None, statuses[0], None, statuses[1]]) as run:
                 self.helper.switch(action)
                 self.assertEqual(run.call_count, 4)
+
+    def test_failed_usb2_power_on_still_attempts_usb3(self):
+        usb3 = '\n'.join(f'  Port {i}: 0200 power' for i in range(1, 5))
+        with patch.object(self.helper, 'run', side_effect=[OSError('USB 2 error'), None, Mock(stdout=usb3)]) as run:
+            with self.assertRaisesRegex(RuntimeError, 'USB 2 error'):
+                self.helper.switch('on')
+            self.assertEqual(run.call_args_list[1].args[-4:], ('-l', '2', '-a', 'on'))
 
     def test_unknown_peripheral_blocks_shared_power_off(self):
         h = self.helper

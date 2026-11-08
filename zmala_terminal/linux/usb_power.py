@@ -264,8 +264,10 @@ class UsbPower:
 
     def command(self, action):
         try:
+            # Each hub takes two bounded commands. Off may also need to roll back
+            # both hubs, so the caller must leave time for the helper's rollback.
             subprocess.run(['sudo', '-n', HELPER, action], check=True,
-                       capture_output=True, timeout=30, text=True)
+                           capture_output=True, timeout=110 if action == 'off' else 55, text=True)
         except subprocess.CalledProcessError as error:
             # The helper can restore power after a failed off; don't hide that
             # explanation inside captured stderr.
@@ -293,8 +295,10 @@ class UsbPower:
                     # A stalled UI or stale battery must never leave the charger off.
                     active = self.active or now - self.updated > 10
                     off = should_power_off(now, self.last_use, active, self.battery, self.mode)
-                    desired = 'off' if off else 'on'
                     state = self.state
+                    # Recover confirmed power after a failed or interrupted
+                    # transition before considering another idle shutdown.
+                    desired = 'off' if off and state in ('on', 'off') else 'on'
                     if now >= next_status:
                         folder = os.environ.get('ZMALA_RUNTIME_DIR')
                         if folder:
@@ -342,7 +346,9 @@ class UsbPower:
                             # Keep wake retryable even if rollback left the C20 visible.
                             self.state = 'error'
                             self.revision += 1
-                        next_attempt = time.monotonic() + 10
+                            if desired == 'off':
+                                self.last_use = time.monotonic()
+                        next_attempt = 0 if desired == 'off' else time.monotonic() + 10
                     continue
                 self.play_tone(now)
                 self.changed.wait(.2)

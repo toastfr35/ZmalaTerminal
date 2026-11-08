@@ -89,6 +89,12 @@ class PeripheralWorkerTests(unittest.TestCase):
 
                 idle(75)
                 pump(app, lambda: power.state == 'off')
+                power.update(False, 24)
+                pump(app, lambda: power.state == 'on')
+                self.assertIs(power.power_state, True)
+
+                idle(75)
+                pump(app, lambda: power.state == 'off')
                 fail_next.append(True)
                 app.call_event(123, 1, 'alice', 'family.test')
                 pump(app, lambda: power.state == 'error')

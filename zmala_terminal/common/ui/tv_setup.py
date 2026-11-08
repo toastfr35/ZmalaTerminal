@@ -32,7 +32,7 @@ class TVSetupView:
         if not getattr(self.tv_control, 'supports_setup', True):
             return
         profile = profile or read_profile(self.enrollment.path.parent / 'tv-profile.json')
-        if self.tv_check:
+        if getattr(self, 'tv_check', None):
             self.tv_check.close()
             self.tv_check = None
         self.tv_check_restore = False
@@ -126,8 +126,13 @@ class TVSetupView:
         self.setup_stage = None
         self.last_button = time.monotonic()
         self.settings_open = True
-        configs = [config for config in (self.pending_config, self.tv_check_config) if config]
-        self.apply_config(max(configs, key=lambda config: config['configuration_version']))
+        config = self.tv_check_config
+        if self.pending_config is not None and (
+                config is None or self.pending_config.get('configuration_version', 0)
+                >= config.get('configuration_version', 0)):
+            config = self.pending_config
+        if config is not None:
+            self.apply_config(config)
         self.tv_check_config = None
         self.maintenance = self.make_maintenance(self.configuration)
         self.settings_signature = None

@@ -41,7 +41,10 @@ def devices():
             continue
         identity = tuple((path / name).read_text().strip().lower() for name in ('idVendor', 'idProduct'))
         kind = (path / 'bDeviceClass').read_text().strip()
-        if kind != '09':  # The only supported peripheral is the C20; never cut USB storage.
+        onboard_hub = kind == '09' and (
+            re.fullmatch(r'usb\d+', path.name) or path.name == '1-1'
+        )
+        if not onboard_hub:  # An attached hub can hide equipment that cannot safely lose power.
             found.append((path, identity))
     return found
 
@@ -57,15 +60,27 @@ def validate_board():
 
 def switch(action):
     # -e avoids implicitly switching the companion hub a second time.
-    for hub in ('1-1', '2'):
-        run('/usr/sbin/uhubctl', '-e', '-l', hub, '-a', action)
-        # @llr LLR-TERM-POWER-017
-        # A successful process exit alone does not prove port power changed.
-        result = run('/usr/sbin/uhubctl', '-e', '-l', hub)
-        states = re.findall(r'^\s*Port \d+: [0-9a-fA-F]+ (.*)$', result.stdout, re.MULTILINE)
-        expected = 'power' if action == 'on' else 'off'
-        if len(states) != 4 or any(expected not in state.split() for state in states):
-            raise RuntimeError('USB hub did not confirm power ' + action)
+    errors = []
+    for hub, power_bit in (('1-1', 0x0100), ('2', 0x0200)):
+        try:
+            run('/usr/sbin/uhubctl', '-e', '-l', hub, '-a', action)
+            # @llr LLR-TERM-POWER-017
+            # USB 2 and USB 3 use different power bits. An unpowered USB 2
+            # port with other status flags set need not print the word "off".
+            result = run('/usr/sbin/uhubctl', '-e', '-l', hub)
+            states = re.findall(r'^\s*Port ([1-4]): ([0-9a-fA-F]{4})(?:[ \t]|$)',
+                                result.stdout, re.MULTILINE)
+            if (sorted(port for port, _ in states) != list('1234')
+                    or any(bool(int(state, 16) & power_bit) != (action == 'on')
+                           for _, state in states)):
+                raise RuntimeError('USB hub ' + hub + ' did not confirm power ' + action)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            if action != 'on':
+                raise
+            # Either hub can restore the ganged supply. Try both even if one fails.
+            errors.append(str(error))
+    if errors:
+        raise RuntimeError('; '.join(errors))
 
 
 def power(action):
@@ -92,15 +107,20 @@ def power(action):
         if opened.returncode != 1:  # 0 = open, other errors are not evidence of inactivity.
             raise RuntimeError('Camera or audio still open; leaving USB power on')
     camera = attached[0][0]
+    authorized = camera / 'authorized'
+    if authorized.read_text().strip() != '1':
+        raise RuntimeError('Camera is not authorized; leaving USB power on')
     try:
         # Gracefully detach all C20 interfaces before removing the shared supply.
-        (camera / 'authorized').write_text('0')
+        authorized.write_text('0')
         switch('off')
     except Exception:
         print('USB power-off failed; restoring power', file=sys.stderr, flush=True)
-        switch('on')
-        if (camera / 'authorized').exists():
-            (camera / 'authorized').write_text('1')
+        try:
+            switch('on')
+        finally:
+            if authorized.exists():
+                authorized.write_text('1')
         raise
 
 

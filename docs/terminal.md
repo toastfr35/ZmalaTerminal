@@ -1331,7 +1331,8 @@ unpowered port, where it cannot yet be detected.
 Automatic switching requires the Pi 4 host helper. Enable it on a matching installed release:
 
 ```sh
-sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh zmala
+terminal_user=$(systemctl show -p User --value zmalacall-terminal.service)
+sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh "$terminal_user"
 sudo systemctl restart zmalacall-terminal
 ```
 
@@ -1340,6 +1341,8 @@ audio enumeration, refreshes SDK devices on their owning thread and reapplies
 volume. Operations run off-thread and fail toward power-on. A stop hook restores
 power after app exit. Status is `/run/zmalacall/usb-power.json`. Wake adds device
 startup latency before auto-answer; no electrical energy-saving claim is made.
+After a failed shutdown attempt, the worker restores power and waits for a new
+idle interval before trying again.
 
 The webcam icon immediately left of the battery represents shared USB power. Its
 gap before the battery matches the gap after Bluetooth. It uses the compact status
