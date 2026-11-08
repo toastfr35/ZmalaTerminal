@@ -178,6 +178,12 @@ traces remain in each repository's Doorstop documents.
   The enrolled HTTPS hostname and serial must match, and the SSH host key
   is pinned. Treat this data as transient credentials. It does not change
   ordinary device access, SIP permissions or application enrollment.
+- A password-capable Terminal's root helper checks `GET /api/device/developer-operator`
+  over its enrolled HTTPS connection. The device-authenticated response contains
+  terminal_id and an activation, which is null while disabled. An active
+  activation contains the tunnel fields plus operator_hash (a SHA-512 crypt
+  verifier, or null for a legacy session). The operator password is separate
+  from the reverse-tunnel password and is visible only to Server administrators.
 
 ## SIP and media
 

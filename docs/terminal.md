@@ -684,17 +684,16 @@ ordinary configuration caches omit them. The client rejects another device ID,
 non-HTTPS enrollment or a host different from its enrolled server.
 
 `linux/developer_access.py` applies settings through a narrow root helper. A
-separate SSH service listens on `127.0.0.1:2223` and allows the configured Pi user;
-that user needs an existing usable SSH login. The generated server `terminal`
-password does not create or change the Pi user's credentials. The outbound client
+separate SSH service listens on `127.0.0.1:2223` and allows the configured Pi user.
+The reverse-tunnel account on the Server has its own generated password. The outbound client
 pins the server's Ed25519 key, forwards server-loopback port 22001 to this local
 listener, and reconnects every ten seconds while enabled. Normal network SSH
 policy remains separate; the dedicated shell listener is never bound to Wi-Fi
 or Ethernet. Runtime secrets live under root-only `/run/zmalacall-developer`.
 
 Disabling on the server immediately breaks the tunnel; the next successful
-settings refresh stops local reconnects and the shell listener and removes
-runtime secrets. After a terminal reboot, a fresh authenticated refresh is needed
+settings refresh stops local reconnects, the shell listener and its sessions,
+then clears the operator password and runtime secrets. After a terminal reboot, a fresh authenticated refresh is needed
 to recreate them. A temporary network failure does not change the administrator's
 manual enable/disable choice. Developer-helper failures do not prevent normal
 configuration or calling. Installation uses `install-developer-access.py terminal
@@ -702,28 +701,23 @@ configuration or calling. Installation uses `install-developer-access.py termina
 
 Appliance images install these services declaratively. Ordinary `ssh.service`
 and `ssh.socket` remain masked. The dedicated shell admits the separate `zmala`
-operator account using a device-specific public key, with password authentication
-disabled; it does not admit the `zmalaterminal` application account. The operator
-has passwordless sudo for diagnostics. Store authorized public keys in the
-root-owned persistent `/etc/ssh/keys/authorized_keys`; the fixed root-owned key
-reader supplies them to sshd without making the private key directory readable
-by the operator. Generic image artifacts contain no authorized keys or shared
-passwords. Enabling Developer Access alone does not provision that credential.
-Do not add `host/ssh` to an uninitialized factory data partition: the identity
-initializer deliberately rejects that extra state. The private development
-candidate instead carries only this PC's public key in both read-only system
-slots, at `/usr/lib/zmala-development-operator.pub`, with its isolated SSH
-configuration selecting a fixed root `cat` command for that file. It leaves the
-factory data partition untouched. This private authorization follows the root
-slot and is removed by a later generic system image; it is not the public-image
-operator enrollment workflow.
+operator account. Password-capable images use the current password displayed
+to the Server admin. The root helper gets approval directly from the enrolled
+HTTPS Server, pins its origin and device ID in
+`/etc/ssh/keys/developer-enrollment.json`, and installs the password verifier
+only for the active session. The application account cannot set the password.
+To transfer Developer Access to another Server, a local root operator can
+clear that file while Developer Access is off and then enroll with the new
+Server. The operator account has passwordless sudo for diagnostics. Generic
+image artifacts start with the operator account locked and generate each
+Terminal's SSH host key on first boot.
 
 The preparation service generates the per-device Ed25519 host identity under
 `/etc/ssh/keys` after persistent storage mounts. Only a fresh server setting starts
 the shell and tunnel. Combined hosts route the narrow helper by the authenticated
 sudo service identity, keeping terminal and server activation state separate.
 The image builder checks the target SSH configuration, operator authentication,
-key rejection and listener shutdown in a private network namespace. This is not
+password rotation and listener shutdown in a private network namespace. This is not
 a physical server-admin enable/disable qualification.
 
 The image also installs the Zmala Plymouth theme and artwork, selects the theme

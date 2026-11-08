@@ -6,6 +6,7 @@ import subprocess
 from urllib.parse import urlsplit
 
 HELPER = Path('/usr/local/libexec/zmala-developer-access')
+SETTINGS = Path('/etc/zmalacall/developer-access.json')
 _applied = None
 
 
@@ -20,8 +21,18 @@ def apply(config, bootstrap):
             raise ValueError('Developer access requires authenticated HTTPS enrollment')
         if config.get('host') != server.hostname:
             raise ValueError('Developer tunnel must return to the enrolled server')
-    payload = json.dumps(config, sort_keys=True)
-    signature = hashlib.sha256(payload.encode()).digest()
+    try:
+        password_operator = json.loads(SETTINGS.read_text()).get('password_operator') is True
+    except FileNotFoundError:
+        password_operator = False
+    request = config
+    if password_operator and urlsplit(bootstrap['server_url']).scheme == 'https':
+        enrollment = {key: bootstrap[key] for key in ('server_url', 'device_id', 'device_token')}
+        request = {'enrollment': enrollment}
+    payload = json.dumps(request, sort_keys=True)
+    # A new activation or revocation must trigger a fresh approval even
+    # though the privileged request carries only the enrollment.
+    signature = hashlib.sha256(json.dumps([request, config], sort_keys=True).encode()).digest()
     if signature == _applied:
         return  # systemd owns reconnects; do not spawn sudo on every settings poll.
     result = subprocess.run(['/usr/bin/sudo', '-n', str(HELPER), 'apply'],
