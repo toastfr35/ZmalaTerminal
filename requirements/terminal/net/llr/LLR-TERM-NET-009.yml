@@ -32,6 +32,12 @@ text: |
   shall create a per-device Ed25519 identity in persistent private storage when
   absent and retain that identity on subsequent preparations. It shall not restore
   terminal tunnel credentials from persistent storage after reboot.
+  A password-capable appliance shall retrieve operator approval through the
+  privileged helper from the enrolled HTTPS server. It shall retain the approved
+  HTTPS origin and device identity in root-owned storage, accept only the bound
+  activation, and clear the local operator password and SSH sessions when
+  approval is withdrawn. Application-supplied settings shall not set the
+  operator password.
 verification: |
   Exercise authorization, credential scope, process lifecycle and failure paths;
   verify the configured SSH and firewall boundaries and secret cleanup.

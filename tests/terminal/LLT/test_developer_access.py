@@ -81,3 +81,36 @@ class DeveloperTerminalTests(unittest.TestCase):
             self.assertIn('ExitOnForwardFailure=yes',args)
             self.assertEqual(env['SSH_ASKPASS_REQUIRE'],'force')
             self.assertNotIn(self.config()['password'],str(args)+str(env))
+
+    def test_operator_approval_is_pinned_and_revoked_even_with_a_stale_app_request(self):
+        helper = module('developer-access')
+        enrollment = {'server_url': 'https://example.test', 'device_id': 'serial', 'device_token': 'fixture'}
+        password_hash = '$6$salt$' + 'x'*86
+        with tempfile.TemporaryDirectory() as folder, patch.object(helper, 'run') as run, \
+                patch.object(helper, 'build_opener') as opener:
+            helper.RUNTIME = Path(folder)
+            helper.ENROLLED_SERVER = helper.RUNTIME/'enrolled-server.json'
+            reply = opener.return_value.open.return_value.__enter__.return_value
+            request = {'enrollment': enrollment}
+            mode = {'password_operator': True}
+            reply.read.return_value = json.dumps({
+                'terminal_id': 'serial', 'activation': self.config() | {'operator_hash': password_hash},
+            }).encode()
+            helper.terminal('apply', request, mode)
+            self.assertIn(('chpasswd', '-e'), [call.args for call in run.call_args_list])
+            self.assertEqual(helper.read(helper.RUNTIME/'client.json'), self.config())
+            self.assertEqual(helper.read(helper.ENROLLED_SERVER), {
+                'server_url': 'https://example.test', 'device_id': 'serial',
+            })
+            self.assertEqual(opener.return_value.open.call_args.args[0].full_url,
+                             'https://example.test/api/device/developer-operator')
+            with self.assertRaises(PermissionError):
+                helper.operator_approval(enrollment | {'server_url': 'https://other.test'})
+            reply.read.return_value = b'{"terminal_id":"serial","activation":null}'
+            run.reset_mock()
+            helper.terminal('apply', request, mode)
+            self.assertEqual([call.args for call in run.call_args_list], [
+                ('systemctl', 'stop', 'zmalacall-developer-tunnel.service', 'zmalacall-developer-shell.service'),
+                ('usermod', '-p', '*', 'zmala'),
+            ])
+            self.assertFalse((helper.RUNTIME/'client.json').exists())
