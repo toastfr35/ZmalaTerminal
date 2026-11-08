@@ -6,7 +6,7 @@ instruct users to prepare media, install software, administer the server or conn
 Ethernet. The back page combines remote operation and local settings.
 
 The authoring sources are `locales/*.json`, `layout.css` and `assets/`, with the
-approved official cover logo reused directly from `docs/branding/PNG/`. The locale
+approved official logo reused on all four pages directly from `docs/branding/PNG/`. The locale
 set must exactly match `zmala_terminal/common/shared/terminal-languages.json`.
 There is no English fallback. Equipment captions use translated generic names
 (terminal, camera and remote control). Connection instructions identify the blue
@@ -57,7 +57,7 @@ layout and remote buttons are never mirrored for RTL languages.
 ## Monochrome artwork
 
 The print editions use black text on white paper, vector outline equipment and
-a text-free line-art cover. Button details show the selected button's position
+the original leaflet cover illustration in grayscale. Button details show the selected button's position
 on the remote; translated captions also say top/bottom for green/red. Connector
 numbers remain outside the diagram. Color is never needed to interpret the
 printed illustrations. The official wordmark is reused with grayscale styling.

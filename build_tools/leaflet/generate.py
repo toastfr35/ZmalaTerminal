@@ -62,6 +62,10 @@ def render_html(code, info, copy):
     def footer(page):
         return f'<footer><span>Zmala · {esc(info["native"])}</span><span dir="ltr">{page} / 4</span></footer>'
 
+    def heading(number, key):
+        return (f'<header class="inside-heading"><div class="eyebrow">{number:02}</div>'
+                f'<h2>{esc(copy[key])}</h2>{picture("official-logo.png", "page-brand")}</header>')
+
     css = (SOURCE / 'layout.css').read_text(encoding='utf-8')
     equipment = ''.join(f'<figure>{picture(name)}<figcaption>{esc(caption)}</figcaption></figure>'
                         for name, caption in zip(('case.svg', 'c10.svg', 'remote.svg'), copy['equipment']))
@@ -71,13 +75,13 @@ def render_html(code, info, copy):
 <section class="page cover"><main>
 {picture('official-logo.png', 'brand')}
 <h1>{esc(copy['title'])}</h1>
-{picture('overview-print.svg', 'hero')}
+{picture('overview.png', 'hero')}
 <p class="blurb">{esc(copy['blurb'])}</p>
 <p>{esc(copy['scope'])}</p>
 <p class="ready">{esc(copy['ready'])}</p>
 </main>{footer(1)}</section>
 <section class="page"><main>
-<div class="eyebrow">01</div><h2>{esc(copy['connect'])}</h2>
+{heading(1, 'connect')}
 <div class="equipment">{equipment}</div>
 <div class="ports">{picture('ports.svg')}<div class="markers" dir="ltr">
 <span style="left:59.5%">1</span><span style="left:41%">2</span>
@@ -86,14 +90,14 @@ def render_html(code, info, copy):
 {steps('connections')}
 </main>{footer(2)}</section>
 <section class="page"><main>
-<div class="eyebrow">02</div><h2>{esc(copy['setup_title'])}</h2>
+{heading(2, 'setup_title')}
 <p class="setup-intro">{esc(copy['setup_intro'])}</p>
 {picture('remote-back.svg', 'pairing')}
 {steps('setup')}
 <p class="private">{esc(copy['private'])}</p>
 </main>{footer(3)}</section>
 <section class="page"><main>
-<div class="eyebrow">03</div><h2>{esc(copy['operate'])}</h2>
+{heading(3, 'operate')}
 <ul class="controls">{''.join(f'<li><span class="button">{picture(name)}</span><div><h3>{esc(t)}</h3><p>{esc(b)}</p></div></li>' for name, (t,b) in zip(('buttons-arrows.svg', 'button-green.svg', 'button-red.svg', 'button-middle.svg'), copy['controls']))}</ul>
 <h2 class="settings-heading">{esc(copy['settings_title'])}</h2>
 {steps('settings')}
