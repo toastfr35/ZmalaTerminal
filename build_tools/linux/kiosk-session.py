@@ -50,8 +50,18 @@ def configure_display():
     mode = os.environ.get('ZMALA_DISPLAY_MODE', '1280x720')
     if mode == 'auto':
         return
-    query = subprocess.run(['xrandr', '--query'], capture_output=True, text=True, timeout=5, check=True)
-    for output in display_outputs(query.stdout, mode):
+    for delay in (0, 2, 4, 8):
+        if delay:
+            time.sleep(delay)
+        # Poll the connectors again in case Linux missed the display at handoff.
+        query = subprocess.run(['xrandr', '--query'], capture_output=True, text=True,
+                               timeout=5, check=True).stdout
+        if (re.search(r'^\S+ connected\b', query, re.MULTILINE)
+                or not re.search(r'^HDMI\S* disconnected\b', query, re.MULTILINE)):
+            break
+    else:
+        print('No HDMI display detected after startup retries', file=sys.stderr)
+    for output in display_outputs(query, mode):
         # xrandr chooses the closest advertised refresh rate to 60 Hz.
         subprocess.run(['xrandr', '--output', output, '--mode', mode, '--rate', '60'],
                        check=True, timeout=10)

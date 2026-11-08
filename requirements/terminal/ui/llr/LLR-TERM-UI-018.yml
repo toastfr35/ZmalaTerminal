@@ -32,7 +32,9 @@ scope: Core
 text: |
   The default display policy shall choose an advertised 1280×720 mode near 60 Hz on a
   connected output. Explicit 1920×1080 and automatic policies shall remain available.
+  When an explicit mode is requested and all outputs are disconnected at startup,
+  the kiosk shall retry HDMI detection a bounded number of times before continuing.
   Display resolution shall be independent of call capture resolution.
 verification: |
-  Supply connector modes and requested display policies. Check chosen output and
-  confirm that capture settings are unchanged.
+  Supply connector modes and requested display policies. Check the chosen output,
+  recovery after a late detection, continuation with no display and unchanged capture settings.
