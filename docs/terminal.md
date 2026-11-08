@@ -889,6 +889,28 @@ installer can select 1080p or auto. Plymouth displays the logo/family word cloud
 firmware/HDMI negotiation may still produce brief blank screens. Original boot
 files are saved as `*.before-zmala`; rescue consoles remain on other VTs.
 
+If U-Boot is visible and the display loses signal during Linux startup, check
+the DRM connector status over SSH while the fault is present. On a Pi 4 cold
+boot, both Linux HDMI connectors reported `disconnected` and had empty EDID
+data, while the Terminal service kept running. A fresh probe found the display
+on `HDMI-A-1` and enabling 1280×720 restored the picture on the same port.
+For explicit display modes, the kiosk repeats the hardware query up to three
+times when Xorg reports disconnected HDMI and no connected display. It applies
+the requested mode as soon as a connected output advertises it.
+
+To recover a running session, identify the connector for the cable in
+`/sys/class/drm/`. The following commands show the successful recovery on the
+affected Pi. Use the actual DRM path and the output name and mode reported by
+the XRandR query.
+
+```sh
+printf 'detect\n' | sudo tee /sys/class/drm/card1-HDMI-A-1/status >/dev/null
+terminal_user=$(systemctl show zmalacall-terminal.service --property=User --value)
+sudo -u "$terminal_user" env DISPLAY=:0 XAUTHORITY=/run/zmalacall-display/Xauthority xrandr --query
+sudo -u "$terminal_user" env DISPLAY=:0 XAUTHORITY=/run/zmalacall-display/Xauthority \
+  xrandr --output HDMI-1 --mode 1280x720 --rate 60
+```
+
 The kiosk owns display `:0`/VT7 and disables a competing desktop display manager.
 Picom uses XRender/VSync with fullscreen composition. Supported Pi 4 Xorg drivers
 receive the `msdri3` override in `/etc/X11/xorg.conf.d/21-zmalacall-pi4.conf` to

@@ -2,6 +2,7 @@
 # @requirements LLR-TERM-START-003, LLR-TERM-START-004, LLR-TERM-START-005, LLR-TERM-UI-018, LLR-TERM-UI-019
 # @environment portable
 # @plan Invoke kiosk session and launcher helpers with temporary files and mocked subprocess, signal and proc boundaries. Check bounded X11 readiness, supported outputs, owned-child cleanup, profile locking and PID reuse. Read a process start timestamp from a proc fixture whose command contains spaces and parentheses. Inspect Plymouth artwork, bottom-right text positioning and boot-unit ordering. Feed the boot label confirmed/trial metadata, invalid records and unavailable/timed-out Plymouth; assert confirmed-version selection, exact bounded command and startup continuation. Verify private Xauthority ownership without executing real host commands.
+# Verify startup re-polls disconnected HDMI, applies an advertised mode if a display appears, and gives up after a bounded wait when headless.
 # @pass File contents, command arguments, lock behavior and shutdown assertions pass. Launcher tests require Linux and are reported as skips elsewhere.
 import contextlib
 import io
@@ -150,6 +151,26 @@ class LinuxLifecycleTests(unittest.TestCase):
             self.assertEqual([c.args[0] for c in run.call_args_list],[['xset','s','off'],['xset','-dpms']])
             self.assertIn('--fullscreen',popen.call_args.args[0]); child.terminate.assert_called_once(); manager.terminate.assert_called_once()
             self.assertEqual(manager.kill.call_count,int(failed))
+
+    def test_hdmi_detection_retry_recovers_or_continues_headless(self):
+        kiosk = module('kiosk-session')
+        missing = Mock(stdout='HDMI-1 disconnected\nHDMI-2 disconnected\n')
+        recovered = Mock(stdout='HDMI-1 disconnected\nHDMI-2 connected\n   1280x720 60.0\n')
+        unsupported = Mock(stdout='HDMI-1 connected\n   1920x1080 60.0\nHDMI-2 disconnected\n')
+        probe = ['xrandr', '--query']
+        enable = ['xrandr', '--output', 'HDMI-2', '--mode', '1280x720', '--rate', '60']
+        cases = (
+            ([missing, recovered, Mock()], [probe, probe, enable], [2]),
+            ([missing]*4, [probe]*4, [2, 4, 8]),
+            ([unsupported], [probe], []),
+        )
+        for responses, commands, delays in cases:
+            with self.subTest(commands=commands), patch.dict(kiosk.os.environ, {'ZMALA_DISPLAY_MODE': '1280x720'}), \
+                    patch.object(kiosk.subprocess, 'run', side_effect=responses) as run, \
+                    patch.object(kiosk.time, 'sleep') as sleep, contextlib.redirect_stderr(io.StringIO()):
+                kiosk.configure_display()
+                self.assertEqual([call.args[0] for call in run.call_args_list], commands)
+                self.assertEqual([call.args[0] for call in sleep.call_args_list], delays)
 
     @unittest.skipUnless(sys.platform=='linux','Linux supervisor uses fcntl process locks')
     def test_launcher_run_lock_and_shutdown_record_lifetime(self):
