@@ -3,7 +3,7 @@
 Hardware and overview graphic files are text-free. Captions, component names,
 step numbers and instructions belong to the HTML/locale layer. Do not bake
 translated labels into images. Keep the physical connector diagram in its
-original left-to-right order. The cover uses the approved official Zmala wordmark
+original left-to-right order. All four pages use the approved official Zmala wordmark
 from `docs/branding/PNG/a1-wordmark-light-1024.png` directly, without redrawing or
 duplicating it. This brand asset is the intentional exception to text-free art.
 
@@ -40,9 +40,9 @@ The final built-in image edit prompt was:
 
 ## Monochrome print edition
 
-`overview-print.svg` is the authored vector cover used by the leaflet: two people
-on a TV and a person on a phone, drawn with dark outlines on white. The original
-`overview.png` remains as source history. Equipment SVGs use white fill and dark
+`overview.png` is the original leaflet cover illustration and is rendered in
+grayscale for printing. The earlier vector alternative is `overview-print.svg`.
+Equipment SVGs use white fill and dark
 outlines to conserve ink. Green/red button details show their physical top/bottom
 positions with a black marker and pointer; translated HTML captions name both
 color and position. The artwork contains no translated text.
