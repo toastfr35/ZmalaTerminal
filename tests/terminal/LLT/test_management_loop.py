@@ -44,7 +44,8 @@ class ManagementPumpTests(unittest.TestCase):
         loop.messages=queue.Queue(); loop.generation=3; loop.callbacks.revision=4; loop.closed=False
         loop.setup_stage=None; loop.scanner=None; loop.settings_open=False; loop.keys_down=set()
         loop.worker_busy=False; loop.network_worker_busy=False; loop.configuration=Mock(cancelled=False)
-        loop.engine=Mock(registered=True,call=None); loop.usb_power=Mock(enabled=True,ready=True)
+        loop.engine=Mock(registered=True,call=None)
+        loop.usb_power=Mock(enabled=True,ready=True,ringtone_preview_status='',playback_active=False)
         loop.presenter_input=Mock(battery=75); loop.tv_control=Mock(); loop.tv_control.ready.return_value=True
         loop.pending_config=None; loop.notice=''; loop.callback_alert=None; loop.callbacks.requests=[]
         loop.server_seen=99; loop.presence_stale=False; loop.last_poll=99; loop.diagnostics={'camera':'ready'}
@@ -135,9 +136,17 @@ class ManagementPumpTests(unittest.TestCase):
         self.assertTrue(loop.usb_media_ready()); self.assertEqual(order,['require',loop.engine])
         loop.usb_power.ready=False; self.assertFalse(loop.usb_media_ready())
         loop.tick_usb(); loop.usb_power.update.assert_called_with(False,75,False)
-        for attribute,value in [('setup_stage','server'),('scanner',object()),('keys_down',{'green'})]:
+        for attribute,value in [('setup_stage','server'),('setup_stage','wifi_ready'),('scanner',object())]:
             before=getattr(loop,attribute); setattr(loop,attribute,value); loop.tick_usb()
             loop.usb_power.update.assert_called_with(True,75,False); setattr(loop,attribute,before)
+        loop.setup_stage = 'tv'; loop.settings_open = True; loop.keys_down = {'green'}
+        loop.tick_usb(); loop.usb_power.update.assert_called_with(False,75,False)
+        for status, active in [('waiting',True),('playing',True),('muted',False),('error',False),('',False)]:
+            loop.usb_power.ringtone_preview_status = status
+            loop.tick_usb(); loop.usb_power.update.assert_called_with(active,75,False)
+        loop.usb_power.playback_active = True
+        loop.tick_usb(); loop.usb_power.update.assert_called_with(True,75,False)
+        loop.usb_power.playback_active = False
         for state in State:
             loop.model.state=state; loop.tick_usb()
             active = state in (State.CALLING, State.RINGING, State.CONNECTING, State.IN_CALL, State.STOPPING)

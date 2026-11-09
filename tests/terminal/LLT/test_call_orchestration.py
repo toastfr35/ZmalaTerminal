@@ -78,7 +78,10 @@ class CallOrchestrationTests(unittest.TestCase):
                                        ({'id':'other','online':True,'can_call':True},False,60),(None,False,60)]:
             c=self.controller(); c.model.button('green'); c.model.button('green')
             c.configuration.request.return_value=json.dumps(reply)
-            with patch.object(call_control.threading,'Thread',side_effect=lambda **kw:Mock(start=kw['target'])),patch.object(call_control.time,'monotonic',return_value=100): c.begin_dial()
+            def run_preflight(**kwargs):
+                c.usb_power.require.assert_called_once_with(urgent=True)
+                return Mock(start=kwargs['target'])
+            with patch.object(call_control.threading,'Thread',side_effect=run_preflight),patch.object(call_control.time,'monotonic',return_value=100): c.begin_dial()
             kind,result=c.messages.get_nowait(); self.assertEqual(kind,'dial-ready'); self.assertEqual(result[:2],(1,3)); self.assertEqual(result[3:],(available,timeout))
             self.assertEqual(c.outgoing_deadline,160); c.configuration.request.assert_called_once_with('/api/contacts/alice/availability')
 

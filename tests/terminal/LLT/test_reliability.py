@@ -72,6 +72,7 @@ class ReliabilityTests(unittest.TestCase):
         app.tv_setup_checked = True; app.model = TerminalModel(); app.model.configure(config())
         app.engine = Mock(); app.available_fonts = set(); app.root = Mock(); app.text = lambda key:key
         app.press = Mock(); app.usb_media_ready = Mock(return_value=False); app.engine_retry_at = 0
+        app.current_settings = {}
         app.model.incoming('alice', 'family.test')
         desired = config(); desired['contacts'] = []
         app.apply_config(desired); app.press.assert_called_once_with('red')
@@ -103,11 +104,17 @@ class ReliabilityTests(unittest.TestCase):
         app = ConfigurationControl(); app.callbacks = CallbackController(); desired = config()
         app.engine = Mock(audio_profile='normal', config=desired); app.engine.video_settings = VideoSettings.for_config(desired)
         app.current_settings = {}; desired['terminal_settings'] = {'camera':'selected'}
+        app.usb_media_ready = Mock(return_value=True)
         original = app.engine
         app.configure_engine(desired, desired['sip'], 'normal')
         original.apply_settings.assert_called_once_with({'camera':'selected'})
         original.apply_call_timeout.assert_called_once()
         self.assertIs(app.engine, original)
+        app.usb_media_ready.reset_mock(); app.usb_media_ready.return_value = False
+        app.configure_engine(desired | {'usb_power':'camera', 'action_sound_volume':35}, desired['sip'], 'normal')
+        app.usb_media_ready.assert_not_called()
+        self.assertEqual(original.config['action_sound_volume'], 35)
+        app.usb_media_ready.return_value = True
         app.engine = None; app.make_engine = Mock(return_value=Mock()); app.usb_power = Mock(enabled=True)
         app.configure_engine(desired, None, 'normal')
         app.engine.core_set_ring.assert_called_once_with(app.engine.core, None)

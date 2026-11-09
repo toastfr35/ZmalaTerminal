@@ -60,16 +60,12 @@ class ConfigurationControl:
                 self.render()
                 return
             logging.info('Relay credentials refreshed without waking USB media')
-        else:
-            # @llr LLR-TERM-POWER-016
-            if not self.usb_media_ready():
-                self.pending_config = config
-                return
         from zmala_terminal.common.audio_processing import requested_profile
         # Actual device/transport changes still use normal idle media preparation.
         try:
-            if not renewal:
-                self.configure_engine(config, old_sip, requested_profile(config))
+            if not renewal and self.configure_engine(config, old_sip, requested_profile(config)) is False:
+                self.pending_config = config
+                return
         except Exception as error:
             retry = 1 if isinstance(error, MediaNotReady) else 5
             logging.warning('Could not apply media configuration; retrying in %s seconds: %s', retry, error)
@@ -101,10 +97,15 @@ class ConfigurationControl:
         running = MediaSnapshot(old_sip, getattr(self.engine, 'config', {}).get('secure_calls'),
             self.engine.video_settings.resolution, getattr(self.engine.video_settings, 'fps', 15),
             getattr(self.engine, 'audio_profile', 'normal')) if self.engine else None
-        if running is None or running.needs_rebuild(config, audio_profile):
+        rebuild = running is None or running.needs_rebuild(config, audio_profile)
+        settings = config.get('terminal_settings', {})
+        devices_changed = settings != self.current_settings
+        # @llr LLR-TERM-POWER-016
+        if (rebuild or devices_changed) and not self.usb_media_ready():
+            return False
+        if rebuild:
             # @llr LLR-TERM-AUDIO-010
-            # ALSA enumeration opens playback to probe it. The idle feedback
-            # stream must release the exclusive C20 PCM before a new core probes.
+            # Release the HDMI stream before native ALSA enumeration probes devices.
             feedback = getattr(self, 'action_sounds', None)
             if feedback:
                 feedback.cancel()
@@ -115,12 +116,11 @@ class ConfigurationControl:
             if getattr(self, 'usb_power', None) and self.usb_power.enabled:
                 # Wake the speaker before playing the incoming-call melody.
                 self.engine.core_set_ring(self.engine.core, None)
-            self.current_settings = dict(config.get('terminal_settings', {}))
+            self.current_settings = dict(settings)
         else:
             self.engine.config = config
             self.engine.core_refresh_registers(self.engine.core)
-            settings = config.get('terminal_settings', {})
-            if settings != self.current_settings:
+            if devices_changed:
                 self.engine.apply_settings(settings)
                 self.current_settings = dict(settings)
             self.engine.apply_speaker_volume()

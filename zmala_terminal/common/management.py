@@ -13,6 +13,7 @@ POLL_SECONDS = 2
 PRESENCE_STALE_SECONDS = 6
 TICK_MILLISECONDS = 20
 USB_CALL_STATES = (State.CALLING, State.RINGING, State.CONNECTING, State.IN_CALL, State.STOPPING)
+USB_SETUP_STAGES = ('wifi', 'wifi_ready', 'server')
 
 
 def defer_auto_answer(model, tv, now):
@@ -47,9 +48,9 @@ class ManagementLoop:
         power = getattr(self, 'usb_power', None)
         if power and power.enabled:
             power.set_mode((self.model.config or {}).get('usb_power', 'always_on'))
-            active = bool(self.setup_stage or self.scanner or self.model.state in USB_CALL_STATES
+            active = bool(self.setup_stage in USB_SETUP_STAGES or self.scanner or self.model.state in USB_CALL_STATES
                           or self.engine and self.engine.call or power.ringtone_preview_status in ('waiting', 'playing')
-                          or getattr(self, 'keys_down', None))
+                          or power.playback_active)
             power.update(active, self.presenter_input.battery, self.model.state == State.RINGING)
             power.refresh(self.engine)
 

@@ -49,8 +49,11 @@ text: |
   new profiles shall default to call/ringtone 50 percent and button feedback 20 percent.
 
   C10/C20 hardware playback gain shall be fixed at +12 dB for both C10 and C20; call gain shall be applied on the
-  native core owner thread, while ringtone/button PCM shall be attenuated separately
-  for C10/C20 playback without changing capture or TV audio.
+  native core owner thread. Ringtone PCM shall be attenuated separately for
+  C10/C20 playback without changing capture. Remote-button PCM shall use its
+  own attenuation on the connected, enabled Pi HDMI output. Playback shall
+  follow a change of connector and remain silent if HDMI audio is unavailable.
+  Remote-button feedback shall work while C10/C20 USB media is asleep.
 
   During idle navigation and Settings, a distinct physical button press shall request
   one short cue: the same low tap for left/right and middle, a rising cue for green
@@ -76,7 +79,7 @@ text: |
 
   Audio helpers shall
   exclude the SDK TURN preloader while retaining the C10/C20 ALSA policy. Stopping
-  before a call, ringing or ringtone preview shall terminate and reap the player
+  for a call, ringing or ringtone preview shall terminate and reap the player
   with bounded 200 ms termination escalation, including a starting worker. Missing or
   waking audio shall not delay navigation or calls. Closing shall discard pending
   feedback and terminate its player. Scaled ringtone files shall use disposable
@@ -86,9 +89,10 @@ text: |
   WAV header. Active calls shall not replace tone files or change conversation gain.
 
   Feedback shall remain stopped until a native engine exists and shall release
-  C10/C20 playback before native-core creation or replacement probes audio devices.
+  HDMI playback before native-core creation or replacement probes audio devices.
 verification: |
   Assert category-isolated gains, zero/full PCM, bounded workers, duplicate handling,
   all-level RAM bank bounds/reuse, startup cancellation, stale/zero requests,
-  call/preview suppression, player timeout and cleanup. On term2,
-  check idle clicks, independent ringtone/call levels, silent call controls and C10/C20-only routing.
+  call/preview suppression, both Pi HDMI outputs, hotplug recovery, missing HDMI,
+  player timeout and cleanup. On a Pi 4, check idle clicks from the TV with USB
+  off, independent levels, silent call controls and C10/C20 call and ringtone routing.

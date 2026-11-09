@@ -542,15 +542,18 @@ through the SDK playback gain on its owner thread (50% is -14 dB; 0% is -120 dB)
 `sound_levels.py` scales validated ringtone PCM into a private RAM-backed temporary
 file, replacing and deleting it when the tone or level changes and on shutdown.
 
-`action_sounds.py` keeps one idle raw-PCM player warm to avoid C20 startup lag.
+`action_sounds.py` keeps one raw PCM player warm for remote-button cues. It
+uses the connected, enabled Pi 4 HDMI connector and its matching ALSA card.
+It checks for connector changes while idle and retries if HDMI audio becomes
+unavailable. Without HDMI audio, navigation stays silent.
 It feeds paced 2.5 ms frames through a 4 KiB nonblocking pipe with a 200 ms write
 deadline; left/right/middle use a 400 Hz tap for 20 ms with a soft decay. Green
 adds a 600 Hz note; red uses two 250 Hz taps separated by 30 ms of silence.
 Cold, busy or stale presses
-are dropped instead of queued. Calls and ringtone playback stop/reap the feedback
-player before taking the exclusive C20 route. Helpers remove the inherited SIP
-`LD_PRELOAD` while preserving the ALSA configuration. Button feedback is not mixed
-with call or ringtone audio.
+are dropped instead of queued. Calls and ringtone previews pause the feedback
+player. Call playback, microphone capture, ringtones and outgoing ringback use
+the C10/C20. Helpers remove the inherited SIP `LD_PRELOAD` while preserving
+the ALSA configuration.
 Before opening PCM for the first time, the worker prepares all three cues at
 every nonzero integer volume into a bounded RAM bank (under 4 MiB, about 3 MiB).
 The three waveform shapes are synthesized once. Scaled frames remain available
@@ -559,9 +562,8 @@ frames, without file reads, synthesis or slicing. The ALSA buffer is 5 ms with
 2.5 ms periods. Normal pauses resume immediately; only a failed player has a
 one-second retry backoff. Cancellation checks preparation before opening PCM and
 shares a 200 ms stop/join budget with player termination.
-Native core creation/replacement also stops the idle stream before ALSA device
-probing; feedback remains disabled while no core exists. Otherwise the exclusive
-idle player can hide the C20 speaker from the probe and prevent SIP registration.
+Native core creation and replacement pause the idle stream during ALSA device
+probing. Feedback can resume once the core exists, including with USB asleep.
 Before starting visual navigation, input yields for up to 20 ms for the worker's
 first PCM frame. A successful handoff gives playback another 20 ms head start,
 so portrait rendering does not starve sound startup. Missing audio skips that
@@ -1312,14 +1314,18 @@ re-enumeration events remain available in the kernel journal.
 
 The Pi 4's external USB ports switch together, including the camera and charger.
 The Server stores the selected mode and defaults to Always on. Both automatic
-modes switch the shared supply after 60 seconds idle. Camera only follows
-camera activity. Camera and remote dock also keeps power on when the remote
-battery is below 25% or the battery reading is unavailable.
-Every button press (even consumed or debounced), volume adjustment and
-accepted incoming call wakes the worker immediately, before TV routing or answer
-timers. Calls, ringing, setup, ringtone previews, held buttons and a stale
-app heartbeat restore or retain power. The idle interval starts when ongoing
-activity ends. Another peripheral or open media handles blocks shutdown.
+modes switch off the shared supply 60 seconds after the last call, audible
+ringtone preview or camera-based setup activity ends. Camera and remote dock
+also restores or retains power when the remote battery is below 25% or the
+battery reading is unavailable. Camera only ignores the battery.
+Incoming and outgoing calls request wake before TV routing or call preflight.
+Ringtone choice and ringtone volume wake USB when an audible preview starts.
+Navigation, call-volume adjustments, muted previews and ordinary Settings
+changes leave USB idle timing alone. Native media initialization and device
+changes request power before probing. A stale app heartbeat keeps or restores
+power. Another USB peripheral or an open camera or USB audio handle can block
+power-off. The host helper excludes verified onboard HDMI playback from that
+check, so the idle HDMI click stream can stay open.
 Do not use with USB storage; disable before attaching extra equipment to an
 unpowered port, where it cannot yet be detected.
 
@@ -1331,6 +1337,10 @@ sudo sh /opt/zmalacall/current/build_tools/linux/install-usb-power.sh "$terminal
 sudo systemctl restart zmalacall-terminal
 ```
 
+On a manually installed Terminal that already uses automatic USB power, refresh
+the host helper with the same steps when moving to HDMI feedback. A Terminal
+application-only update cannot replace the root-owned helper.
+
 The helper deauthorizes C20 interfaces before switching; wake waits for camera/
 audio enumeration, refreshes SDK devices on their owning thread and reapplies
 volume. Operations run off-thread and fail toward power-on. A stop hook restores
@@ -1338,6 +1348,15 @@ power after app exit. Status is `/run/zmalacall/usb-power.json`. Wake adds devic
 startup latency before auto-answer; no electrical energy-saving claim is made.
 After a failed shutdown attempt, the worker restores power and waits for a new
 idle interval before trying again.
+
+To qualify this on a Pi 4, select Camera only and let the camera power icon
+show off. Browse contacts and adjust Click volume. Confirm the TV plays the
+cues and the USB icon stays off. Preview a ringtone, then leave the editor
+open and confirm the C10/C20 plays the tone and USB powers off 60 seconds
+after it ends. At zero ringtone volume the same action should leave USB off.
+From sleep, check a call in each direction for ringtone or ringback, two-way
+audio and video, and confirm USB remains powered until 60 seconds after the
+call ends. Repeat on the second HDMI port and after reconnecting the TV.
 
 The webcam icon immediately left of the battery represents shared USB power. Its
 gap before the battery matches the gap after Bluetooth. It uses the compact status

@@ -1,17 +1,35 @@
-"""Keep idle C20 feedback warm; release its exclusive PCM before calls or tones."""
+"""Keep a dedicated HDMI feedback stream warm during idle navigation."""
 import logging
-from zmala_terminal.linux.nuroum import playback_device
 import os
 import select
 import subprocess
 import threading
 import time
 from functools import lru_cache
+from pathlib import Path
 from zmala_terminal.linux.sound_levels import click_pcm, playback_environment
 
 PERIOD = .0025
 FRAME = 480  # 2.5 milliseconds of stereo 16-bit PCM at 48 kHz.
 SILENCE = bytes(FRAME)
+
+
+# @llr LLR-TERM-AUDIO-010
+def hdmi_playback_device(drm=Path('/sys/class/drm')):
+    """Map the active Pi 4 HDMI connector to its stable ALSA card ID."""
+    candidates = []
+    for port in (0, 1):
+        for output in drm.glob(f'card*-HDMI-A-{port + 1}'):
+            try:
+                if ((output / 'status').read_text().strip() == 'connected'
+                        and (output / 'enabled').read_text().strip() == 'enabled'):
+                    candidates.append((bool((output / 'edid').read_bytes()), port))
+            except OSError:
+                continue  # The connector may have disappeared during discovery.
+    if candidates:
+        _, port = max(candidates, key=lambda candidate: candidate[0])
+        return f'plughw:CARD=vc4hdmi{port},DEV=0'
+    return None
 
 
 # @llr LLR-TERM-AUDIO-010
@@ -67,7 +85,7 @@ class ActionSounds:
                 self.pending = (percent, time.monotonic(), button, started)
         if started and started.wait(.02):
             # Yield the GIL before Tk starts expensive portrait rendering. The first
-            # PCM frame is already in the pipe; allow the small C20 buffer to drain
+            # PCM frame is already in the pipe; allow the small HDMI buffer to drain
             # ahead of the visual action. Missing audio can delay input by at most
             # 20 ms, and a successful handoff by at most 40 ms in total.
             self.stop.wait(.02)
@@ -101,15 +119,19 @@ class ActionSounds:
             try:
                 player.wait(timeout=.1)
             except subprocess.TimeoutExpired:
-                logging.warning('C10/C20 feedback player did not exit after termination')
+                logging.warning('HDMI feedback player did not exit after termination')
 
     def run(self):
         player = None
         try:
+            device = hdmi_playback_device()
+            if device is None:
+                return
             sounds = click_bank()
             if self.stop.is_set():
-                return  # Cancellation during preparation must not open the call's PCM.
-            player = subprocess.Popen(['/usr/bin/aplay', '-q', '-D', playback_device(),
+                return
+            logging.debug('Button feedback playback device: %s', device)
+            player = subprocess.Popen(['/usr/bin/aplay', '-q', '-D', device,
                 '-t', 'raw', '-f', 'S16_LE', '-c', '2', '-r', '48000',
                 '--buffer-time=5000', '--period-time=2500', '--start-delay=1'],
                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -118,9 +140,14 @@ class ActionSounds:
             with self.lock:
                 self.player = player
             warmed_since = next_frame = time.monotonic()
+            check_route_at = warmed_since + 1
             cue, position, started = (), 0, None
             while not self.stop.is_set():
                 now = time.monotonic()
+                if now >= check_route_at:
+                    if hdmi_playback_device() != device:
+                        break
+                    check_route_at = now + 1
                 with self.lock:
                     self.warmed = now-warmed_since >= .15
                     request, self.pending = self.pending, None

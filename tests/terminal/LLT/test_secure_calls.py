@@ -69,6 +69,7 @@ class SecureCallTests(unittest.TestCase):
         e.call_params_set_media_encryption.assert_called_once_with(20, 1)
         desired = config()
         app = ConfigurationControl(); app.callbacks = CallbackController()
+        app.current_settings = {}; app.usb_media_ready = Mock(return_value=True)
         app.engine = Mock(config=copy.deepcopy(desired), audio_profile='normal',
                           video_settings=VideoSettings.for_config(desired))
         original = app.engine

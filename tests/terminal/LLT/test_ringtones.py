@@ -124,6 +124,7 @@ class RingtoneTests(unittest.TestCase):
         power.ringtone_volume=0;status.return_value=(50,50,False);power.play_tone(2)
         self.assertEqual(power.ringtone_preview_status,'muted')
         power.ringtone_volume=50
+        power.preview_tone('/cache/choice.wav')
         status.return_value=(50,50,False);popen.return_value.poll.return_value=None
         power.play_tone(3);self.assertEqual(power.ringtone_preview_status,'playing')
         popen.return_value.poll.return_value=1;power.play_tone(4)
