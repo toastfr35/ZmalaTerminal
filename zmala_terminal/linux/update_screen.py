@@ -64,7 +64,8 @@ def render_message(text, language, width, height):
     layout = PangoCairo.create_layout(context)
     layout.get_context().set_language(Pango.Language.from_string(language))
     layout.set_text(text, -1)
-    layout.set_width(int(width * .8) * Pango.SCALE)
+    text_width = int(width * .8)
+    layout.set_width(text_width * Pango.SCALE)
     layout.set_wrap(Pango.WrapMode.WORD_CHAR)
     layout.set_alignment(Pango.Alignment.CENTER)
     for size in range(min(48, max(20, width//40)), 15, -1):
@@ -75,7 +76,7 @@ def render_message(text, language, width, height):
         if measured_height <= height * .42:
             break
     context.set_source_rgb(237/255, 241/255, 251/255)
-    context.move_to((width - measured_width)/2, (height-measured_height)/2)
+    context.move_to((width - text_width)/2, (height-measured_height)/2)
     PangoCairo.show_layout(context, layout)
     stream = io.BytesIO()
     surface.write_to_png(stream)

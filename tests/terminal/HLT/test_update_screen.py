@@ -3,6 +3,7 @@
 # @environment display
 # @plan Render every locale/state with Pango at 900x620, 1280x720 and 1920x1080, assert text bounds and French sentence layout, and keep the independent progress process alive while a disposable app exits. Inspect real Tk mapped/hidden window state through a test-only process observer.
 # @pass All text fits and the progress window survives application exit; idle withdraws it. Tests render under Xvfb and do not claim real TV power/source qualification.
+import io
 import os
 from pathlib import Path
 import json
@@ -11,6 +12,7 @@ import sys
 import tempfile
 import time
 import unittest
+from PIL import Image
 from zmala_terminal.linux.update_screen import MESSAGES,STATES,message,render_message
 
 @unittest.skipUnless(sys.platform=='linux' and os.environ.get('DISPLAY'),'Linux Pango/X11 display')
@@ -25,6 +27,9 @@ class UpdateScreenTests(unittest.TestCase):
                         line_heights = [render_message(line, language, width, height)[1][1]
                                         for line in message(language, phase).splitlines()]
                         self.assertLessEqual(h, sum(line_heights))
+                        with Image.open(io.BytesIO(png)) as preview:
+                            left, _, right, _ = preview.convert('RGB').getbbox()
+                        self.assertAlmostEqual((left + right) / 2, width / 2, delta=4)
         with tempfile.TemporaryDirectory() as folder:
             state=Path(folder)/'state';state.write_text(json.dumps({'phase':'updating','language':'fr','download_percent':0}))
             evidence=Path(folder)/'evidence'
