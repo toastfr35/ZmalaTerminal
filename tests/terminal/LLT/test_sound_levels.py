@@ -6,7 +6,8 @@
 # and the ordered rising green/low red double tap. Drive feedback enable/warmup, bursts,
 # stale events, bounded audio-before-animation handoff, suppression and cancellation with controlled clocks and subprocess boundaries.
 # Feed a complete synthesized cue through actual worker framing, bound nonblocking short writes
-# and pipe timeouts, and verify termination escalation and no backlog. Warm every integer
+# and pipe timeouts, and verify termination escalation and no backlog. Select either
+# active Pi HDMI connector, check removal/recovery, and play clicks with USB asleep. Warm every integer
 # level in memory, prove pause/resume reuses it without synthesis, and cancel during startup.
 # Check voice mute, 5% = former 40%, unchanged maximum, equal dB steps, legacy lows
 # and native call-gain application while ringtone/button gains retain their original curve.
@@ -23,7 +24,7 @@ import unittest
 from unittest.mock import Mock,patch
 import wave
 from zmala_terminal.linux.sound_levels import gain_db,call_gain_db,scale_wav,click_pcm,ToneLevels,playback_environment
-from zmala_terminal.linux.action_sounds import ActionSounds,FRAME,PERIOD,click_bank
+from zmala_terminal.linux.action_sounds import ActionSounds,FRAME,PERIOD,click_bank,hdmi_playback_device
 from zmala_terminal.linux import media
 
 
@@ -55,9 +56,51 @@ class SoundLevelsTests(unittest.TestCase):
             with self.assertRaises(ValueError):call_gain_db(invalid)
 
     def setUp(self):
-        route = patch('zmala_terminal.linux.action_sounds.playback_device', return_value="default:C20")
-        route.start()
+        route = patch('zmala_terminal.linux.action_sounds.hdmi_playback_device',
+                      return_value='plughw:CARD=vc4hdmi0,DEV=0')
+        self.route = route.start()
         self.addCleanup(route.stop)
+
+    def test_hdmi_output_follows_the_connected_enabled_connector(self):
+        with tempfile.TemporaryDirectory() as folder:
+            drm = Path(folder)
+            def connector(card, port, status, enabled, edid):
+                output = drm / f'card{card}-HDMI-A-{port}'
+                output.mkdir(exist_ok=True)
+                (output / 'status').write_text(status)
+                (output / 'enabled').write_text(enabled)
+                (output / 'edid').write_bytes(edid)
+            self.assertIsNone(hdmi_playback_device(drm))
+            connector(2, 1, 'connected', 'enabled', b'')
+            connector(2, 2, 'connected', 'enabled', b'tv')
+            self.assertEqual(hdmi_playback_device(drm), 'plughw:CARD=vc4hdmi1,DEV=0')
+            connector(2, 2, 'connected', 'disabled', b'tv')
+            connector(2, 1, 'connected', 'enabled', b'tv')
+            self.assertEqual(hdmi_playback_device(drm), 'plughw:CARD=vc4hdmi0,DEV=0')
+            connector(2, 1, 'disconnected', 'enabled', b'')
+            self.assertIsNone(hdmi_playback_device(drm))
+
+    def test_player_releases_old_hdmi_and_recovers_without_a_usb_fallback(self):
+        sound = ActionSounds()
+        with patch('zmala_terminal.linux.action_sounds.subprocess.Popen') as popen, \
+                patch('zmala_terminal.linux.action_sounds.os.set_blocking'), \
+                patch('zmala_terminal.linux.action_sounds.time.monotonic', return_value=10):
+            self.route.return_value = None
+            sound.run()
+            popen.assert_not_called()
+            self.assertEqual(sound.retry_at, 11)
+
+            self.route.side_effect = ['plughw:CARD=vc4hdmi0,DEV=0', 'plughw:CARD=vc4hdmi1,DEV=0']
+            with patch('zmala_terminal.linux.action_sounds.time.monotonic', side_effect=[10,11,11]):
+                sound.run()
+            self.assertIn('plughw:CARD=vc4hdmi0,DEV=0', popen.call_args.args[0])
+            popen.return_value.stdin.close.assert_called_once()
+
+            self.route.side_effect = None
+            self.route.return_value = 'plughw:CARD=vc4hdmi1,DEV=0'
+            with patch.object(sound, '_write', return_value=False):
+                sound.run()
+            self.assertIn('plughw:CARD=vc4hdmi1,DEV=0', popen.call_args.args[0])
 
     def pcm(self,data):
         with wave.open(io.BytesIO(data),'rb') as source:
@@ -142,7 +185,8 @@ class SoundLevelsTests(unittest.TestCase):
                 sound.run()
                 self.assertEqual(b''.join(frames),expected)
                 self.assertEqual(ready.set.call_count,1 if age==0 else 0)
-                self.assertIn('raw',popen.call_args.args[0]);self.assertIn('default:C20',popen.call_args.args[0])
+                self.assertIn('raw',popen.call_args.args[0])
+                self.assertIn('plughw:CARD=vc4hdmi0,DEV=0',popen.call_args.args[0])
                 self.assertIn('--buffer-time=5000',popen.call_args.args[0])
                 self.assertIn('--period-time=2500',popen.call_args.args[0])
                 self.assertEqual(PERIOD,.0025)
@@ -222,7 +266,7 @@ class SoundLevelsTests(unittest.TestCase):
         from zmala_terminal.common.model import State
         app=SimpleNamespace(action_sounds=Mock(),engine=SimpleNamespace(call=None),settings_open=False,
             settings_draft=SimpleNamespace(editing=False),model=SimpleNamespace(state=State.HOME,config={}),
-            usb_power=SimpleNamespace(ready=True,ringing=False,ringtone_preview_status=''))
+            usb_power=SimpleNamespace(ready=False,ringing=False,ringtone_preview_status=''))
         InputControl.button_feedback(app);app.action_sounds.play.assert_called_once_with(20,'left')
         app.action_sounds.play.reset_mock()
         for button in ('left','right','green','red','pointer'):
@@ -245,7 +289,7 @@ class SoundLevelsTests(unittest.TestCase):
             app.settings_draft=SimpleNamespace(editing=True,key=key);InputControl.button_feedback(app)
         app.action_sounds.play.assert_not_called()
 
-    def test_feedback_releases_c20_before_core_creation_and_stays_off_while_unconfigured(self):
+    def test_feedback_pauses_for_core_creation_and_warms_with_usb_asleep(self):
         from zmala_terminal.common.configuration_control import ConfigurationControl
         from zmala_terminal.common.settings_control import SettingsControl
         from zmala_terminal.common.local_settings import SettingsDraft
@@ -255,7 +299,8 @@ class SoundLevelsTests(unittest.TestCase):
         def create(config):
             self.assertEqual(order,['released']);order.append('core');return engine
         app=SimpleNamespace(engine=None,action_sounds=feedback,make_engine=create,current_settings={},
-            usb_power=Mock(enabled=False,ready=True,ringing=False,ringtone_preview_status='',playback_active=False),
+            usb_media_ready=Mock(return_value=True),
+            usb_power=Mock(enabled=True,ready=False,ringing=False,ringtone_preview_status='',playback_active=False),
             settings_open=False,settings_draft=SettingsDraft(),model=SimpleNamespace(state=State.HOME,config={}),
             setup_stage=None,generation=1,render=Mock())
         SettingsControl.tick_ringtone(app,1)

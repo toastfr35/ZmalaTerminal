@@ -1,7 +1,7 @@
 # @test T-LLT-037
 # @requirements LLR-TERM-POWER-012, LLR-TERM-POWER-013, LLR-TERM-POWER-014, LLR-TERM-POWER-015, LLR-TERM-POWER-016, LLR-TERM-POWER-017, LLR-TERM-MAINT-028
 # @environment portable
-# @plan Verify either supported USB identity may power down, but unrelated devices cannot. Control time, remote battery, hub status, input and call events with mocked USB helpers; assert the three modes, sixty-second inactivity and battery boundaries, immediate wake requests, media readiness gating, bounded retries and truthful power indication. Inject applied-volume status and worker time to verify ringing only after nonzero mixer convergence, atomic power telemetry, ringer termination escalation and unconditional shutdown power restoration.
+# @plan Verify either supported USB identity may power down, but unrelated devices cannot. Control time, remote battery, hub status, input, previews and calls with mocked USB helpers. Assert three modes, sixty seconds after media activity ends, no USB activity from navigation, battery boundaries, immediate media wake requests, readiness gating, bounded retries and truthful power indication. Inject applied-volume status and worker time to verify ringing only after nonzero mixer convergence, atomic power telemetry, ringer termination escalation and unconditional shutdown power restoration.
 # Verify successful transitions and shutdown are quiet while helper rollback errors
 # remain visible; ordinary power-on emits no helper diagnostics. No real USB is switched.
 # Root cleanup must skip every USB operation while a trusted trial fence exists;
@@ -155,9 +155,11 @@ class UsbPowerTests(unittest.TestCase):
         power.mode = 'camera_and_dock'
         return power
 
-    def test_every_press_wakes_before_setup_can_consume_it(self):
+    def test_input_does_not_wake_usb_or_reset_media_idle_time(self):
         app = InputControl()
         app.usb_power = self.controller()
+        app.usb_power.state = 'off'
+        app.usb_power.last_use = 900
         app.remote_setup_blocked = lambda: True
         app.setup_stage = 'remote'
         for action in (lambda: app.keypress('red'), lambda: app.pointer_button(True), app.volume_activity):
@@ -165,9 +167,12 @@ class UsbPowerTests(unittest.TestCase):
             app.usb_power.changed.clear()
             with patch('time.monotonic', return_value=1000):
                 action()
-            self.assertEqual(app.usb_power.last_use, 1000)
-            self.assertTrue(app.usb_power.changed.is_set())
-            self.assertFalse(should_power_off(1059, app.usb_power.last_use, False, 95, 'camera_and_dock'))
+            self.assertEqual(app.last_button, 1000)
+            self.assertEqual(app.usb_power.last_use, 900)
+            self.assertEqual(app.usb_power.wake_serial, 0)
+            self.assertFalse(app.usb_power.changed.is_set())
+        app.usb_power.set_mode('camera')
+        self.assertTrue(should_power_off(1000, app.usb_power.last_use, False, 95, 'camera'))
 
     def test_idle_starts_after_activity_ends(self):
         power = self.controller()
@@ -178,17 +183,35 @@ class UsbPowerTests(unittest.TestCase):
             power.update(False, 95)
         self.assertEqual(power.last_use, 1000)
 
-    def test_held_button_inhibits_power_off(self):
+    def test_preview_wakes_usb_until_it_ends_even_with_settings_left_open(self):
         app = ManagementLoop(); app.callbacks = CallbackController()
-        app.usb_power = Mock(enabled=True)
+        power = app.usb_power = self.controller()
+        power.mode = 'camera'; power.state = 'off'; power.active = False; power.last_use = 0
         app.setup_stage = app.scanner = app.engine = None
         app.model = Mock(state=State.HOME, config={'usb_power': 'camera'})
-        app.settings_open = False
+        app.settings_open = True
         app.keys_down = {'red'}
         app.presenter_input = Mock(battery=95)
-        app.tick_usb()
-        app.usb_power.set_mode.assert_called_once_with('camera')
-        app.usb_power.update.assert_called_once_with(True, 95, False)
+        with patch('time.monotonic', return_value=1000):
+            power.set_ringtone('test.wav', 0)
+            power.preview_tone('test.wav')
+            app.tick_usb()
+            self.assertEqual(power.ringtone_preview_status, 'muted')
+            self.assertEqual(power.wake_serial, 0)
+            self.assertEqual(power.last_use, 0)
+            self.assertFalse(power.active)
+            power.set_ringtone('test.wav', 50)
+            power.preview_tone('test.wav')
+            self.assertEqual(power.wake_serial, 1)
+            app.tick_usb()
+            self.assertTrue(power.active)
+        with patch('time.monotonic', return_value=1010):
+            power.stop_preview()
+            app.tick_usb()
+        self.assertEqual(power.last_use, 1010)
+        self.assertFalse(power.active)
+        self.assertFalse(should_power_off(1069.9, power.last_use, power.active, power.battery, power.mode))
+        self.assertTrue(should_power_off(1070, power.last_use, power.active, power.battery, power.mode))
 
     def test_incoming_call_wakes_before_tv_work(self):
         app = CallControl(); app.callbacks = CallbackController()
@@ -448,6 +471,34 @@ class HelperSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'still open'):
                 h.power('off')
             switch.assert_not_called()
+
+    def test_open_hdmi_does_not_block_usb_power_off(self):
+        helper = self.helper
+        hdmi = Path('/dev/snd/pcmC2D0p')
+        capture = Path('/dev/snd/pcmC3D0c')
+        hdmi_driver = Path('../../../../bus/platform/drivers/vc4_hdmi')
+        with patch.object(helper.Path, 'read_text', return_value='vc4hdmi1\n'), \
+                patch.object(helper.Path, 'readlink', return_value=hdmi_driver) as driver:
+            self.assertTrue(helper.onboard_hdmi_pcm(hdmi))
+            self.assertFalse(helper.onboard_hdmi_pcm(capture))
+            driver.return_value = Path('../../../../bus/usb/drivers/snd-usb-audio')
+            self.assertFalse(helper.onboard_hdmi_pcm(hdmi))
+            driver.side_effect = FileNotFoundError
+            self.assertFalse(helper.onboard_hdmi_pcm(hdmi))
+
+        with tempfile.TemporaryDirectory() as folder:
+            camera = Path(folder)
+            (camera / 'authorized').write_text('1')
+            with patch.object(helper, 'validate_board'), \
+                    patch.object(helper, 'devices', return_value=[(camera, ('0525','a4b0'))]), \
+                    patch.object(helper, 'onboard_hdmi_pcm', side_effect=lambda node: node == hdmi), \
+                    patch.object(helper.Path, 'glob', side_effect=[[], [hdmi, capture]]), \
+                    patch.object(helper.subprocess, 'run', return_value=Mock(returncode=1)) as opened, \
+                    patch.object(helper, 'switch') as switch:
+                helper.power('off')
+                opened.assert_called_once_with(['/usr/bin/fuser', str(capture)], capture_output=True, timeout=5)
+                switch.assert_called_once_with('off')
+                self.assertEqual((camera / 'authorized').read_text(), '0')
 
 
 if __name__ == '__main__':

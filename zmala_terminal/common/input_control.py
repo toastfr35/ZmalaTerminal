@@ -1,6 +1,5 @@
 """Physical input dispatch, wake-only presses and carousel selection."""
 import time
-import logging
 from zmala_terminal.common.carousel import CarouselMotion
 from zmala_terminal.common.model import State
 from zmala_terminal.common.platform_services import create_remote as PresenterInput
@@ -8,18 +7,15 @@ from zmala_terminal.common.volume_control import VolumeControl
 
 
 class InputControl:
-    # @llr LLR-TERM-POWER-014, LLR-TERM-POWER-016, LLR-TERM-MAINT-028
+    # @llr LLR-TERM-POWER-014, LLR-TERM-MAINT-028
     def input_activity(self):
-        """Wake USB before any TV routing, debounce or setup consumption."""
+        """Record navigation activity independently of USB media use."""
         client = getattr(self, "update_client", None)
         if client:
             if client.locked:
                 return
             client.activity()
         self.last_button = time.monotonic()
-        power = getattr(self, 'usb_power', None)
-        if power:
-            power.require(urgent=True)
 
     def bind_inputs(self):
         from zmala_terminal.common.platform_services import create_action_sounds as ActionSounds
@@ -80,12 +76,8 @@ class InputControl:
     def button_feedback(self, button='left'):
         player = getattr(self, 'action_sounds', None)
         power = getattr(self, 'usb_power', None)
-        if player and power:
-            logging.debug('Button feedback ready=%s state=%s call=%s ringing=%s preview=%s',
-                power.ready, self.model.state, bool(self.engine and self.engine.call),
-                power.ringing, power.ringtone_preview_status)
-        if not player or not power or not power.ready:
-            return  # Waking USB must not delay navigation or replay old clicks.
+        if not player or not power:
+            return
         if (self.model.state not in (State.HOME, State.CONFIRMING, State.CONFIRM_CALLBACK)
                 or self.engine and self.engine.call
                 or power.ringing or power.ringtone_preview_status in ('waiting', 'playing')):

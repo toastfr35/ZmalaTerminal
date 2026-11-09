@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# ZMALA_USB_POWER_CAPABILITY=hdmi-pcm-v1
 """Fixed Pi 4 USB power helper. Installed root-owned; no arbitrary commands/paths."""
 import argparse
 import json
@@ -83,6 +84,20 @@ def switch(action):
         raise RuntimeError('; '.join(errors))
 
 
+# @llr LLR-TERM-POWER-015
+def onboard_hdmi_pcm(node, sound=Path('/sys/class/sound')):
+    """Only exempt a playback node positively identified as onboard VC4 HDMI."""
+    match = re.fullmatch(r'pcmC(\d+)D\d+p', node.name)
+    if not match:
+        return False
+    card = sound / ('card' + match[1])
+    try:
+        return ((card / 'id').read_text().strip() in ('vc4hdmi0', 'vc4hdmi1')
+                and (card / 'device/driver').readlink().parts[-4:] == ('bus', 'platform', 'drivers', 'vc4_hdmi'))
+    except OSError:
+        return False
+
+
 def power(action):
     # @llr LLR-TERM-MAINT-028
     if action == 'restore':
@@ -101,7 +116,8 @@ def power(action):
         raise RuntimeError('Other USB peripherals present; leaving power on')
     if len(attached) != 1:
         raise RuntimeError('Expected exactly one C10 or C20 before powering down')
-    nodes = list(Path('/dev').glob('video*')) + list(Path('/dev/snd').glob('pcm*'))
+    nodes = list(Path('/dev').glob('video*'))
+    nodes.extend(node for node in Path('/dev/snd').glob('pcm*') if not onboard_hdmi_pcm(node))
     if nodes:
         opened = subprocess.run(['/usr/bin/fuser', *map(str, nodes)], capture_output=True, timeout=5)
         if opened.returncode != 1:  # 0 = open, other errors are not evidence of inactivity.

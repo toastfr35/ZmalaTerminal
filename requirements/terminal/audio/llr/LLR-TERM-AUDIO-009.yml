@@ -37,7 +37,8 @@ text: |
   wrap to the first; moving shall not change the saved choice. A highlighted
   editor choice shall preview as soon as its audio is ready after each selection change, through C10/C20
   at the independently configured ringtone volume. Preview shall wait for media readiness and
-  hardware readiness, respect ringtone mute independently of call mute and stop after ten seconds or earlier at file
+  hardware readiness for audible playback. A muted preview shall leave USB
+  asleep. Preview shall respect ringtone mute independently of call mute and stop after ten seconds or earlier at file
   end, selection change, cancellation, leaving the editor, incoming call or shutdown.
   Preview shall work without USB power switching; incoming calls take priority.
   Windows acceptance shall preview through the desktop sound output with the

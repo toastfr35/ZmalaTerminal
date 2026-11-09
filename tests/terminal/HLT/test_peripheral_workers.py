@@ -1,8 +1,8 @@
 # @test T-HLT-025
 # @requirements HLR-TERM-POWER-008, HLR-TERM-POWER-009
 # @environment display
-# @plan Run USB and fan worker threads alongside the real Tk terminal. Substitute only privileged USB commands, media enumeration and I2C writes. Select camera and dock mode, age the idle timestamp through 60 seconds, vary battery/activity, block wake, reject native refresh and inject helper failure. Drive a button and incoming call through application controllers. Check native refresh thread ownership and fan transitions.
-# @pass USB sleeps only after eligible idle time, user/call activity requests wake immediately, and readiness waits for enumeration plus native refresh. Slow/failing hardware work does not block navigation; fan runs during calls and stops afterwards. Physical C20 readiness, hub switching and thermal performance remain hardware acceptance tests.
+# @plan Run USB and fan worker threads alongside the real Tk terminal. Substitute only privileged USB commands, media enumeration and I2C writes. Select camera and dock mode, age the idle timestamp through 60 seconds, vary battery/activity, block wake, reject native refresh and inject helper failure. Navigate with USB off and drive incoming calls through application controllers. Check native refresh thread ownership and fan transitions.
+# @pass USB sleeps only after eligible idle time and stays off during navigation. An accepted call requests wake immediately, and readiness waits for enumeration plus native refresh. Slow/failing hardware work does not block the UI; the fan runs during calls and stops afterwards. Physical C10/C20 readiness, hub switching and thermal performance remain hardware acceptance tests.
 
 import os
 import sys
@@ -70,14 +70,20 @@ class PeripheralWorkerTests(unittest.TestCase):
                 pump(app, lambda: power.state == 'off')
                 self.assertIs(power.power_state, False)
 
-                # A slow privileged wake must not hold the UI thread.
-                entered.clear(); gate.clear()
                 before = app.model.index
+                wake_serial = power.wake_serial
                 app.keypress('right')
                 app.keyrelease('right')
-                pump(app, entered.is_set)
                 self.assertNotEqual(app.model.index, before)
+                self.assertEqual(power.state, 'off')
+                self.assertEqual(power.wake_serial, wake_serial)
+
+                # A slow call-triggered wake must not hold the UI thread.
+                entered.clear(); gate.clear()
+                app.call_event(122, 1, 'alice', 'family.test')
+                pump(app, entered.is_set)
                 self.assertEqual(power.state, 'switching')
+                self.assertEqual(app.model.state, State.RINGING)
                 self.assertFalse(power.ready)
                 gate.set()
                 pump(app, lambda: power.state == 'on')
@@ -86,6 +92,7 @@ class PeripheralWorkerTests(unittest.TestCase):
                 self.assertTrue(power.ready)
                 self.assertEqual(set(refresh_threads), {ui_thread})
                 self.assertTrue(all(thread != ui_thread for _, thread in commands))
+                app.call_event(122, 14, 'alice', 'family.test')
 
                 idle(75)
                 pump(app, lambda: power.state == 'off')
@@ -100,8 +107,9 @@ class PeripheralWorkerTests(unittest.TestCase):
                 pump(app, lambda: power.state == 'error')
                 self.assertEqual(app.model.state, State.RINGING)
                 self.assertFalse(power.ready)
-                # Fresh physical input bypasses the helper's ten-second retry delay.
-                app.input_activity()
+                # A new accepted call bypasses the helper's ten-second retry delay.
+                app.call_event(123, 14, 'alice', 'family.test')
+                app.call_event(124, 1, 'alice', 'family.test')
                 pump(app, lambda: power.state == 'on')
                 power.refresh(app.engine)
                 self.assertTrue(power.ready)

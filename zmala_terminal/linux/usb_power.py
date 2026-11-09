@@ -91,7 +91,6 @@ class UsbPower:
             if mode == self.mode:
                 return
             self.mode = mode
-            self.last_use = time.monotonic()
             self.wake_serial += 1
         self.changed.set()
 
@@ -153,18 +152,22 @@ class UsbPower:
             self.ringtone_file = Path(file)
             self.ringtone_volume = percent
 
+    # @llr LLR-TERM-POWER-014
     def preview_tone(self, file):
         with self.lock:
             if self.ringing or self.stopped:
                 return
+            if self.ringtone_volume == 0:
+                self.preview_file, self.preview_state = None, 'muted'
+                self.changed.set()
+                return
             self.preview_file, self.preview_state = Path(file), 'waiting'
             self.preview_serial += 1
             self.preview_started = None
+            self.require(urgent=True)
             if not self.enabled and self.worker is None and sys.platform == 'linux':
                 self.worker = threading.Thread(target=self.preview_worker, name='ringtone-preview', daemon=True)
                 self.worker.start()
-        self.require()
-        self.changed.set()
 
     # @llr LLR-TERM-AUDIO-009
     def preview_worker(self):
@@ -200,6 +203,8 @@ class UsbPower:
         with self.lock:
             if self.ringing:
                 self.preview_file, self.preview_state = None, ''
+            if self.preview_file is not None and self.ringtone_volume == 0:
+                self.preview_file, self.preview_state = None, 'muted'
             preview = self.preview_file is not None
             requested = self.ringing or preview
             eligible = requested and self.ready
@@ -208,8 +213,6 @@ class UsbPower:
                 desired, applied, failed = status()
                 # Call mute must not mute ringing. Hardware gain is fixed at the model-specific maximum.
                 eligible = applied is not None and not failed and self.ringtone_volume > 0
-                if preview and self.ringtone_volume == 0:
-                    self.preview_state = 'muted'
             if not eligible:
                 self.stop_playback()
                 return
@@ -291,7 +294,7 @@ class UsbPower:
                 with self.lock:
                     if handled_wake != self.wake_serial:
                         handled_wake = self.wake_serial
-                        next_attempt = 0  # New user/call activity bypasses a failed attempt's backoff.
+                        next_attempt = 0  # A new media request or mode change bypasses backoff.
                     # A stalled UI or stale battery must never leave the charger off.
                     active = self.active or now - self.updated > 10
                     off = should_power_off(now, self.last_use, active, self.battery, self.mode)

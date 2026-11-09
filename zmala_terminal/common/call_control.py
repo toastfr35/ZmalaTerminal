@@ -104,8 +104,11 @@ class CallControl:
             self.model.contact['id'], self.model.config['sip']['username'],
             self.model.callback_request['id'] if cancel else None)
 
+    # @llr LLR-TERM-POWER-014
     def begin_dial(self):
         """Check current permission and presence before opening a native call."""
+        if getattr(self, 'usb_power', None):
+            self.usb_power.require(urgent=True)
         self.notice = ''
         self.outgoing_deadline = time.monotonic() + 60
         self.dial_serial += 1
@@ -150,7 +153,7 @@ class CallControl:
         if not action or (not self.engine and action not in ('request_callback', 'cancel_callback')):
             return
         # @llr LLR-TERM-AUDIO-010
-        # The C20 feedback stream is exclusive; release it before native call setup.
+        # Discard any pending navigation feedback when entering or leaving a call.
         feedback = getattr(self, 'action_sounds', None)
         if feedback and action in ('dial', 'answer', 'end', 'decline'):
             feedback.cancel()

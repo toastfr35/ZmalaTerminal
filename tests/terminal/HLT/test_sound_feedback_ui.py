@@ -3,7 +3,7 @@
 # @environment display
 # @plan Use real Tk/input/settings/volume controllers with substituted hardware and player.
 # Check the 16 native labels and wrap boundaries, independent ringtone/button editors,
-# one feedback request for a held key, distinct green/red cues and a compact black volume panel over the carousel
+# one feedback request for a held key with USB asleep, distinct green/red cues and a compact black volume panel over the carousel
 # and simulated call video. Preserve selection and call through adjustments and close.
 # @pass Labels/options/wrapping and geometry assertions pass; input requests feedback once
 # per distinct press, and opening/closing the overlay preserves the underlying screen.
@@ -11,7 +11,7 @@
 import os
 import sys
 import unittest
-from unittest.mock import Mock,patch
+from unittest.mock import Mock,PropertyMock,patch
 from tests.support.terminal.ui_fixture import terminal_fixture,pump
 from zmala_terminal.common.local_settings import FIELDS,SettingsDraft
 from zmala_terminal.common.localization import LANGUAGES
@@ -25,7 +25,10 @@ class SoundFeedbackUI(unittest.TestCase):
                 patch('zmala_terminal.linux.c20_volume.status',return_value=(50,50,False)), \
                 patch('zmala_terminal.linux.c20_volume.request'):
             app.action_sounds=Mock()
-            app.keypress('left');app.keypress('left');app.keyrelease('left')
+            with patch.object(type(app.usb_power), 'ready', new_callable=PropertyMock, return_value=False), \
+                    patch.object(app.usb_power, 'require') as require:
+                app.keypress('left');app.keypress('left');app.keyrelease('left')
+                require.assert_not_called()
             app.action_sounds.play.assert_called_once_with(20,'left')
             app.keypress('green');app.keyrelease('green')
             app.action_sounds.play.assert_called_with(20,'green')

@@ -24,10 +24,13 @@ references:
 reviewed: null
 scope: Experimental
 text: |
-  Every button press, including volume-overlay clicks, and accepted incoming call shall immediately
-  request USB power restoration and restart idle timing. This includes consumed and
-  debounced presses. The request shall not wait for TV routing or answer timers.
-  Device enumeration may complete later.
+  An accepted incoming call, an outgoing call attempt and an audible ringtone
+  preview shall immediately request USB power restoration. The request shall
+  precede TV routing, call preflight or playback. Camera-based setup and native
+  media initialization or reconfiguration shall request power before probing
+  devices. Device enumeration may complete later. Navigation, ordinary Settings
+  changes and muted previews shall leave USB media sleep undisturbed.
 verification: |
-  Feed normal, consumed and debounced button inputs, volume-overlay clicks and incoming calls. Check request
-  order before TV or answer work.
+  Feed normal, consumed and debounced inputs and volume-overlay clicks with USB
+  asleep. Check call and preview wake ordering and that media-free Settings
+  changes, muted previews and navigation leave the idle clock unchanged.
