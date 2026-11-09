@@ -127,7 +127,8 @@ class LinuxMediaAdapterTests(unittest.TestCase):
 
     def test_usb_refresh_preserves_live_streams_then_reloads_devices_and_volume(self):
         from zmala_terminal.linux import media
-        e = Mock(core=1, call=2, config={'terminal_settings': {'speaker': 'chosen'}, 'c20_speaker_volume': 37})
+        e = Mock(core=1, call=2, defer_media=False,
+                 config={'terminal_settings': {'speaker': 'chosen'}, 'c20_speaker_volume': 37})
         with patch('zmala_terminal.linux.c20_volume.reapply') as reapply:
             for state in (7, 8):
                 e.call_get_state.return_value = state
@@ -139,10 +140,16 @@ class LinuxMediaAdapterTests(unittest.TestCase):
             e.dll.linphone_core_reload_video_devices.assert_called_once_with(1)
             e.apply_settings.assert_called_once_with({'speaker': 'chosen'})
             reapply.assert_called_once_with()
-        with patch('zmala_terminal.linux.c20_volume.configure') as configure:
+        with patch('zmala_terminal.linux.c20_volume.configure') as configure, \
+                patch('zmala_terminal.linux.c20_volume.reapply') as reapply:
             media.apply_speaker_volume(e)
             configure.assert_called_once_with(37)
             e.sync_speaker_mute.assert_called_once()
+            configure.reset_mock()
+            e.defer_media = True
+            media.refresh_usb_devices(e)
+            configure.assert_called_once_with(37)
+            reapply.assert_called_once_with()
         e.devices.return_value = {'camera':['ZmalaMJPEG:C20'], 'speaker':['Nuroum C20 speaker'], 'microphone':['Nuroum C20 microphone']}
         self.assertEqual(media.select_settings(e, {}), {key: values[0] for key, values in e.devices.return_value.items()})
         e.call_params_get_received_framerate.return_value = 12

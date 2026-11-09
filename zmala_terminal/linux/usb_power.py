@@ -294,7 +294,7 @@ class UsbPower:
                 with self.lock:
                     if handled_wake != self.wake_serial:
                         handled_wake = self.wake_serial
-                        next_attempt = 0  # New user/call activity bypasses a failed attempt's backoff.
+                        next_attempt = 0  # A new media request or mode change bypasses backoff.
                     # A stalled UI or stale battery must never leave the charger off.
                     active = self.active or now - self.updated > 10
                     off = should_power_off(now, self.last_use, active, self.battery, self.mode)

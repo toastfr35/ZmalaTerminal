@@ -79,8 +79,12 @@ def refresh_usb_devices(self):
         function.argtypes, function.restype = [P], None
         function(self.core)
     self.apply_settings(self.config.get('terminal_settings', {}))
-    from zmala_terminal.linux.c20_volume import reapply
+    from zmala_terminal.linux.c20_volume import configure, reapply
     reapply()
+    if self.defer_media:
+        # A core started with USB asleep has never initialized the mixer.
+        # Ringing and previews need its gain before any call prepares media.
+        configure(self.config.get('c20_speaker_volume', 50))
     logging.info('C10/C20 devices refreshed after USB wake')
 
 
