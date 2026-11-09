@@ -2,10 +2,31 @@
 import ipaddress
 import json
 import logging
+from pathlib import Path
 import platform
+import re
 import socket
 import subprocess
 import sys
+
+
+# @llr LLR-TERM-CONFIG-020
+def appliance_release(path=Path('/usr/lib/zmala/system-release.json')):
+    """Return the running appliance release when the image supplies one."""
+    try:
+        with path.open('rb') as stream:
+            body = stream.read(4097)
+        if len(body) > 4096:
+            return None
+        release = json.loads(body)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(release, dict) or release.get('schema') != 1 or release.get('role') != 'terminal':
+        return None
+    version = release.get('version')
+    if isinstance(version, str) and re.fullmatch(r'[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}', version):
+        return version
+    return None
 
 
 def local_ip():

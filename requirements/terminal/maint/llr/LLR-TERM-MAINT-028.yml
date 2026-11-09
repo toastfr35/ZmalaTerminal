@@ -38,6 +38,10 @@ references:
   type: file
 - path: zmala_terminal/common/update_menu.py
   type: file
+- path: zmala_terminal/common/ui/settings.py
+  type: file
+- path: tests/terminal/LLT/test_view_contracts.py
+  type: file
 reviewed: null
 scope: Experimental
 text: The application shall acknowledge only a fresh root-owned bounded maintenance
@@ -54,7 +58,9 @@ text: The application shall acknowledge only a fresh root-owned bounded maintena
   A ready heartbeat shall follow a successful complete UI cycle; repeated cycle
   failures shall not keep trial readiness fresh.
   Updates in Settings shall request a local check, display the offered version
-  and ask whether to apply it. Only a green confirmation shall request the
+  and ask whether to apply it. On an appliance, identify this version as the
+  Terminal release, including when the application version is unchanged.
+  Only a green confirmation shall request the
   offered release; a red press shall return without requesting installation.
   A fresh root-owned explicit update request may waive the inactivity delay
   after Settings closes. All call, setup, worker and peripheral guards remain

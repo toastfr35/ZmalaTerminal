@@ -29,7 +29,8 @@ reviewed: null
 scope: Core
 text: |
   Settings shall hide the normal status icons and show the assigned terminal ID
-  and the running Terminal software version in small text at the bottom.
+  and the running appliance release in small text at the bottom. On a host
+  without appliance release metadata, show the running software version instead.
   The carousel order shall be language, automatic answer, automatic framing,
   ringtone, ringtone volume, button sounds volume,
   portraits shown, return to TV, USB power, TV setup, Maintenance, Updates and Information.
@@ -38,7 +39,8 @@ text: |
   Show a placeholder when no portrait is available and a localized unavailable
   value for missing details. Red shall return to the Information card.
 verification: |
-  Render Settings at supported sizes. Check the identifier, software version,
+  Render Settings at supported sizes. Check the identifier, appliance release
+  and software version fallback,
   absence of status icons, five setting icons and the last four carousel entries.
   Open Information with populated and missing values and check its labels,
   portrait, placeholder and return behavior.

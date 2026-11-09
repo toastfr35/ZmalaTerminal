@@ -1,15 +1,17 @@
 # @test T-LLT-048
-# @requirements LLR-TERM-NAV-005, LLR-TERM-CONFIG-020, LLR-TERM-UI-014, LLR-TERM-UI-015, LLR-TERM-UI-016, LLR-TERM-UI-017, LLR-TERM-UI-019, LLR-TERM-UI-024, LLR-TERM-HISTORY-016, LLR-TERM-HISTORY-022
+# @requirements LLR-TERM-NAV-005, LLR-TERM-CONFIG-020, LLR-TERM-MAINT-028, LLR-TERM-UI-014, LLR-TERM-UI-015, LLR-TERM-UI-016, LLR-TERM-UI-017, LLR-TERM-UI-019, LLR-TERM-UI-024, LLR-TERM-HISTORY-016, LLR-TERM-HISTORY-022
 # @environment portable
 # @plan Record drawing calls at small and full-HD dimensions; check the selected-to-adjacent portrait size ratio, in-frame contact labels, portrait margins, localized rounded affirmative/negative controls, settings-only chrome and serial footer. Inject Pango to verify unchanged Unicode text and bounded shaping; force a tall translated settings label to check minimum-font ellipsis and intact combining marks. Test absolute carousel deadlines under delayed frames. Exercise real carousel composition with recording widgets, controlled shaped-label metrics and image failures; assert pending/missed badges, logo restoration, bounded labels and placeholder/ringing redraws.
 # Check three-state contact colours, labels and symbols; expire a six-second live snapshot and confirm push remains callable only while fresh. Change presence at the same configuration version and assert redraws without reconfiguration.
 # Fit two-line status text beside a separate icon at selected/adjacent widths, including animation; force minimum-font overflow and check bounded ellipsis without splitting combining marks.
 # Draw incoming callback flags with controlled label metrics on selected/adjacent cards; check high-contrast banner, flag geometry, retained localized labels and no name/status layout changes.
 # Check the larger bold settled selected name and its full-card width; moving cards retain compact labels.
+# Verify the installed and offered appliance release labels with an unchanged app version.
 # @pass Geometry, color, text and timing assertions must pass; these unit checks do not replace physical display or font-rendering acceptance.
 
 from zmala_terminal.common.callbacks import CallbackController
 import importlib.util
+from io import BytesIO
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -21,6 +23,7 @@ from zmala_terminal.common.ui.carousel import CarouselView
 from zmala_terminal.common.ui.confirmation import ConfirmationView
 from zmala_terminal.common.ui.settings import SettingsView
 from zmala_terminal.common.local_settings import SettingsDraft, FIELDS
+from zmala_terminal.common.system_settings import appliance_release
 from zmala_terminal.common.model import TerminalModel, State
 from zmala_terminal.common.theme import BUTTON_GREEN, BUTTON_RED
 from tests.terminal.LLT.test_terminal import config
@@ -251,6 +254,7 @@ class ViewContractTests(unittest.TestCase):
         v.settings_open = True; v.settings_hold = SimpleNamespace(capturing=False, progress=0)
         v.settings_signature = None; v.settings_draft = SettingsDraft(); v.language = 'en'
         v.settings_version = '1.2.3'
+        v.settings_release = None
         v.settings_canvas = Mock(); v.settings_canvas.winfo_width.return_value = 1280; v.settings_canvas.winfo_height.return_value = 720
         v.settings_label = Mock(); v.settings_panel = Mock(); v.text = lambda key: key
         v.draw_connectivity = Mock(); v.corner_logo = Mock(); v.text_renderer = Mock(); v.settings_images = []
@@ -263,6 +267,30 @@ class ViewContractTests(unittest.TestCase):
         hints = [c for c in v.settings_panel.call_args_list if c.kwargs.get('tags') == 'settings-hint']
         self.assertEqual(len(hints), 3)
         self.assertTrue(all(0 <= c.args[0] < 1280 for c in hints))
+
+        v.settings_draft.updates = SimpleNamespace(state='available', version='20261109.0.1')
+        v.settings_release = '0.4.9'
+        v.settings_label.reset_mock()
+        v.draw_settings()
+        labels = [call.args[0] for call in v.settings_label.call_args_list]
+        self.assertIn('ID : test  ·  Terminal release 0.4.9', labels)
+        self.assertIn('Terminal release 2026-11-09 is available.\nApply the update now?', labels)
+        v.settings_draft.updates.version = '20261109.0.2'
+        v.settings_label.reset_mock()
+        v.draw_settings()
+        self.assertIn('Terminal release 2026-11-09 (2) is available.\nApply the update now?',
+                      [call.args[0] for call in v.settings_label.call_args_list])
+
+    def test_appliance_release_metadata_is_optional(self):
+        path = Mock()
+        path.open.return_value = BytesIO(b'{"schema":1,"role":"terminal","version":"0.4.9"}')
+        self.assertEqual(appliance_release(path), '0.4.9')
+        path.open.return_value = BytesIO(b'{"schema":1,"role":"server","version":"0.4.9"}')
+        self.assertIsNone(appliance_release(path))
+        path.open.return_value = BytesIO(b'{' + b' ' * 4096 + b'}')
+        self.assertIsNone(appliance_release(path))
+        path.open.side_effect = FileNotFoundError
+        self.assertIsNone(appliance_release(path))
 
     def test_pango_receives_unmodified_bidi_name_with_width_wrap_and_font(self):
         pango = Mock(SCALE=1024)

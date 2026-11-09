@@ -467,7 +467,8 @@ Middle is Pointer. Remote motion is ignored for volume. While the overlay is ope
 Settings has a five-card icon carousel containing all settings, and individual
 editor pages. Each page has full-width control hints. Status icons are hidden,
 the transparent Zmala logo remains at the top left, and the terminal ID and
-running software version appear in the footer. Confirmed edits
+running Terminal release appear in the footer. Installer-based Terminals show
+the application version there. Confirmed edits
 go back to the server. Failed/conflicting saves retain visible error guidance.
 The main background is black. Cards and frames retain their dark-blue fills.
 After reconciliation, retry expectations use the editor defaults for optional
@@ -504,6 +505,12 @@ inside the small-window layout.
 | Maintenance | Shut down, reboot or reset to factory defaults, each with a separate confirmation |
 | Updates | Check now and choose whether to apply the offered version |
 | Information | Terminal ID, OS version, software version, IP address, and enrolled account ID, name and portrait |
+
+For an appliance, the Terminal release is the date of the full OTA bundle.
+Later releases on the same date include a revision in parentheses.
+An OS security update can advance it while the app build stays the same.
+Updates shows the offered Terminal release. Information lists the OS and app
+versions separately.
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
 Preview starts as soon as the highlighted audio is ready and plays for at most ten
