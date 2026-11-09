@@ -40,6 +40,11 @@ pass under Linux. An initial run on Windows-backed temporary storage failed eigh
 permission-sensitive cases. Repeating the suite with Linux temporary storage under
 the workspace tmp directory passed all cases.
 
+The discovered high-level Python suite also passes under a virtual display,
+with 35 tests run and three explicit skips. The skipped checks require a physical
+Terminal SSH alias, an installed Pi after reboot, or root network namespaces for
+firewall ingress. They remain qualification gaps for this local run.
+
 Physical C10/C20 audio and camera behavior, Presenter reports, TV picture/routing,
 USB hub switching and Pi thermal behavior were not exercised on hardware in this
 review. The native SDK and separately launched display scenarios require the
