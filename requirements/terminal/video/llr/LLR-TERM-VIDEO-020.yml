@@ -22,6 +22,12 @@ text: During a connected call, when the server advertises photo sharing, the ter
   time shall consume that interval. An image already expired when its result is
   processed shall not be displayed. The SIP Call-ID shall be percent-encoded in
   the request query.
+  Status shall be an object with a nonnegative integer revision and Boolean sharing.
+  Supplied remaining_ms shall be an integer; an omitted value shall mean zero.
+  Boolean values shall not satisfy integer fields. Malformed status shall leave
+  the current image subject to its existing expiry. An expired status shall not
+  start an image download, and a transfer completing after expiry shall not start
+  decoding. Failure to start a worker shall permit a later polling attempt.
 references:
 - path: zmala_terminal/common/call_photo.py
   type: file
@@ -35,3 +41,6 @@ verification: Inject current and stale call results, expired and failed leases, 
   Control request-start and completion times, including a completion after expiry.
   Check negative, zero and above-12000 remaining_ms values, unchanged-revision
   image reuse, one in-flight worker and query encoding of reserved Call-ID characters.
+  Reject malformed status objects and field types without extending the current lease.
+  Count image requests and decoder calls when status or image transfer consumes the
+  lease. Fail worker startup and verify recovery on a later poll.
