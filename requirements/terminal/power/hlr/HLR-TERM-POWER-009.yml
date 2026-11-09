@@ -17,7 +17,8 @@ scope: Experimental
 text: |
   When enabled, USB power saving shall retain power while devices are needed.
   In camera and dock mode, it shall retain power while the remote battery
-  is low or uncertain. User activity shall request power restoration.
+  is low or uncertain. Activities requiring USB media shall request power restoration.
+  Contact navigation and ordinary Settings changes shall preserve USB sleep.
 verification: |
   Exercise idle, low battery, unknown state and wake events. Check power confirmation
   and media readiness after restoration.
