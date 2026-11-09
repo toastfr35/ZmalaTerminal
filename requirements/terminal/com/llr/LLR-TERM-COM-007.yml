@@ -31,6 +31,15 @@ text: |
   The terminal shall request live state at approximately two-second intervals.
   Presence and callback changes shall apply independently of stable configuration
   revisions. Slow portrait loading shall not delay this polling.
+  At most one configuration polling worker shall be active, including its
+  associated status report. A live-only reply shall apply only when a saved
+  configuration exists and its revision matches the reply. It shall update
+  reachability only for existing contacts, leaving their identity and permissions
+  unchanged. An existing contact omitted from the live reply shall become offline.
 verification: |
   Advance a controlled clock while delaying portrait work. Check refresh intervals and
   live changes with an unchanged revision.
+  Block a configuration fetch and then its status report across multiple polling
+  intervals and check that no second worker starts. Supply a mismatched revision,
+  an unknown contact, a missing contact and attempted permission changes in a
+  live reply. Check rejection or isolation of each field as specified above.

@@ -32,7 +32,17 @@ text: |
   Base45 server code. The URL shall use HTTP or HTTPS without user information, query or
   fragment. Enrollment shall be saved only after authenticated configuration passes
   validation.
+  The complete code shall contain at most 4096 characters. Decoded server_url
+  shall contain at most 512 characters and identify an origin with a nonempty
+  hostname, no non-root path and, when present, a port from 1 through 65535.
+  The device ID shall match [A-Za-z0-9_-]{1,80} and the token shall match
+  [A-Za-z0-9_-]{20,256}. Base45 spaces shall be preserved. Reserved flag bits,
+  malformed encodings and truncated fields shall be rejected according to the
+  compact layout in requirements/interfaces/terminal-server.md.
 verification: |
   Decode Server-generated compact UUID and literal field
   vectors. Reject malformed compact headers, encodings, identities and URLs. Reject failed authentication and
   wrong-device configuration without saving credentials.
+  Check exact limits and one-character overflow for the code, URL, ID and token,
+  token lengths 19 and 20, ports 0, 1, 65535 and 65536, and a valid vector
+  containing a Base45 space. Verify that every rejection leaves enrollment unsaved.

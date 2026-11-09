@@ -28,8 +28,15 @@ scope: Core
 text: |
   Configuration shall use the JSON integer schema version 1 (not a Boolean,
   string or fractional number), the enrolled device ID and a positive integer
-  revision. It shall contain no more than 40 unique valid contacts. Each contact URI
-  shall match its account and the configured SIP domain.
+  revision. The revision shall also reject Boolean, string and fractional values.
+  Contacts shall be an array containing zero through 40 objects with unique IDs.
+  Each ID shall match [a-z][a-z0-9_-]{0,30}. Each name shall be a string of one
+  through 80 characters containing at least one non-whitespace character.
+  Each contact URI shall equal sip:ID@DOMAIN, using that contact ID and the
+  configured SIP domain. Validation shall complete before accepting the snapshot.
 verification: |
   Vary schema, identity, revision, contact count, duplicate IDs and domain. Check
   acceptance and rejection at each boundary.
+  Include empty and 40-contact arrays, 41 contacts, duplicate IDs, 31- and
+  32-character IDs, 80- and 81-character names, whitespace-only names and a
+  URI whose account differs from its contact ID.

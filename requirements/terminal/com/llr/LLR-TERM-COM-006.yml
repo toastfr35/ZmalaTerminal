@@ -31,6 +31,14 @@ text: |
   The terminal shall retain a validated configuration snapshot for offline restart.
   Presence and callback refreshes alone shall not rewrite that snapshot. A lower
   revision shall not replace a newer accepted configuration.
+  The saved snapshot shall omit callbacks, developer_access, and each contact's
+  online and presence fields. Both successful polls and acknowledged settings
+  writes shall use this same stable snapshot policy. Identical stable contents
+  shall not cause a further cache write.
 verification: |
   Restart offline, refresh live fields repeatedly and deliver an older revision. Check
   saved-file writes and retained settings.
+  Inspect the stored JSON for each excluded field after both a poll and a
+  settings acknowledgement. Repeat full and live-only replies with identical
+  stable contents and count cache writes. Reject an older settings response as
+  well as an older poll without changing the accepted snapshot.
