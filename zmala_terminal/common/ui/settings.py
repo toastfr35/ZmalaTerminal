@@ -1,4 +1,5 @@
 """Five-card settings carousel and focused, remote-only setting pages."""
+from datetime import date
 import json
 from pathlib import Path
 import re
@@ -7,6 +8,7 @@ import unicodedata
 from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
 from zmala_terminal.common.settings_artwork import artwork_path
 from zmala_terminal.common.localization import LANGUAGES, font_family
+from zmala_terminal.common.system_settings import appliance_release
 from zmala_terminal.common.theme import BG, FG, MUTED, PANEL, ACCENT, BUTTON_GREEN, BUTTON_RED, RED
 from zmala_terminal.common.ui.system_settings import SystemSettingsView
 
@@ -23,10 +25,14 @@ KEYS = ('settings', 'language', 'auto_answer', 'auto_framing', 'ringtone_volume'
 UPDATE_MESSAGES = {
     'en': {'checking': 'Checking for updates…', 'current': 'Your software is up to date.',
            'available': 'Version {version} is available.\nApply the update now?',
+           'available_release': 'Terminal release {version} is available.\nApply the update now?',
+           'release_label': 'Terminal release {version}',
            'submitting': 'Requesting the update…', 'unavailable': 'Update service unavailable.',
            'error': 'Could not complete the update request.', 'apply': 'Apply update', 'back': 'Back'},
     'fr': {'checking': 'Recherche de mises à jour…', 'current': 'Le logiciel est à jour.',
            'available': 'La version {version} est disponible.\nAppliquer la mise à jour maintenant ?',
+           'available_release': 'La version {version} du terminal est disponible.\nAppliquer la mise à jour maintenant ?',
+           'release_label': 'Version {version} du terminal',
            'submitting': 'Demande de mise à jour…', 'unavailable': 'Service de mise à jour indisponible.',
            'error': 'Impossible de traiter la demande de mise à jour.', 'apply': 'Appliquer', 'back': 'Retour'},
 }
@@ -43,6 +49,17 @@ def terminal_version(root):
     return None
 
 
+def release_label(version):
+    stamp, _, revision = version.partition('.0.')
+    if len(stamp) != 8 or not revision.isdecimal():
+        return version
+    try:
+        day = date.fromisoformat(stamp).isoformat()
+    except ValueError:
+        return version
+    return day if revision == '1' else f'{day} ({revision})'
+
+
 class SettingsView(SystemSettingsView):
     def settings_text(self, key):
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
@@ -53,6 +70,7 @@ class SettingsView(SystemSettingsView):
         self.settings_images = []
         self.settings_signature = None
         self.settings_version = terminal_version(Path(__file__).resolve().parents[3])
+        self.settings_release = appliance_release()
 
     def settings_value(self, key, value):
         if key == 'tv_setup':
@@ -169,7 +187,10 @@ class SettingsView(SystemSettingsView):
         self.settings_images = []
         c.create_image(42, 40, image=self.corner_logo, tags='zmala-logo')
         footer = f'ID : {device_id}'
-        if self.settings_version:
+        if self.settings_release:
+            messages = UPDATE_MESSAGES.get(self.language, UPDATE_MESSAGES['en'])
+            footer += '  ·  ' + messages['release_label'].format(version=release_label(self.settings_release))
+        elif self.settings_version:
             footer += f'  ·  v{self.settings_version}'
         self.settings_label(footer, width/2, height-17,
                             width-64, 11, MUTED, anchor='center', tags='settings-serial')
@@ -232,7 +253,10 @@ class SettingsView(SystemSettingsView):
         self.settings_label(self.settings_text('updates'), width/2, 132, width-100, 32,
                             bold=True, anchor='center', max_height=88)
         self.settings_icon('updates', width/2, height*.34, 96, BG)
-        self.settings_label(messages[menu.state].format(version=menu.version), width/2, height*.56,
+        message, version = menu.state, menu.version
+        if message == 'available' and self.settings_release:
+            message, version = 'available_release', release_label(version)
+        self.settings_label(messages[message].format(version=version), width/2, height*.56,
                             width-150, 28, anchor='center', max_height=height*.24)
         actions = [(messages['back'], BUTTON_RED)]
         if menu.state == 'available':
