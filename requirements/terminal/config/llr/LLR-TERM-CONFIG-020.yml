@@ -36,6 +36,7 @@ text: |
   portraits shown, return to TV, USB power, TV setup, Maintenance, Updates and Information.
   Information shall show the terminal ID, OS version, running software version
   and local IP address alongside the enrolled account ID, name and portrait.
+  Ignore empty interface address entries when selecting a usable local IP address.
   Show a placeholder when no portrait is available and a localized unavailable
   value for missing details. Red shall return to the Information card.
 verification: |

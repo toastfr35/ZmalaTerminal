@@ -3,12 +3,14 @@
 # @environment portable
 # @plan Exercise settings navigation, acknowledged writes and timeout reconciliation with real drafts and recording HTTP/Tk boundaries. Verify busy and cancelled drafts, captured enrollment generation, both Settings-exit answers and ignored confirmation arrows, keyboard repeat release coalescing and stale-result rejection. Draw every setting with controlled image metrics; check serial footer, five setting cards and full-width page controls, localized values, hold progress, busy feedback and bounded font size. With every carousel position at both supported sizes and 22-pixel minimum text images, assert short saved values are rendered without ellipsis.
 # @pass Every navigation, request, state and drawing assertion passes without a display or server; no mocked pixel output is claimed as physical readability evidence.
+import json
 import queue
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 from zmala_terminal.common import settings_control
 from zmala_terminal.common.local_settings import FIELDS, SETTINGS_PAGES, SettingsDraft, SettingsHold
+from zmala_terminal.common.system_settings import local_ip
 from zmala_terminal.common.ui import settings
 from tests.terminal.LLT import test_local_settings
 from tests.terminal.LLT.test_display_states import widget
@@ -19,6 +21,16 @@ class SettingsWorkflowTests(unittest.TestCase):
         c=test_local_settings.LocalSettingsTests().controller(); c.settings_draft=SettingsDraft(); c.settings_open=True
         c.messages=queue.Queue(); c.configuration=Mock(); c.generation=3; c.closed=False; c.apply_poll_config=Mock()
         return c
+
+    def test_local_ip_ignores_empty_linux_address_entries(self):
+        ipv4, ipv6 = '192.0.2.42', '2001:db8::42'
+        for addresses, expected in (((ipv6, ipv4), ipv4), ((ipv6,), ipv6)):
+            interfaces = [{'addr_info': []}, {'addr_info': [{'local': ip} for ip in addresses] + [{}]}]
+            with (self.subTest(addresses=addresses),
+                  patch('zmala_terminal.common.system_settings.sys.platform', 'linux'),
+                  patch('zmala_terminal.common.system_settings.subprocess.check_output',
+                        return_value=json.dumps(interfaces).encode())):
+                self.assertEqual(local_ip(), expected)
 
     def test_navigation_draft_cancel_accept_and_busy_guard(self):
         c=self.controller(); d=c.settings_draft

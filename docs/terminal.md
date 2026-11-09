@@ -510,7 +510,8 @@ For an appliance, the Terminal release is the date of the full OTA bundle.
 Later releases on the same date include a revision in parentheses.
 An OS security update can advance it while the app build stays the same.
 Updates shows the offered Terminal release. Information lists the OS and app
-versions separately.
+versions separately and shows a usable local IPv4 address when present, with
+IPv6 available on IPv6-only networks.
 
 Open Ringtone with green, then use left/right to hear the highlighted choice.
 Preview starts as soon as the highlighted audio is ready and plays for at most ten
@@ -1710,6 +1711,8 @@ updater in a new installation reads [Terminal releases](https://github.com/toast
 It checks once per day at local midnight, with a catch-up check after a missed
 day. Settings > Updates checks immediately. Green confirms the specific offered
 release and requests activation as soon as the normal safety guards permit it.
+The update screen places each sentence on its own line and keeps the download
+bar below the message.
 Confirmation waives the inactivity timer. Calls and setup still take precedence.
 Existing standalone installations need a trusted package installer run to gain
 the new privileged command endpoint. Appliance images use their own host updater.
