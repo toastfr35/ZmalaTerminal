@@ -19,6 +19,9 @@ native-speaker editorial review has not been recorded.
 
 ## Generate
 
+The root npm package supplies Playwright for leaflet rendering. Terminal build,
+lint and test commands are defined in the root `Makefile`.
+
 From the repository root, install the tooling dependencies:
 
 ```sh
