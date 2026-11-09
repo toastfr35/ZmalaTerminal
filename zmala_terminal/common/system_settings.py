@@ -35,10 +35,10 @@ def local_ip():
         if sys.platform == 'linux':
             interfaces = json.loads(subprocess.check_output(
                 ['ip', '-j', 'address', 'show', 'up', 'scope', 'global'], timeout=2))
-            values = (row['local'] for interface in interfaces for row in interface['addr_info'])
+            values = (row.get('local') for interface in interfaces for row in interface.get('addr_info', ()))
         else:
             values = (row[4][0] for row in socket.getaddrinfo(socket.gethostname(), None))
-        addresses = sorted(map(ipaddress.ip_address, values), key=lambda address: address.version)
+        addresses = sorted(map(ipaddress.ip_address, filter(None, values)), key=lambda address: address.version)
         return next((str(address) for address in addresses
                      if not (address.is_loopback or address.is_link_local or address.is_unspecified)), None)
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):

@@ -21,6 +21,8 @@ text: A separate unprivileged display process shall render activation/check/roll
   English for an unknown locale, survive application-process exit, and withdraw for
   idle/background phases. When the system updater provides a download percentage,
   it shall display the transfer message, bar and percentage until the transfer ends.
+  Use a reduced, display-scaled font with explicit line breaks between sentences,
+  and place the progress bar below the message.
   It shall issue no TV, USB or call-control operations.
 verification: Compare language coverage with the catalogue and run display integration
   to inspect bounds, progress and mapped state across a disposable app exit. Review representative
