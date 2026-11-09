@@ -6,9 +6,9 @@ A1 is the main Zmala brand. A3 is the compact phone app mark.
 
 PNG contains 18 exports:
 
-- A1 with the Zmala wordmark, on light and dark backgrounds, at256,512 and1024pixels wide.
-- A1 without the wordmark, on light and dark backgrounds, at256,512 and1024pixels square.
-- A3 without text, on light and dark backgrounds, at256,512 and1024pixels square.
+- A1 with the Zmala wordmark, on light and dark backgrounds, at 256, 512 and 1024 pixels wide.
+- A1 without the wordmark, on light and dark backgrounds, at 256, 512 and 1024 pixels square.
+- A3 without text, on light and dark backgrounds, at 256, 512 and 1024 pixels square.
 
 Wordmark exports preserve the master aspect ratio; exact dimensions are in sizes.json.
 Masters contains the six full-resolution PNG masters.
@@ -25,4 +25,9 @@ The intended palette is navy #172033, lavender #AA91F0 and mint #55BA91. Generat
 
 Generated using the built-in image tool from the approved A1 and A3 drafts. generation-prompts.json records the six edit prompts. PNG exports were resized from those masters without redesigning the artwork.
 
-These approved assets supply the shared runtime branding. Run `node build_tools/create-product-icon.cjs` after changing an approved PNG; use `--check` to verify the derived runtime copies. A1 dark supplies terminal and server marks and in-app Android branding; A1 light supplies installer and document marks. A3 dark supplies the Android launcher foreground. The runtime SVG embeds its PNG so the existing favicon URL stays self-contained. App signing and package identity are unchanged.
+These approved assets supply the runtime branding. Terminal copies live under
+`zmala_terminal/common/assets/`; leaflets directly reuse the A1 light wordmark.
+The earlier `create-product-icon.cjs` command belonged to the original combined
+repository. When changing artwork, review the Terminal runtime copies and leaflet
+rendering together, and coordinate shared brand changes with the other component
+repositories.

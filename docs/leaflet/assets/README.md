@@ -7,19 +7,21 @@ original left-to-right order. All four pages use the approved official Zmala wor
 from `docs/branding/PNG/a1-wordmark-light-1024.png` directly, without redrawing or
 duplicating it. This brand asset is the intentional exception to text-free art.
 
-- `overview.png`: text-free derivative of `docs/images/zmala-overview.png`, the
-  README illustration. Created with the built-in image-generation tool. The
-  original illustration is retained unchanged.
+- `overview.png`: text-free derivative of the original README illustration,
+  created with the built-in image-generation tool. The original is retained in
+  the Zmala repository at `docs/images/zmala-overview.png`.
 - `case.svg`: authored, text-free drawing of the sloped enclosure, rear lid,
   side vents and dark base, checked against the manufacturer's
   [Argon ONE V2 product photographs](https://argon40.com/products/argon-one-v2-case-for-raspberry-pi-4).
   The front is shown without connectors; the rear connector view is separate.
 - `ports.svg`: schematic based on the Argon ONE Pi 4 V2 connection drawing
-  retained in `docs/terminal_prep.docx`. Not to scale.
+  historically documented in the combined repository's `docs/terminal_prep.docx`.
+  Not to scale.
 - `c10.svg`: authored schematic illustration, checked against the manufacturer's
   [C10 product page](https://nuroum.com/uk/product/all-in-one-webcam-c10).
 - `remote.svg` and `remote-back.svg`: authored schematics based on the front/back
-  pairing illustration in `docs/terminal_config.docx`. The green/red button
+  pairing illustration historically documented in the combined repository's
+  `docs/terminal_config.docx`. The green/red button
   stickers are preserved. The rear Bluetooth button is highlighted.
 - `buttons-arrows.svg`, `button-middle.svg`, `button-green.svg` and
   `button-red.svg`: enlarged button details. The arrow pair uses two circular

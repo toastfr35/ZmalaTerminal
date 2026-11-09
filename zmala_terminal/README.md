@@ -8,17 +8,20 @@ Python terminal with platform adapters. Shared controllers start in `common/main
 | Pi hardware | `linux/` owns native media, Bluetooth, HDMI-CEC and Pi services |
 | Windows compatibility | `windows/` supplies development adapters outside the Pi baseline |
 
-`common/` means shared by terminal platforms. Shared Pi host identity/storage policy belongs in `../zmala_system/`. Native/display/hardware tests use the explicit commands in the implementation guide.
+`common/` means shared by terminal platforms. Shared Pi host identity and storage
+policy belongs to the separate Zmala image repository. Native, display and hardware
+tests use the explicit commands in the implementation guide.
 
 Read the [implementation guide](../docs/terminal.md) and
-[development setup](../docs/development.md). Product requirements are in
+[development setup](../docs/general.md). Product requirements are in
 [`requirements/terminal/`](../requirements/terminal/); unit and system plans are in
 [`tests/terminal/`](../tests/terminal/).
 
 Run from the repository root after installing the development dependencies:
 
 ```sh
-make test
+make test-llt
+xvfb-run -a make test-hlt test-hlt-display
 make requirements
 ```
 
