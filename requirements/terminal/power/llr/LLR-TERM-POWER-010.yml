@@ -36,11 +36,13 @@ references:
 reviewed: null
 scope: Core
 text: |
-  The Pi shall use only the Nuroum C10/C20 camera, microphone and speaker, rediscovered
+  For calls, the Pi shall use only the Nuroum C10/C20 camera, microphone and speaker, rediscovered
   by identity after USB enumeration changes. It shall bind both future calls and
   an incoming call waiting during wake to the C10/C20 input and output before answering.
   Missing devices or rejected routes shall keep media unready, with diagnostics;
-  HDMI, unrelated hardware and stale server identifiers shall never be substitutes.
+  HDMI, unrelated hardware and stale server identifiers shall never be substitutes
+  for call devices. Remote-button feedback shall use the separate HDMI route
+  specified in LLR-TERM-AUDIO-010.
   The host shall disable automatic USB runtime suspend for the C10/C20 USB device
   on enumeration and binding, independently of its port or node number. This
   shall not disable explicit guarded USB hub power switching or affect unrelated

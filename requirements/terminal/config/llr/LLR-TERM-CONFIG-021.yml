@@ -42,15 +42,20 @@ text: 'The local editors shall provide these choices:
 
   - Portrait count: 3 or 5.
 
-  - TV return: Never, 30, 60, 120, 300, 600 or 1200 seconds.
+  - TV return: Never, 30, 60, 120, 300, 600, 1200 or 1800 seconds.
 
-  The default TV return interval shall be 30 seconds.
+  - USB power: Always on, Camera only or Camera and dock, wrapping at both ends.
+
+  The default TV return interval shall be 1800 seconds (30 minutes). An explicit saved
+  interval shall remain selected. USB power shall default to Always on when absent.
 
   '
 verification: 'Enumerate every editor option and check defaults, numeric limits and rejection of
 
   unsupported values. Check each volume step, both limits and opening an existing
 
-  between-step value without saving.
+  between-step value without saving. Check the 1800-second TV default, preservation
+  of an explicit saved interval, and all three USB power choices with Always on as
+  the absent-value default and wrapping in both directions.
 
   '
