@@ -33,6 +33,18 @@ text: |
   Wi-Fi setup shall accept escaped WIFI codes and compact FAMILY-WIFI:1 codes,
   including Unicode network names. It shall validate the supported security mode and
   password before starting a join.
+  Escaped WIFI codes shall contain at most 1024 characters. Compact payloads
+  following FAMILY-WIFI:1: shall contain one through 160 unpadded Base64URL
+  characters and shall reject reserved flags and truncated fields.
+  The decoded SSID shall occupy one through 32 UTF-8 bytes and contain no ASCII
+  control characters or DEL. Security shall be WPA or nopass. WPA passwords
+  shall contain 8 through 63 printable ASCII characters or exactly 64 hexadecimal
+  digits. Open networks shall require an empty password. The hidden flag shall
+  accept true or false case-insensitively and default to false when omitted.
 verification: |
   Decode escaped and compact codes, Unicode names and invalid security fields. Check
   exact decoded values and rejection before joining.
+  Count SSID bytes using multibyte names. Check 32 and 33 bytes, password lengths
+  7, 8, 63 and 64, a nonhexadecimal 64-character password, an open network with
+  a password, duplicate WIFI fields and an unfinished escape. Check both hidden
+  values and its omitted default.
