@@ -9,7 +9,6 @@ from functools import lru_cache
 from pathlib import Path
 from zmala_terminal.linux.sound_levels import click_pcm, playback_environment
 
-PERIOD = .0025
 FRAME = 480  # 2.5 milliseconds of stereo 16-bit PCM at 48 kHz.
 SILENCE = bytes(FRAME)
 
@@ -133,15 +132,17 @@ class ActionSounds:
             logging.debug('Button feedback playback device: %s', device)
             player = subprocess.Popen(['/usr/bin/aplay', '-q', '-D', device,
                 '-t', 'raw', '-f', 'S16_LE', '-c', '2', '-r', '48000',
-                '--buffer-time=5000', '--period-time=2500', '--start-delay=1'],
+                '--buffer-time=20000', '--period-time=5000', '--start-delay=15000'],
                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 env=playback_environment(), bufsize=0, pipesize=4096)
             os.set_blocking(player.stdin.fileno(), False)
             with self.lock:
                 self.player = player
-            warmed_since = next_frame = time.monotonic()
+            warmed_since = time.monotonic()
             check_route_at = warmed_since + 1
             cue, position, started = (), 0, None
+            # The bounded pipe lets ALSA pace the stream. A separate software
+            # clock can drain the HDMI buffer when the two clocks drift.
             while not self.stop.is_set():
                 now = time.monotonic()
                 if now >= check_route_at:
@@ -169,10 +170,6 @@ class ActionSounds:
                                   button, (time.monotonic()-queued)*1000)
                     started.set()
                     started = None
-                next_frame += PERIOD
-                if next_frame < time.monotonic()-.02:
-                    next_frame = time.monotonic()  # Never stuff old frames to catch up.
-                self.stop.wait(max(0, next_frame-time.monotonic()))
         except (OSError, ValueError):
             logging.debug('Button feedback unavailable', exc_info=True)
         finally:
