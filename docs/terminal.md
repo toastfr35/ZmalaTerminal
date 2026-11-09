@@ -1327,6 +1327,8 @@ modes switch off the shared supply 60 seconds after the last call, audible
 ringtone preview or camera-based setup activity ends. Camera and remote dock
 also restores or retains power when the remote battery is below 25% or the
 battery reading is unavailable. Camera only ignores the battery.
+If a reboot restores power to a connected C10/C20, the idle Terminal
+resumes USB power management even when the updater recorded a sleep hint.
 Incoming and outgoing calls request wake before TV routing or call preflight.
 Ringtone choice and ringtone volume wake USB when an audible preview starts.
 Navigation, call-volume adjustments, muted previews and ordinary Settings

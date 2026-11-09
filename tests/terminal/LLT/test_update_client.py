@@ -74,10 +74,35 @@ class UpdateClientTests(unittest.TestCase):
 
     def test_passive_poll_cannot_resume_usb_before_real_activity(self):
         from zmala_terminal.common.management import ManagementLoop
-        app=SimpleNamespace(update_client=SimpleNamespace(locked=False,passive=True),usb_power=Mock())
+        app=SimpleNamespace(update_client=SimpleNamespace(locked=False,passive=True),
+                            usb_power=Mock(deferred=True), c20_status=Mock())
+        app.c20_status.read.return_value = False
         ManagementLoop.tick_usb(app)
+        app.usb_power.resume.assert_not_called()
         app.usb_power.update.assert_not_called()
         app.usb_power.refresh.assert_not_called()
+
+    def test_idle_boot_reconciles_camera_that_is_already_awake(self):
+        from zmala_terminal.common.management import ManagementLoop
+        from zmala_terminal.common.model import State
+        power = Mock(enabled=True, deferred=True, ringtone_preview_status='', playback_active=False)
+        client = SimpleNamespace(locked=True, passive=True)
+        app = SimpleNamespace(update_client=client, usb_power=power, c20_status=Mock(),
+            model=SimpleNamespace(config={'usb_power': 'camera'}, state=State.HOME),
+            setup_stage=None, scanner=None, engine=SimpleNamespace(call=None),
+            presenter_input=SimpleNamespace(battery=75))
+        app.c20_status.read.return_value = True
+        ManagementLoop.tick_usb(app)
+        app.c20_status.read.assert_not_called()
+        power.resume.assert_not_called()
+
+        client.locked = False
+        ManagementLoop.tick_usb(app)
+        power.resume.assert_called_once()
+        power.set_mode.assert_called_once_with('camera')
+        power.update.assert_called_once_with(False, 75, False)
+        power.refresh.assert_not_called()
+        self.assertTrue(client.passive)
 
     def test_deferred_sleep_is_reported_before_usb_state_is_known(self):
         from zmala_terminal.common.model import State
@@ -89,8 +114,13 @@ class UpdateClientTests(unittest.TestCase):
         tick_terminal(app,200)
         self.assertTrue(client.tick.call_args.args[0])
         self.assertTrue(client.tick.call_args.args[3])
+        app.usb_power.deferred = False
+        app.usb_power.state = 'on'
+        app.usb_power.powered = True
+        tick_terminal(app, 200)
+        self.assertFalse(client.tick.call_args.args[3])
         client.passive=False
-        app.usb_power.deferred=False
+        app.usb_power.state = 'starting'
         tick_terminal(app,200)
         self.assertFalse(client.tick.call_args.args[0])
         self.assertFalse(client.tick.call_args.args[3])
