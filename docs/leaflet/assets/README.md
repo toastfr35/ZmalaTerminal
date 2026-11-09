@@ -43,8 +43,7 @@ The final built-in image edit prompt was:
 ## Monochrome print edition
 
 `overview.png` is the original leaflet cover illustration and is rendered in
-grayscale for printing. The earlier vector alternative is `overview-print.svg`.
-Equipment SVGs use white fill and dark
+grayscale for printing. Equipment SVGs use white fill and dark
 outlines to conserve ink. Green/red button details show their physical top/bottom
 positions with a black marker and pointer; translated HTML captions name both
 color and position. The artwork contains no translated text.
