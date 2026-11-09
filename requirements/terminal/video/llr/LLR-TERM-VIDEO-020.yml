@@ -15,6 +15,13 @@ text: During a connected call, when the server advertises photo sharing, the ter
   call change/end or sender-lease expiry shall remove the layer and reveal the retained video surfaces.
   Late results for another call shall be discarded, and failed requests shall not extend the display lease.
   Images shall be bounded to 2 MiB and 1600 pixels per side.
+  Polling shall use a nominal one-second interval with at most one worker in flight.
+  An unchanged revision shall reuse the current decoded image. Each successful
+  status reply shall set expiry from the monotonic start time of its request plus
+  remaining_ms clamped to zero through 12000 milliseconds. Network and decode
+  time shall consume that interval. An image already expired when its result is
+  processed shall not be displayed. The SIP Call-ID shall be percent-encoded in
+  the request query.
 references:
 - path: zmala_terminal/common/call_photo.py
   type: file
@@ -25,3 +32,6 @@ references:
 verification: Inject current and stale call results, expired and failed leases, stop/end transitions and
   malformed/oversized images. Assert layer removal and no media termination. Exercise resize and native
   surface retention in the display HLT; qualify actual speech separately.
+  Control request-start and completion times, including a completion after expiry.
+  Check negative, zero and above-12000 remaining_ms values, unchanged-revision
+  image reuse, one in-flight worker and query encoding of reserved Call-ID characters.

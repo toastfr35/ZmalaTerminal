@@ -29,6 +29,12 @@ text: |
   Configuration and management requests shall use the enrolled device token. They
   shall refuse HTTP redirects. Failed or malformed responses shall not replace
   accepted terminal state.
+  The configuration HTTP client shall use a four-second I/O timeout. It shall
+  reject response bodies above 2 MiB, except authenticated /photos/ routes ending
+  in .gif, whose limit shall be 16 MiB. These limits shall count response bytes
+  before JSON parsing or image decoding. JSON writes shall use application/json.
 verification: |
   Inspect authorization headers and reject redirects, failed requests and malformed
   responses. Confirm that accepted state remains unchanged.
+  Check the timeout argument and content type. Supply bodies at each byte limit
+  and one byte above it, including a non-GIF route carrying GIF-like bytes.
