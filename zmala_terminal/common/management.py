@@ -43,16 +43,24 @@ class ManagementLoop:
     # @llr LLR-TERM-POWER-013, LLR-TERM-MAINT-028
     def tick_usb(self):
         client = getattr(self, 'update_client', None)
-        if client and (client.locked or client.passive):
+        if client and client.locked:
             return
         power = getattr(self, 'usb_power', None)
         if power and power.enabled:
+            if power.deferred:
+                detector = getattr(self, 'c20_status', None)
+                # A reboot can restore physical USB power despite the saved sleep hint.
+                if detector and detector.read() is True:
+                    power.resume()
+                elif client and client.passive:
+                    return  # An idle tick must not wake genuinely sleeping media.
             power.set_mode((self.model.config or {}).get('usb_power', 'always_on'))
             active = bool(self.setup_stage in USB_SETUP_STAGES or self.scanner or self.model.state in USB_CALL_STATES
                           or self.engine and self.engine.call or power.ringtone_preview_status in ('waiting', 'playing')
                           or power.playback_active)
             power.update(active, self.presenter_input.battery, self.model.state == State.RINGING)
-            power.refresh(self.engine)
+            if not (client and client.passive):
+                power.refresh(self.engine)
 
     def poll_wifi(self):
         """Refresh wireless status independently of setup and server availability."""

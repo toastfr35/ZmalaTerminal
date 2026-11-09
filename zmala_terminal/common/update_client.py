@@ -118,6 +118,6 @@ def tick_terminal(app, now):
         hold_tv = getattr(television, 'hold_for_update', None)
         if hold_tv:
             hold_tv()
-    client.tick(idle, app.language, not app.closed,
-                bool(client.passive or power and power.enabled and power.powered is False),
-                on_fence=fence)
+    sleeping = ((client.passive and getattr(power, 'deferred', True))
+                or (power and power.enabled and power.powered is False))
+    client.tick(idle, app.language, not app.closed, bool(sleeping), on_fence=fence)
