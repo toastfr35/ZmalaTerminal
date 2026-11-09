@@ -108,9 +108,11 @@ traces remain in each repository's Doorstop documents.
   The shared language catalogue supplies allowed language codes. Volume
   values are integer 0–100, portrait counts are 3 or 5, and TV idle delay
   is 0, 30, 60, 120, 300, 600, 1200 or 1800 seconds. Zero means disabled.
-  Video resolutions are 360p, 480p, 720p or 1080p and frame rates are
-  10, 15, 20, 25 or 30. These video fields are profile inputs, outside the
-  device-write allowlist. The audio profile is normal or speech.
+  Server profile writes accept video resolutions 480p, 720p or 1080p and
+  frame rates 10, 15, 20, 25 or 30, defaulting to 720p at 15 fps. Legacy
+  saved 360p profiles migrate to 480p; 360p is not accepted on new writes.
+  These video fields are profile inputs, outside the device-write allowlist.
+  The audio profile is normal or speech.
 - USB power is always_on, camera or camera_and_dock. The Server defaults to
   always_on for existing profiles. On supported Pi 4 terminals, the two
   automatic modes switch the shared USB supply after 60 seconds idle. Camera
@@ -221,7 +223,10 @@ traces remain in each repository's Doorstop documents.
   Terminal's proof key. The Terminal checks domain, receive permission, proof
   and replay, and caps the message ID at 256 characters. Do not expose or
   forward the caller's original authorization headers or a caller-supplied
-  proof. Server-generated callback notifications also use this proof format.
+  proof. Terminal callback requests arrive through authenticated configuration
+  polling, not server-generated SIP MESSAGE notifications. The separate legacy
+  callback SIP notice targets reachable App accounts and does not carry these
+  Terminal message-proof headers; App callback push uses its own signed hint.
 
 ## Terminal update exchange
 
