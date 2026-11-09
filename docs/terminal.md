@@ -546,7 +546,7 @@ file, replacing and deleting it when the tone or level changes and on shutdown.
 uses the connected, enabled Pi 4 HDMI connector and its matching ALSA card.
 It checks for connector changes while idle and retries if HDMI audio becomes
 unavailable. Without HDMI audio, navigation stays silent.
-It feeds paced 2.5 ms frames through a 4 KiB nonblocking pipe with a 200 ms write
+ALSA paces 2.5 ms frames through a 4 KiB nonblocking pipe with a 200 ms write
 deadline; left/right/middle use a 400 Hz tap for 20 ms with a soft decay. Green
 adds a 600 Hz note; red uses two 250 Hz taps separated by 30 ms of silence.
 Cold, busy or stale presses
@@ -558,8 +558,9 @@ Before opening PCM for the first time, the worker prepares all three cues at
 every nonzero integer volume into a bounded RAM bank (under 4 MiB, about 3 MiB).
 The three waveform shapes are synthesized once. Scaled frames remain available
 across calls, previews and volume changes: warmed playback only indexes existing
-frames, without file reads, synthesis or slicing. The ALSA buffer is 5 ms with
-2.5 ms periods. Normal pauses resume immediately; only a failed player has a
+frames, without file reads, synthesis or slicing. The player requests a 20 ms
+ALSA buffer with 5 ms periods and starts at 15 ms of buffered audio. Normal
+pauses resume immediately, while a failed player has a
 one-second retry backoff. Cancellation checks preparation before opening PCM and
 shares a 200 ms stop/join budget with player termination.
 Native core creation and replacement pause the idle stream during ALSA device

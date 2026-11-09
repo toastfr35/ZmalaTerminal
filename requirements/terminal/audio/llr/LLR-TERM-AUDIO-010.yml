@@ -62,8 +62,10 @@ text: |
   reports, releases and internal timer actions shall not request extra clicks.
 
   A single feedback PCM stream shall remain warm only while idle navigation or
-  Settings is eligible. It shall feed paced 2.5-millisecond stereo 48 kHz frames
-  from one worker, with a 4 KiB nonblocking pipe and a 200 ms write deadline.
+  Settings is eligible. One worker shall feed 2.5-millisecond stereo 48 kHz
+  frames paced by ALSA through a 4 KiB nonblocking pipe with a 200 ms write
+  deadline. The player shall request a 20 ms buffer, 5 ms periods and a 15 ms
+  start threshold to tolerate scheduling delays on the Pi.
 
   All three cue shapes at every nonzero integer volume shall be prepared in
   at most 4 MiB of process memory before warming playback. Prepared frames shall

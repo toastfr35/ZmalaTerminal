@@ -24,7 +24,7 @@ import unittest
 from unittest.mock import Mock,patch
 import wave
 from zmala_terminal.linux.sound_levels import gain_db,call_gain_db,scale_wav,click_pcm,ToneLevels,playback_environment
-from zmala_terminal.linux.action_sounds import ActionSounds,FRAME,PERIOD,click_bank,hdmi_playback_device
+from zmala_terminal.linux.action_sounds import ActionSounds,FRAME,click_bank,hdmi_playback_device
 from zmala_terminal.linux import media
 
 
@@ -187,9 +187,10 @@ class SoundLevelsTests(unittest.TestCase):
                 self.assertEqual(ready.set.call_count,1 if age==0 else 0)
                 self.assertIn('raw',popen.call_args.args[0])
                 self.assertIn('plughw:CARD=vc4hdmi0,DEV=0',popen.call_args.args[0])
-                self.assertIn('--buffer-time=5000',popen.call_args.args[0])
-                self.assertIn('--period-time=2500',popen.call_args.args[0])
-                self.assertEqual(PERIOD,.0025)
+                self.assertIn('--buffer-time=20000',popen.call_args.args[0])
+                self.assertIn('--period-time=5000',popen.call_args.args[0])
+                self.assertIn('--start-delay=15000',popen.call_args.args[0])
+                self.assertEqual(FRAME,480)
                 self.assertEqual(popen.call_args.kwargs['pipesize'],4096)
                 self.assertIsNone(sound.worker);self.assertIsNone(sound.pending)
                 self.assertEqual(sound.retry_at,0)
