@@ -34,12 +34,14 @@ Unicode shaping and bidirectional layout. A successful overflow check does not
 by itself prove every glyph exists; review the rendered pages on a new build host.
 
 ```sh
-python build_tools/leaflet/generate.py --language en
-python build_tools/leaflet/generate.py --language fr
-python build_tools/leaflet/generate.py --language all --bundle
+python build_tools/leaflet/generate.py --language en --output ../tmp/terminal-leaflets
+python build_tools/leaflet/generate.py --language fr --output ../tmp/terminal-leaflets
+python build_tools/leaflet/generate.py --language all --bundle --output ../tmp/terminal-leaflets
 ```
 
-Output defaults to `build_tools/dist/leaflets/` and stays out of Git. Each locale
+These commands assume the normal component checkout beneath the workspace root.
+From a worktree, pass the absolute workspace `tmp/` output location. The generator
+defaults to `build_tools/dist/leaflets/`, which the release workflow collects. Each locale
 produces a self-contained HTML proof, a four-page PDF and a two-page landscape A4
 PDF. `--output PATH` selects a different folder. `--html-only` needs only Python
 and creates the HTML proofs. `--node PATH` and `--browser PATH` select an installed
@@ -101,7 +103,7 @@ page ordering, not translation approval or physical printer qualification.
 Every release generates all language editions and publishes
 `ZmalaTerminal-Leaflets.zip` alongside the terminal software package. Verify
 builds the same ZIP in CI and retains it as the `terminal-package` workflow
-artifact for seven days. The release collector and publisher require exactly the
+artifact under the workflow's retention policy. The release collector and publisher require exactly the
 two PDFs per supported language and `PRINTING.txt`, reject incomplete, unexpected
 or duplicate members, and check PDF signatures and ZIP integrity. Loose PDFs and
 HTML proofs remain build outputs rather than additional release assets.

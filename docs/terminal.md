@@ -98,8 +98,9 @@ green confirms; red stays on the same card. Neither exit answer changes values.
 
 
 The server supplies the main terminal configuration. The local Settings page lets
-the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count
-and the return-to-TV timeout. Each editor lets the user accept or cancel a change.
+the user change language, automatic answer, framing, ringtone volume, button-sound volume, ringtone, portrait count,
+the return-to-TV timeout and USB power mode. Each editor lets the user accept or
+cancel a change. Maintenance, Updates and Information have their own action pages.
 
 The terminal confirms a saved change only after the server accepts it. A rejected
 or failed change produces visible feedback. Settings that require a new media
@@ -158,12 +159,13 @@ normal call completion return the terminal to the appropriate idle state.
 
 ### 10. Audio
 
-The terminal uses the C20 microphone and speaker for calls. It plays an incoming
-ringtone and an outgoing waiting tone on the C20 speaker. Call, ringtone and
+The terminal uses the C10/C20 microphone and speaker for calls. It plays an incoming
+ringtone and an outgoing waiting tone on that speaker. Call, ringtone and
 button-sound levels are independent, including their 0% silent setting, without
 changing microphone gain or television volume. Idle remote navigation plays a
 short low tap for left/right and middle, a rising tone for green and a low double
-tap for red. Calls, ringing and ringtone previews suppress button feedback.
+tap for red through the connected Pi HDMI output. Calls, ringing and ringtone
+previews suppress button feedback. Navigation feedback can play while USB media sleeps.
 
 Audio processing provides the configured echo-control behavior. The Pi waits for
 all C20 media instead of starting a receive-only call or selecting TV audio.
@@ -200,7 +202,7 @@ available, the terminal can notify the user. It does not dial automatically.
 
 ### 13. TV control
 
-The terminal tests TV power and input switching during setup. The user confirms
+The TV setup page in Settings tests TV power and input switching. The user confirms
 the observed result of each test. Confirmed capabilities control later automatic
 TV actions. Failed or skipped capabilities remain available through manual TV control.
 
@@ -218,8 +220,9 @@ work that can block runs separately from display updates.
 Optional USB power control can turn off the shared camera and charger supply
 after 60 seconds of inactivity. Camera-only mode ignores the battery. Camera
 and dock mode keeps power on when the battery is below 25% or unknown.
-A button press or an incoming call requests power restoration. The webcam
-indicator reports confirmed hub power.
+Calls, audible ringtone previews and camera-based setup request power restoration.
+Navigation, call-volume adjustments and ordinary Settings changes preserve USB
+sleep. The webcam indicator reports confirmed hub power.
 
 ### 15. Maintenance and diagnostics
 
@@ -274,6 +277,7 @@ Linux source archives exclude Windows adapters and locally built native artifact
 | `engine.py`, `linphone_api.py`, `native_runtime.py` | Shared native ABI/call engine and platform loading |
 | `qr_scanner.py`, `qr_worker.py`, `native_qr.py` | Isolated camera process and preview protocol |
 | `maintenance.py`, `process_job.py`, `volume_control.py` | Command ownership, process cleanup and mixer worker |
+| `call_photo.py` | Validated photo polling, bounded leases and the in-call image layer |
 
 `Terminal` owns shared state; controllers do not keep independent state copies.
 Tk and core iteration run on the UI thread. Native media owns worker/ticker
@@ -437,8 +441,8 @@ independently of the Ethernet path used to reach the server.
 
 `input_control.py` maps keyboard and physical reports to model actions.
 `settings_control.py` owns drafts and the long-red gesture; `volume_control.py`
-coalesces mixer work. The following mappings are implementation behavior, while
-`terminal_use.docx` explains the caller workflow.
+coalesces mixer work. The multilingual release leaflet explains everyday use.
+Its authoring and printing instructions are in the [leaflet guide](leaflet/README.md).
 
 | Control | Action |
 | --- | --- |
@@ -546,7 +550,9 @@ control cannot overwrite a newly applied default.
 `ringtone_volume` defaults to the old call value for older profiles; new profiles
 start at 50%. `action_sound_volume` starts at 20%. The C10/C20 hardware PCM stays at
 +12 dB for both C10 and C20 without changing its mute switch. `media.py` applies the logical call level
-through the SDK playback gain on its owner thread (50% is -14 dB; 0% is -120 dB).
+through the SDK playback gain on its owner thread. The call scale runs from
+-16.8 dB at 5% to 0 dB at 100%, with 50% approximately -8.84 dB and 0% muted
+at -120 dB. Ringtone and button feedback retain their separate -28 to 0 dB curve.
 `sound_levels.py` scales validated ringtone PCM into a private RAM-backed temporary
 file, replacing and deleting it when the tone or level changes and on shutdown.
 
@@ -772,8 +778,8 @@ previously stopped terminal is not started. Retrieve the ZIP through the develop
 HTML photos alongside power/input readings. Pictures may contain private household
 content; reports stay on the terminal until retrieved and are not published.
 The tool is for internal deployment/plugin qualification, not automatic support
-certification. See `new_TV.md` for the complete investigation procedure and timing
-options. Existing installations receive the command on their next installer update.
+certification. Use `zmala-tv-test --help` for the installed timing and output options.
+Existing installations receive the command on their next installer update.
 
 ### TV driver plugins
 
@@ -815,7 +821,8 @@ the driver rechecks power and cancellation before using the existing CEC wake
 fallback. It never sends a network toggle when power is unknown. This keeps
 repeated wake requests from disturbing an already-on source. Power/input getters
 report control state, not proof that the programme picture is playing. Capabilities describe these mechanisms, not current reachability.
-See `docs/samsung-tv-investigation.md` for measured scope and remaining limitations.
+The open wake and picture investigation is tracked in
+[Terminal issue #1](https://github.com/toastfr35/ZmalaTerminal/issues/1).
 
 CEC remains the primary transport. The controller dispatches network fallbacks
 through the common API and creates a driver instance per operation so cancellation
@@ -831,8 +838,9 @@ CEC fallback. A successful driver result suppresses redundant Image View On;
 cancellation is rechecked after driver I/O before any fallback. On Samsung this
 leaves an already-on TV's picture untouched. Standby restoration can delegate
 ambiguous CEC replies to the guarded driver, which requires fresh confirmed on
-before a network toggle. The real-call test plan and measured results are in
-`docs/tv-in-situ-test-plan.md`.
+before a network toggle. Record real-call results with the TV model and input in
+[the wake investigation](https://github.com/toastfr35/ZmalaTerminal/issues/1) or
+[the idle restoration investigation](https://github.com/toastfr35/ZmalaTerminal/issues/2).
 
 ### Installation TV checks
 
@@ -954,6 +962,18 @@ request. Old servers without the capability flag are not polled. Display-fixture
 tests cover resizing and retained surfaces; physical audio/video continuity must
 be qualified separately on the deployed Pi.
 
+`fetch_photo` performs the background request and returns a named `PhotoResult`.
+Status requires a nonnegative integer revision, Boolean sharing and an integer
+remaining time when supplied. Missing remaining time means zero. Polling has a
+nominal one-second interval and permits one worker at a time. An unchanged revision
+reuses decoded pixels. The deadline starts when polling begins and is capped at
+12 seconds, so network and decoding time consume the available lease.
+
+Expired status skips the image request. A transfer that finishes after expiry skips
+decoding, and an image that expires before UI processing is never shown. Malformed
+responses and request failures preserve the previous expiry. Worker-start failure
+allows a later poll. The UI checks result ownership before changing the layer.
+
 ## Video and audio
 
 Fresh profiles use 720p at 15 fps. Each terminal independently selects 480p
@@ -1060,7 +1080,7 @@ feature. After the first-picture keyframe retry change and Android 0.3.6's
 deferred notification acceptance, four Pi-to-OnePlus calls showed remote video
 at both ends (two app-closed, then two app-open, with the phone on cellular data).
 The native filter regression passed, including a negative control against the
-old first-picture behavior. See `docs/android.md` for the bounded hardware run
+old first-picture behavior. See the [Android guide](https://github.com/toastfr35/ZmalaApp/blob/main/docs/android.md) for the bounded hardware run
 and its limitations; it does not establish sustained C20 reliability.
 
 On 25 October 2026, intermittent missing terminal video was reproduced together
@@ -1152,100 +1172,21 @@ Source archives omit downloaded models/runtime; calls never download them.
 
 ## Appliance services, storage and peripherals
 
-The proposed image-installed system update path is tracked in
-[the update/upgrade plan](https://github.com/toastfr35/Zmala/blob/main/update_upgrade.md).
-[Image development tools](https://github.com/toastfr35/Zmala/tree/main/zmala_images) now build locked
-OS-package roots and package experimental host-storage archives. They do not
-change installed terminal services or the application-only updater described below.
-Boot-probe assembly uses the emitted project's `-S` source directory and its
-offline EEPROM mask hook; see the image tools for inspection and remaining
-qualification limits. This does not update or reconfigure an installed terminal.
+SD-card assembly, shared host identity/storage, A/B boot and whole-appliance
+updates are owned by the separate Zmala repository. Its image guide describes
+the current build steps and qualification limits. Host requirements use the
+IDs maintained there. Consult that guide when changing an appliance image.
+[Image build and host documentation](https://github.com/toastfr35/Zmala/tree/main/zmala_images)
 
-The experimental shared `zmala_system` policy (`HLR-TERM-MAINT-035` and its LLRs)
-expects a marked read-only root, prevalidated ext4 data with initialized identity
-and RAM work. Package records/alternatives stay in the selected root; fresh `/etc`
-overlay defaults and `/var` state are not imported from another OS generation.
-The RAM upper area is capped at 64 MiB, `/var` at 128 MiB and `/tmp` at 128 MiB.
-The image journald template uses volatile storage capped at 32 MiB/4 MiB files.
-Fixed bindings preserve terminal data, network/Bluetooth state, SSH keys and
-operator settings; `/etc/ssh/keys` and `/etc/zmalacall/operator` are distinct from
-new slot defaults. Saved identity/hostname are exposed read-only. Only declared
-mount operations are invoked; no TV, camera, media, package or service helper runs.
+The Terminal repository owns the application, its Pi adapters and the standalone
+package installer. Appliance images provide their own host update services;
+standalone installations use the application updater described below. Settings
+communicates with either owner through the local update interface.
+[Local update contract](../requirements/interfaces/terminal-host-update.md)
 
-
-The experimental `combined` image role (**Zmala Terminal + Server**) uses the same
-host identity and A/B boot contract, with terminal UID/GID 1000 and server UID/GID
-1001. Their application trees remain separate mode-0700 bindings. Operator
-configuration binds `/etc/zmalacall/operator/terminal` and
-`/etc/zmalacall/operator/server` as root-owned mode-0750 directories readable only
-by their respective groups. SSH and certificate state remain root-private.
-Standalone roles retain UID/GID 1000 and their existing paths. Root, factory data,
-initialized data and boot records reject role substitution; conversion needs a
-separate migration. Offline image provisioning now creates the locked terminal
-account, installs the existing display/application/pairing/CEC/compositor units
-and compiles the video, audio and TURN libraries from retained public inputs.
-ARM64 library loads and TURN regressions are checked without opening hardware
-devices. Combined server sources and bootstrap state remain separate. SSH and
-legacy application updates are masked in these development roots. Onboarding,
-coordinated updates and qualified installation media remain pending.
-
-Unit and real private-namespace tests cover this storage helper. The offline
-archive tool packages its profile, variable-state seed and runtime without
-extracting or booting the result. The separate `device_identity` helper
-(`HLR-TERM-MAINT-040`) initializes identity on an explicitly marked, prevalidated
-ext4 data mount. Linux UID/GID 0, private ownership/modes and a matching factory
-record are required. Kernel entropy supplies the machine ID and default hostname;
-ordered file/directory synchronization and atomic publication allow interrupted
-first boot to resume without changing a committed identity. Unknown or corrupt
-saved state is rejected without resetting data. It never selects/formats disks,
-generates SSH keys, operates TV/USB devices or starts terminal services.
-
-The experimental early-boot path (`HLR-TERM-MAINT-044`) validates selected slot and
-root PARTUUID against actual read-only ext4/GPT/kernel topology, and finds data
-only as its declared same-parent sibling. Compact-policy roots first run the
-factory capacity check (`HLR-TERM-MAINT-057`): the 14,001,635,328-byte layout has
-two 4 GiB system slots and fixed 4 GiB data. On larger supported Pi 4 SD cards,
-backup GPT metadata is relocated with durable readback before identity creation.
-Partition sizes and boot state remain unchanged; extra space is unallocated.
-Unknown or initialized media needing repair is fenced. An interrupted metadata
-commit can retry from a complete original GPT pair or a complete new backup
-matching the unchanged primary array. Physical interruption is not qualified.
-The path then initializes identity and views,
-generates a read-only selected-root entry in the RAM `fstab`, and publishes complete
-current-boot readiness. A separate PID1 gate is required before `sysinit.target`,
-so killed or missing early preparation cannot admit ordinary services. It does
-not operate TV, camera, remote or application services.
-
-Direct LLTs and real GPT/loop namespace HLTs cover both roles. The offline
-initramfs builder checks copied runtime/tool bytes and actual ARM64 imports. It
-also requires the registered storage entry in the generated execution list and
-traces its harmless prerequisite call through the target dispatcher. The first
-physical development boot exposed a missing dispatch entry (issue #174); the
-startup gate blocked ordinary services as intended. These build checks
-do not qualify physical initramfs/PID1 boot. Regular-file A/B assembly now
-requires matched application root, initramfs and pinned loader manifests. The
-development factory boot stops the loader watchdog until joint health transfer
-exists. Data expansion, onboarding and physical qualification remain pending.
-The experimental confirmed/trial controller (`HLR-TERM-MAINT-049`)
-adds one durably consumed candidate attempt and explicit current-slot,
-transaction/generation confirmation. RAUC eligibility is separate from product
-health; unqualified `set-primary` is refused and automatic installed-slot
-activation is disabled by the packaged policy. The later coordinator must stage
-only a completely installed inactive boot/root pair after safe admission.
-
-Native raw environment access requires marked current-boot readiness, the Pi 4
-SD parent, both GPT copies, exact selected root/data topology and the fixed raw
-gap. Root-private configuration, bounded fixed tools, empty defaults, lock/CAS
-and readback prevent ambiguous mutations from being reported as successful.
-The authored selector and real Linux environment tools are tested on new regular
-GPT fixtures. Actual U-Boot/Pi interpretation, physical interruption, bounded
-kernel watchdog handoff and product-health takeover remain pending. PID1 runtime
-watchdog ownership stays disabled until that separate handover is integrated;
-otherwise PID1 could keep an unhealthy trial alive indefinitely. No current
-terminal service or hardware behavior changes through this experiment.
-
-The current manual installer and its 64 MiB journal policy remain as
-described below.
+The following service, filesystem and 64 MiB journal instructions describe a
+standalone package installation. Use the image repository's instructions for an
+appliance's storage, boot recovery and complete-system updates.
 
 ```sh
 sudo systemctl status zmalacall-terminal zmalacall-display zmalacall-pairing
@@ -1394,7 +1335,7 @@ scenarios live in `tests/terminal/HLT/`. Their leading comments identify the tes
 linked requirements, procedure and expected observations. Installer unit tests
 are included in `make test-adhoc`, outside Pi runtime RBT coverage. They exercise release preparation with temporary
 state, including restoration of directory mode 0700 after archive copying so an
-imported directory cannot make enrollment credentials readable to other users. See `docs/general.md` for trace validation and
+imported directory cannot make enrollment credentials readable to other users. See the [development guide](general.md) for trace validation and
 the generated trace report. Every terminal LLR has direct unit-test links and
 every HLR has a system-test plan; validation rejects additions without a
 corresponding test. This does not establish complete behavioral or hardware coverage.
@@ -1420,7 +1361,7 @@ settings, and it does not retain credentials. Record the two results together.
 
 Historical terminal rewrite evidence used the local generated path
 `tests/coverage/terminal-rebaseline/index.html`; it is not distributed with a fresh
-checkout. Generate current LLT execution evidence with `make coverage-llt` and
+checkout. Generate current LLT execution evidence with `make test-llt` and
 trace/plan reports with `make requirements`. Executed HLT and physical hardware
 evidence remain separate from the plan matrix.
 
