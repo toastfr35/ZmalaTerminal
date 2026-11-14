@@ -90,6 +90,8 @@ class UpdateService:
         if not self.keys or any(len(value) != 32 for value in self.keys.values()):
             raise RecoveryError('No trusted release key')
         self.next_claim = 0
+        self.manual_identity = None
+        self.blocked_candidate = None
         self.next_report = 0
         self.available = None
         self.last_error = None
@@ -261,6 +263,8 @@ class UpdateService:
         self.mailbox.publish('queued', identity)
         self.prepare(manifest)
         self.runtime.immediate = True
+        self.manual_identity = identity
+        self.blocked_candidate = None
         self.next_claim = 0
 
     def tick(self):
@@ -274,9 +278,17 @@ class UpdateService:
                 self.mailbox.publish('error', request['request'])
                 logging.warning('Manual update request failed (%s)', type(error).__name__)
         pending = self.transactions.read('pending')
-        if pending and pending.get('state') == 'ready' and now >= self.next_claim:
+        if (pending and pending.get('state') == 'ready' and now >= self.next_claim
+                and pending.get('candidate') != self.blocked_candidate):
             self.next_claim = now + 30
             result = TrialSupervisor(self.transactions, self.runtime).activate()
+            if result == 'waiting' and self.manual_identity:
+                reasons = self.runtime.blockers or ['terminal']
+                self.mailbox.publish('error', self.manual_identity, blockers=reasons)
+                logging.warning('Manual update handover blocked: %s', ', '.join(reasons))
+                self.manual_identity = None
+                self.runtime.immediate = False
+                self.blocked_candidate = pending['candidate']  # A new Apply may retry this prepared candidate.
             if result == 'rolled_back':
                 metadata = trusted_json(self.transactions.slot(pending['candidate'])/'update-release.json')
                 self.quarantine(metadata['digest'])

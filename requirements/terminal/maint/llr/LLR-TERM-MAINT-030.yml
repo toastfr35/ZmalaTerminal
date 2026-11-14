@@ -52,7 +52,10 @@ text: The updater shall bound unauthenticated HTTPS release downloads to approve
   The application updater shall check at local midnight, with one catch-up
   check after a missed day. A manual check shall verify the available release
   without preparing it. Manual apply shall bind to that exact offer and preserve
-  the normal maintenance fence.
+  the normal maintenance fence. Manual admission timeout shall return an error
+  for the original request with authenticated bounded blocker codes and suppress
+  automatic reattempts of that prepared candidate in the current owner process
+  until another explicit Apply. This shall not suppress a different candidate.
 verification: Check transport origin/size/digest/cleanup boundaries and local heartbeat
   nonce, freshness, mode, process cgroup and selected directory. Test preparation
   sandbox commands, quarantine and retained slots using isolated service doubles.

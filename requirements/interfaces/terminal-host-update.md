@@ -23,10 +23,23 @@ Standalone and appliance hosts have one updater owner each.
   the owner accepted the request.
 - Activation uses the existing root-owned `state.json` and Terminal-owned
   `update.json` lease. A fresh root request may include `immediate: true` for a
-  manual offer. This waives the inactivity timer. All other call, setup, worker,
-  peripheral and input guards remain in force. The owner validates the fresh
+  manual offer. This waives the inactivity timer. An idle saved TV viewing lease
+  may be relinquished after cancelling its work and acquiring its transport lock,
+  without sending TV commands. All call, setup, worker, peripheral and input guards
+  remain in force. The owner validates the fresh
   lease and process identity before activation. Old requests omit this field.
 - During the appliance bundle transfer, the root-owned `state.json` can include
   `download_percent`, an integer from 0 to 100, with phase `updating`. The
   display uses it for transfer progress and falls back to the normal update
   message when it is absent. The field has no effect on the activation lease.
+- Heartbeats and rejected manual offers may include `blockers`, a list containing
+  only `call`, `setup`, `settings`, `input`, `worker`, `usb`, `tv`, `idle` or
+  `terminal`. These are diagnostics, never authority to bypass a guard. Owners
+  authenticate diagnostic heartbeats with the same file/process/nonce/freshness
+  checks as admission; installation still requires maintenance and eligibility.
+- A manual admission timeout returns `error` for the same command ID and stops
+  automatic retries of that candidate for the current owner process. Retry first
+  requests a fresh verified offer, then requires Apply again. Newer releases remain
+  eligible for automatic handling. Older peers may omit diagnostics. The Terminal
+  keeps watching a queued offer; after 30 seconds with an older owner it reports
+  continued waiting, not cancellation, and still accepts a matching late error.

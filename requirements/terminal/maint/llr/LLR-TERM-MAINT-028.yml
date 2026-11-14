@@ -67,7 +67,15 @@ text: The application shall acknowledge only a fresh root-owned bounded maintena
   offered release; a red press shall return without requesting installation.
   A fresh root-owned explicit update request may waive the inactivity delay
   after Settings closes. All call, setup, worker and peripheral guards remain
-  required.
+  required. Explicit Apply may relinquish an idle saved TV viewing lease only
+  after cancelling its work and acquiring the transport lock, without TV commands.
+  Heartbeats shall identify active admission blockers using bounded reason codes.
+  Settings shall retain a queued request identity and display a matching rejection
+  with its reason and a retry that obtains a fresh offer. After 30 seconds without
+  a result from an older owner, show continued waiting rather than claiming cancellation.
+  A call or setup shall remain visible ahead of a delayed update result.
 verification: Use bounded local file fixtures and direct call/input/native-owner assertions.
   Verify eligibility, freshness, stale request/trial distinction, symlink rejection
   and passive media guards; physical sleep remains a hardware qualification.
+  Cover blocked TV transport, call precedence, late rejection, retry offer matching
+  and older-owner waiting without bypassing admission guards.

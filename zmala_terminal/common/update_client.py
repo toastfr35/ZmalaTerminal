@@ -61,7 +61,7 @@ class UpdateClient:
             self.activated = True
             self.passive = False
 
-    def tick(self, eligible, language, ready, sleeping, on_fence=None):
+    def tick(self, eligible, language, ready, sleeping, on_fence=None, blockers=()):
         now = self.clock()
         if now < self.next_tick:
             return
@@ -79,7 +79,8 @@ class UpdateClient:
         temporary = self.status.with_suffix('.next')
         value = {'nonce': self.nonce, 'generation': self.generation, 'pid': os.getpid(),
                  'heartbeat': now, 'ready': bool(ready), 'maintenance': self.locked,
-                 'eligible': bool(eligible), 'language': language, 'sleeping': bool(sleeping)}
+                 'eligible': bool(eligible), 'language': language, 'sleeping': bool(sleeping),
+                 'blockers': list(blockers)}
         temporary.write_text(json.dumps(value), encoding='utf-8')
         temporary.chmod(0o600)
         os.replace(temporary, self.status)
@@ -97,17 +98,29 @@ def tick_terminal(app, now):
     request = getattr(client, 'current', None)
     immediate = (isinstance(request, dict) and request.get('phase') == 'request'
                  and request.get('immediate') is True and 0 <= now-request['heartbeat'] <= 10)
-    idle = (app.model.state == State.HOME and not (app.engine and app.engine.call)
-            and not app.setup_stage and not app.settings_open and not app.setup_busy
-            and not app.settings_draft.busy and not app.keys_down
-            and not getattr(app, 'worker_busy', False)
-            and not getattr(app, 'network_worker_busy', False)
-            and not getattr(maintenance, 'busy', False)
-            and not getattr(viewing, 'browsing', None)
-            and not getattr(viewing, 'previous', None)
-            and (getattr(power, 'deferred', False)
-                 or getattr(power, 'state', None) not in ('switching', 'starting'))
-            and (immediate or now - app.last_button >= 120))
+    blockers = [name for name, busy in (
+        ('call', app.model.state != State.HOME or app.engine and app.engine.call),
+        ('setup', app.setup_stage or app.setup_busy),
+        ('settings', (app.settings_open and not (immediate and
+                      getattr(getattr(app.settings_draft, 'updates', None), 'state', None) == 'waiting'))
+                     or app.settings_draft.busy),
+        ('input', app.keys_down),
+        ('worker', getattr(app, 'worker_busy', False) or getattr(app, 'network_worker_busy', False)
+                   or getattr(maintenance, 'busy', False)),
+        ('usb', not getattr(power, 'deferred', False)
+                and getattr(power, 'state', None) in ('switching', 'starting')),
+        ('idle', not immediate and now-app.last_button < 120),
+    ) if busy]
+    # Explicit Apply relinquishes an idle viewing lease without issuing TV commands.
+    # Never cancel TV work during a call/setup or while another guard is active.
+    if immediate and not blockers and (getattr(viewing, 'browsing', None) or getattr(viewing, 'previous', None)):
+        prepare = getattr(television, 'prepare_update', None)
+        if prepare:
+            prepare()
+    if getattr(viewing, 'browsing', None) or getattr(viewing, 'previous', None):
+        blockers.append('tv')
+    client.blockers = tuple(blockers)
+    idle = not blockers
     def fence():
         hold = getattr(power, 'hold_for_update', None)
         if hold:
@@ -120,4 +133,4 @@ def tick_terminal(app, now):
             hold_tv()
     sleeping = ((client.passive and getattr(power, 'deferred', True))
                 or (power and power.enabled and power.powered is False))
-    client.tick(idle, app.language, not app.closed, bool(sleeping), on_fence=fence)
+    client.tick(idle, app.language, not app.closed, bool(sleeping), on_fence=fence, blockers=blockers)

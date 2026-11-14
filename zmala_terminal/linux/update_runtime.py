@@ -89,11 +89,15 @@ class Runtime:
 
     def claim(self):
         self.nonce = uuid.uuid4().hex
+        self.blockers = ['terminal']
         self.phase = 'request'
         deadline = self.clock() + 12
         while self.clock() < deadline:
             self.publish()
             state = self.read_status()
+            if state and isinstance(state.get('blockers'), list):
+                self.blockers = [reason for reason in state['blockers'] if reason in
+                                 ('call', 'setup', 'settings', 'input', 'worker', 'usb', 'tv', 'idle')]
             if state and state.get('maintenance') is True and state.get('eligible') is True:
                 language = state.get('language', 'en')
                 from zmala_terminal.linux.update_screen import MESSAGES

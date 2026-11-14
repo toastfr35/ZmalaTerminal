@@ -3,6 +3,7 @@
 # @environment portable
 # @plan Exercise bounded public downloads with fake transports and authenticated local heartbeat fixtures; reject bad origin, size, digest, nonce, ownership permissions, cgroup and selected-directory mismatches. Reject legacy or writable enabled USB cleanup policies before activation.
 # @pass Only verified complete files are cached, partial failures leave no package, and only the current terminal service can acknowledge maintenance. Linux process fixtures skip on Windows.
+# A manually refused prepared candidate must report its blocker and not retry automatically.
 import hashlib
 import io
 import json
@@ -56,6 +57,26 @@ class DownloadTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == 'posix', 'Requires Linux process and ownership fixtures')
 class HeartbeatTests(unittest.TestCase):
+    def test_manual_timeout_reports_reason_and_does_not_retry_automatically(self):
+        from datetime import date
+        from zmala_terminal.linux import update_service
+        service = object.__new__(update_service.UpdateService)
+        pending = {'state':'ready', 'candidate':'candidate-one'}
+        service.transactions = Mock()
+        service.transactions.read.side_effect = lambda name: pending if name == 'pending' else {'date':date.today().isoformat()}
+        service.runtime = Mock(blockers=['tv'], immediate=True)
+        service.mailbox = Mock()
+        service.mailbox.receive.return_value = None
+        service.next_claim, service.manual_identity, service.blocked_candidate = 0, 'a'*32, None
+        with patch.object(update_service, 'TrialSupervisor') as supervisor, patch.object(update_service.time, 'monotonic', return_value=100):
+            supervisor.return_value.activate.return_value = 'waiting'
+            service.tick()
+            service.mailbox.publish.assert_called_once_with('error', 'a'*32, blockers=['tv'])
+            service.next_claim = 0
+            service.tick()
+            supervisor.return_value.activate.assert_called_once()
+        self.assertFalse(service.runtime.immediate)
+
     def test_preparation_rejects_links_and_quarantine_retains_recovery_slots(self):
         from zmala_terminal.linux.update_prepare import validate_built_tree, probe_release
         from zmala_terminal.linux.update_service import UpdateService, validate_host_helpers
