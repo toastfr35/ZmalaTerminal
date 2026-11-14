@@ -37,6 +37,21 @@ UPDATE_MESSAGES = {
            'error': 'Impossible de traiter la demande de mise à jour.', 'apply': 'Appliquer', 'back': 'Retour'},
 }
 
+UPDATE_BLOCKERS = {
+    'en': {'call': 'A call or call action is active.', 'setup': 'Setup is active.',
+           'settings': 'A settings operation is active.', 'input': 'Release the remote buttons.',
+           'worker': 'A background operation is finishing.', 'usb': 'Camera power is changing.',
+           'tv': 'The television is still being controlled.', 'idle': 'Waiting for inactivity.',
+           'terminal': 'The terminal did not acknowledge the request.'},
+    'fr': {'call': 'Un appel ou une action d’appel est en cours.', 'setup': 'La configuration est en cours.',
+           'settings': 'Un réglage est en cours.', 'input': 'Relâchez les boutons de la télécommande.',
+           'worker': 'Une opération en arrière-plan se termine.', 'usb': 'L’alimentation de la caméra change.',
+           'tv': 'La commande du téléviseur est en cours.', 'idle': 'En attente d’inactivité.',
+           'terminal': 'Le terminal n’a pas confirmé la demande.'},
+}
+UPDATE_MESSAGES['en'].update(waiting='The update is still waiting to start.', retry='Retry')
+UPDATE_MESSAGES['fr'].update(waiting='La mise à jour attend toujours de démarrer.', retry='Réessayer')
+
 
 def terminal_version(root):
     for name in ('update-release.json', 'build_tools/linux/release-info.json', 'VERSION.json'):
@@ -256,11 +271,17 @@ class SettingsView(SystemSettingsView):
         message, version = menu.state, menu.version
         if message == 'available' and self.settings_release:
             message, version = 'available_release', release_label(version)
-        self.settings_label(messages[message].format(version=version), width/2, height*.56,
+        caption = messages[message].format(version=version)
+        if message in ('error', 'waiting') and getattr(menu, 'blockers', None):
+            reasons = UPDATE_BLOCKERS.get(self.language, UPDATE_BLOCKERS['en'])
+            caption += '\n' + reasons.get(menu.blockers[0], reasons['terminal'])
+        self.settings_label(caption, width/2, height*.56,
                             width-150, 28, anchor='center', max_height=height*.24)
         actions = [(messages['back'], BUTTON_RED)]
         if menu.state == 'available':
             actions.insert(0, (messages['apply'], BUTTON_GREEN))
+        elif menu.state == 'error':
+            actions.insert(0, (messages['retry'], BUTTON_GREEN))
         card_width = min(320, width*.34)
         for index, (label, color) in enumerate(actions):
             center = width/2 + (index-(len(actions)-1)/2)*(card_width+24)

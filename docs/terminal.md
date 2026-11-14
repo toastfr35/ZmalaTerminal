@@ -1,5 +1,14 @@
 # Zmala Terminal implementation
 
+Manual update handover reports a rejected admission with a bounded reason and a
+Retry action that checks for a fresh offer before another Apply. Calls and setup
+take priority over this result screen. With an older updater that keeps retrying,
+the UI reports continued waiting after 30 seconds rather than claiming cancellation.
+An explicit Apply can release an idle TV viewing lease after its transport lock
+is free; it sends no TV command and retains call, setup, input, worker and USB guards.
+The new owner stops automatic retries of a manually refused candidate for its
+current process, while allowing a different candidate or a new explicit Apply.
+
 A1 dark supplies the terminal/window mark and updated family-word-cloud boot artwork.
 The artwork remains in `common/assets/`;
 application updates do not rewrite the installed Plymouth host theme.

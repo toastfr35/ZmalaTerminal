@@ -3,6 +3,8 @@
 # @environment portable
 # @plan Use temporary local IPC and deterministic clocks to grant/defer/expire leases and retain trial fencing; test malformed/symlink requests, passive-state release and call/input/native-media guards.
 # @pass Only eligible current requests are acknowledged; maintenance blocks call/input wake paths and passive startup avoids media settings/volume work. POSIX IPC cases skip on Windows.
+# Exercise manual TV lease release under a busy transport and active call, matching
+# late rejection, fresh-offer retry and older owners that continue waiting.
 import json
 import os
 from pathlib import Path
@@ -16,6 +18,83 @@ from zmala_terminal.common.input_control import InputControl
 from zmala_terminal.common.engine import Engine
 
 class UpdateClientTests(unittest.TestCase):
+    def test_late_rejection_waits_for_call_to_end_and_install_clears_pending_result(self):
+        from zmala_terminal.common.settings_control import SettingsControl
+        from zmala_terminal.common.model import State
+        menu = Mock(state='error')
+        menu.poll.return_value = False
+        app = SimpleNamespace(update_client=SimpleNamespace(locked=False, current={}),
+            settings_draft=SimpleNamespace(updates=None), pending_update_menu=menu,
+            model=SimpleNamespace(state=State.IN_CALL), setup_stage=None,
+            engine=SimpleNamespace(call=object()), settings_open=False, render=Mock())
+        SettingsControl.tick_settings_updates(app)
+        self.assertFalse(app.settings_open)
+        self.assertIs(app.pending_update_menu, menu)
+        app.model.state, app.engine.call = State.HOME, None
+        SettingsControl.tick_settings_updates(app)
+        self.assertTrue(app.settings_open)
+        self.assertIs(app.settings_draft.updates, menu)
+        app.pending_update_menu = menu
+        app.update_client.locked = True
+        app.update_client.current = {'phase':'updating'}
+        SettingsControl.tick_settings_updates(app)
+        self.assertIsNone(app.pending_update_menu)
+
+    def test_manual_handover_releases_idle_tv_but_never_during_call(self):
+        from zmala_terminal.common.model import State
+        from zmala_terminal.linux.tv_control import TVControl
+        tv = TVControl(device='/fixture/missing')
+        tv.session.browsing = {'address': '1.0.0.0'}
+        client = SimpleNamespace(passive=False, tick=Mock(), current={'phase': 'request', 'immediate': True, 'heartbeat': 99})
+        app = SimpleNamespace(update_client=client, model=SimpleNamespace(state=State.HOME),
+            engine=SimpleNamespace(call=object()), setup_stage=None, settings_open=False, setup_busy=False,
+            settings_draft=SimpleNamespace(busy=False), keys_down=set(), last_button=99,
+            language='en', closed=False, tv_control=tv)
+        tick_terminal(app, 100)
+        self.assertIn('call', client.blockers)
+        self.assertIsNotNone(tv.session.browsing)
+        app.engine.call = None
+        tv._lock.acquire()
+        try:
+            tick_terminal(app, 100)
+            self.assertIn('tv', client.blockers)
+            self.assertIsNotNone(tv.session.browsing)
+        finally:
+            tv._lock.release()
+        tick_terminal(app, 100)
+        self.assertTrue(client.tick.call_args.args[0])
+        self.assertIsNone(tv.session.browsing)
+        self.assertTrue(tv._cancel.is_set())
+
+    def test_queued_menu_observes_rejection_and_rechecks_before_retry(self):
+        from zmala_terminal.common import update_menu
+        menu = update_menu.UpdateMenu(offer=Path('/missing/offer'), clock=lambda: 100)
+        menu.state, menu.identity, menu.deadline = 'queued', 'a'*32, 130
+        with patch.object(update_menu, 'read_record', return_value={
+                'schema': 1, 'request': menu.identity, 'state': 'error', 'blockers': ['usb', 'untrusted']}):
+            self.assertTrue(menu.poll())
+        self.assertEqual(menu.state, 'error')
+        self.assertEqual(menu.blockers, ['usb'])
+        menu.send = Mock()
+        self.assertTrue(menu.apply())
+        menu.send.assert_called_once_with('check')
+        self.assertEqual(menu.state, 'checking')
+
+    def test_old_owner_waiting_is_not_reported_as_cancelled_and_late_error_is_read(self):
+        from zmala_terminal.common import update_menu
+        now = [100]
+        menu = update_menu.UpdateMenu(offer=Path('/missing/offer'), clock=lambda: now[0])
+        menu.state, menu.identity, menu.deadline = 'queued', 'a'*32, 99
+        reply = {'schema': 1, 'request': menu.identity, 'state': 'queued'}
+        with patch.object(update_menu, 'read_record', side_effect=lambda *args: reply):
+            self.assertTrue(menu.poll())
+            self.assertEqual(menu.state, 'waiting')
+            self.assertFalse(menu.apply())
+            now[0] += 1
+            reply['state'] = 'error'
+            self.assertTrue(menu.poll())
+            self.assertEqual(menu.state, 'error')
+
     @unittest.skipUnless(os.name == 'posix', 'POSIX no-follow IPC')
     def test_manual_apply_uses_only_the_matching_offer(self):
         from zmala_terminal.common import update_menu

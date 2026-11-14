@@ -30,6 +30,7 @@ class UpdateMenu:
         self.identity = ''
         self.deadline = 0
         self.next_poll = 0
+        self.blockers = []
         if os.name == 'posix':
             try:
                 ready = read_record(self.offer, 0)
@@ -55,31 +56,51 @@ class UpdateMenu:
         self.deadline = now+40
 
     def poll(self):
-        if self.state not in ('checking', 'submitting') or self.clock() < self.next_poll:
+        if self.state not in ('checking', 'submitting', 'queued', 'waiting') or self.clock() < self.next_poll:
             return False
         self.next_poll = self.clock()+.25
+        timed_out = False
         if self.clock() >= self.deadline:
-            self.state = 'error'
-            return True
+            if self.state in ('queued', 'waiting'):
+                timed_out = self.state != 'waiting'
+                self.state = 'waiting'  # Older owners may still be retrying; do not claim cancellation.
+            else:
+                self.state = 'error'
+                return True
         try:
             value = read_record(self.offer, 0)
             if not isinstance(value, dict) or value.get('schema') != 1 or value.get('request') != self.identity:
-                return False
+                return timed_out
             state = value.get('state')
+            if state == 'queued' and self.state == 'waiting':
+                return timed_out
             if state == 'available':
                 version, release = value.get('version'), value.get('release')
                 if (not isinstance(version, str) or not re.fullmatch(r'[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}', version)
                         or not isinstance(release, str) or not re.fullmatch('[0-9a-f]{64}', release)):
-                    return False
+                    return timed_out
                 self.version, self.release = version, release
             elif state not in ('current', 'error', 'unavailable', 'queued'):
-                return False
+                return timed_out
+            changed = self.state != state
+            if state == 'queued' and self.state == 'submitting':
+                self.deadline = self.clock()+30
+            reasons = value.get('blockers', [])
+            self.blockers = [item for item in (reasons if isinstance(reasons, list) else [])
+                             if item in ('call', 'setup', 'settings', 'input', 'worker', 'usb', 'tv', 'idle', 'terminal')]
             self.state = state
-            return True
+            return changed
         except (OSError, ValueError):
-            return False
+            return timed_out
 
     def apply(self):
+        if self.state == 'error':
+            try:
+                self.send('check')  # Obtain a fresh verified offer before retrying Apply.
+            except OSError:
+                return False
+            self.state = 'checking'
+            return True
         if self.state != 'available':
             return False
         try:

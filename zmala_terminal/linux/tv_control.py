@@ -198,6 +198,19 @@ class TVControl:
         return self._ready.is_set() or self._started is None or now - self._started >= 30
 
     # @llr LLR-TERM-MAINT-028
+    def prepare_update(self):
+        """Cancel idle TV work and clear its lease only after its transport is free."""
+        self._cancel.set()
+        if not self._lock.acquire(blocking=False):
+            return False
+        try:
+            self.reset_viewing_session()
+            self._started = None
+            return True
+        finally:
+            self._lock.release()
+
+    # @llr LLR-TERM-MAINT-028
     def hold_for_update(self):
         """Do not restore a TV source merely because the updater replaces the UI."""
         self._update_hold = True

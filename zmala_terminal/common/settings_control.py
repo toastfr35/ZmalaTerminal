@@ -241,12 +241,28 @@ class SettingsControl:
             self.render()
 
     def tick_settings_updates(self):
-        menu = self.settings_draft.updates
-        if self.settings_open and menu and menu.poll():
+        client = getattr(self, 'update_client', None)
+        if client and client.locked and (client.current or {}).get('phase') in ('updating', 'checking', 'rollback'):
+            self.pending_update_menu = None
+            return
+        menu = self.settings_draft.updates or getattr(self, 'pending_update_menu', None)
+        changed = bool(menu and menu.poll())
+        pending_result = (menu and menu is getattr(self, 'pending_update_menu', None)
+                          and menu.state in ('error', 'waiting'))
+        if pending_result and (self.model.state != State.HOME or self.setup_stage or self.engine and self.engine.call):
+            return  # Keep the call/setup visible; show the result when idle again.
+        if changed or pending_result:
             if menu.state == 'queued':
+                self.pending_update_menu = menu
                 self.settings_draft.updates = None
                 self.settings_open = False
                 self.settings_hold.clear()
+            elif menu.state in ('error', 'waiting') and menu is getattr(self, 'pending_update_menu', None):
+                if menu.state == 'waiting':
+                    menu.blockers = list(getattr(client, 'blockers', ()))
+                self.pending_update_menu = None
+                self.settings_draft.updates = menu
+                self.settings_open = True
             self.render()
 
     def save_local_setting(self):
