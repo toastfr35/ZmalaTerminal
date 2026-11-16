@@ -8,6 +8,9 @@ changes. Coordinate deliberate wire changes with the Server.
 The [local update interface](interfaces/terminal-host-update.md) covers the
 Updates settings page and its standalone or appliance updater.
 
+The [remote-reset interface](interfaces/terminal-remote-reset.md) covers durable
+factory-reset requests to the privileged Bluetooth pairing service.
+
 The Terminal owns the Doorstop requirements under terminal/. Product parents
 and shared-host ownership are identified in ownership.json. Run make requirements
 to validate the requirement and test traceability.

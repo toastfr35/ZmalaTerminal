@@ -31,6 +31,7 @@ class EnrollmentLifecycleTests(unittest.TestCase):
             f.model=TerminalModel(); f.maintenance=Mock(); f.configuration=Mock(); f.engine=Mock(); f.tv_check=Mock(); f.remote_test=Mock()
             f.missed_calls_store=Mock(); f.settings_hold=Mock(); f.settings_open=True; f.callbacks.seen={'old'}; f.callbacks.serial=5; f.language='fr'
             f.enrollment.value={'wifi':{'linux_uuid':'owned'}}; cancelled=f.setup_cancelled
+            f.pairing_status=Mock()
             resources=[f.maintenance,f.configuration,f.engine,f.scanner,f.tv_check]; events=[]
             def closed(label):
                 self.assertTrue(cancelled.is_set()); self.assertEqual(f.generation,2); events.append(label)
@@ -39,6 +40,7 @@ class EnrollmentLifecycleTests(unittest.TestCase):
             f.engine.close.side_effect=lambda:closed('engine'); f.scanner.close.side_effect=lambda:closed('scanner')
             f.tv_check.close.side_effect=lambda:closed('tv-check'); f.start_scanner=Mock()
             f.factory_reset()
+            f.pairing_status.reset.assert_called_once()
             self.assertFalse(profile.exists()); self.assertEqual(f.tv_profile_saved,'samsung')
             f.tv_control.select_driver.assert_called_once_with('samsung')
             self.assertFalse(f.tv_control.power_enabled)
@@ -50,6 +52,7 @@ class EnrollmentLifecycleTests(unittest.TestCase):
             self.assertFalse(check.exists()); self.assertEqual(untouched.read_text(),'keep'); self.assertEqual(f.setup_stage,'wifi')
             f.remote_test.reset.assert_called_once(); f.start_scanner.assert_called_once(); f.missed_calls_store.clear.assert_called_once()
             f.model.state=State.IN_CALL; f.factory_reset(); self.assertEqual(f.generation,2)
+            f.pairing_status.reset.assert_called_once()
 
     def test_qr_gates_duplicate_busy_cleanup_pairing_and_invalid_input(self):
         f=self.flow(); workers=[]

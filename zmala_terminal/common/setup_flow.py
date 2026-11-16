@@ -68,6 +68,9 @@ class ProvisioningFlow:
         """Invalidate workers first, then erase enrollment and start setup with a fresh model."""
         if self.model.state != State.HOME:
             return
+        pairing = getattr(self, 'pairing_status', None)
+        if pairing and getattr(pairing, 'reset', None):
+            pairing.reset()
         self.generation += 1
         self.setup_cancelled.set()
         self.setup_cancelled = threading.Event()
