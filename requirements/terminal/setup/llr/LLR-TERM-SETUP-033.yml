@@ -5,7 +5,7 @@ header: |
   Reset scope
 level: 17.0
 links:
-- HLR-TERM-SETUP-021: IlCJKycBgVFTVWZ1TQFaWKxNiwjy7VbkK7Sdw1C34r0=
+- HLR-TERM-SETUP-021: 9WbekvNY9JDYyzBJq8geHpLF__PO76acA7Ewk9n529k=
 normative: true
 ref: ''
 references:
@@ -26,8 +26,13 @@ scope: Core
 text: |
   Confirmed reset shall stop media and maintenance work and invalidate pending
   responses. It shall remove this profile’s enrollment, cache, notifications and
-  setup-test results. It shall preserve other profiles, server accounts and the
-  Bluetooth bond. Setup shall require the remote test again.
+  setup-test results. It shall also remove the terminal remote's saved Bluetooth
+  bond from the host and clear the pairing service's saved bond identity. It shall
+  preserve other profiles, server accounts and unrelated Bluetooth device bonds.
+  Setup shall require fresh remote pairing and the remote button test again;
+  the previous bond shall not be reused after reset or reboot.
 verification: |
   Reset a populated profile beside another profile. Deliver late results and check
-  deletion boundaries and repeated remote verification.
+  deletion boundaries. Check that the terminal remote's host bond and pairing
+  service identity are removed while unrelated Bluetooth bonds remain. Reboot
+  after reset and verify that setup requires fresh pairing and button verification.

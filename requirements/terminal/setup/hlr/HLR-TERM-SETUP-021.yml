@@ -18,7 +18,10 @@ reviewed: null
 scope: Core
 text: |
   The terminal shall provide a confirmed reset for a new setup. Reset shall preserve
-  server accounts and data owned by other terminal profiles.
+  server accounts and data owned by other terminal profiles. Reset shall forget the
+  terminal's Bluetooth remote pairing and require remote pairing and button
+  verification again during setup.
 verification: |
   Cancel and confirm reset. Interrupt cleanup and restart. Check deletion scope and
-  resumed setup.
+  resumed setup. Verify that the previous remote is no longer paired and that
+  setup requires pairing and button verification again.

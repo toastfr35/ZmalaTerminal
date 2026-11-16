@@ -69,6 +69,10 @@ has completed. Enrollment then goes to the contact screen. Optional TV tests
 are available on the TV setup card in Settings and use the selected language.
 The user can reset the terminal from Settings → Maintenance after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
+The reset requirements also mandate forgetting the terminal remote's Bluetooth
+bond and the pairing service's saved bond identity, followed by fresh pairing and
+button verification. This Bluetooth cleanup is specified but not yet implemented;
+the current software retains the pairing and only clears button-test results.
 
 ### 3. Network connection
 

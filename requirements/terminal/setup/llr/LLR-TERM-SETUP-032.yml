@@ -5,7 +5,7 @@ header: |
   Reset confirmation
 level: 16.0
 links:
-- HLR-TERM-SETUP-021: IlCJKycBgVFTVWZ1TQFaWKxNiwjy7VbkK7Sdw1C34r0=
+- HLR-TERM-SETUP-021: 9WbekvNY9JDYyzBJq8geHpLF__PO76acA7Ewk9n529k=
 normative: true
 ref: ''
 references:
@@ -37,4 +37,4 @@ text: |
   without deleting enrollment.
 verification: |
   Open reset from Maintenance and exercise both answers. Check that cancellation
-  preserves the saved identity.
+  preserves the saved identity and Bluetooth remote pairing.
