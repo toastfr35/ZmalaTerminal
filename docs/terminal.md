@@ -69,6 +69,10 @@ has completed. Enrollment then goes to the contact screen. Optional TV tests
 are available on the TV setup card in Settings and use the selected language.
 The user can reset the terminal from Settings → Maintenance after a separate confirmation.
 Reset removes this terminal profile's setup data but does not delete server accounts.
+Reset also forgets the terminal remote's Bluetooth bond and the pairing service's
+saved bond identity, followed by fresh pairing and button verification. The pairing
+service resumes interrupted removal before allowing pairing; unrelated Bluetooth
+devices remain paired. Cancelling reset preserves the existing pairing.
 
 ### 3. Network connection
 
@@ -433,8 +437,10 @@ within the screen and its process releases the camera before call-engine startup
 
 Reset is entered through Settings with a separate confirmation. It invalidates
 workers and clears the current profile's enrollment, configuration cache, missed
-counts, button verification and TV results. Existing Bluetooth pairing remains,
-but the button test repeats. Only application-owned Wi-Fi profiles are removed.
+counts, button verification and TV results. The pairing service forgets the current
+remote's Bluetooth bond and saved identity; pairing and the button test repeat.
+Interrupted Bluetooth removal resumes before setup can accept another pairing.
+Only application-owned Wi-Fi profiles are removed.
 A secret-free cleanup record survives failures/reboot; cleanup retries block new
 Wi-Fi enrollment. Other profiles and server accounts are unaffected.
 

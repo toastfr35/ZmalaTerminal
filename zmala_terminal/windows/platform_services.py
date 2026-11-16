@@ -217,6 +217,9 @@ class DesktopPairing:
     def read(self):
         return None
 
+    def reset(self):
+        pass
+
 
 class DesktopCameraStatus:
     enabled = False

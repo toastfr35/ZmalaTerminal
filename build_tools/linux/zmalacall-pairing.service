@@ -7,6 +7,7 @@ StartLimitIntervalSec=0
 [Service]
 # @llr LLR-TERM-MAINT-030
 Type=simple
+EnvironmentFile=/etc/zmalacall/terminal.conf
 ExecStartPre=/usr/sbin/rfkill unblock bluetooth
 ExecStart=/usr/bin/python3 /usr/local/lib/zmalacall-terminal-host/pair-presenter.py
 Restart=always

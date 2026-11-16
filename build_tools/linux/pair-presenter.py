@@ -9,6 +9,8 @@ import logging
 import math
 import os
 from pathlib import Path
+import re
+import stat
 import time
 import uuid
 
@@ -18,6 +20,58 @@ STATUS = Path('/run/zmalacall-pairing/status.json')
 AGENT = '/org/zmalacall/PresenterAgent'
 BOND = Path('/var/lib/zmalacall-pairing/bond.json')
 RECONNECT_SECONDS = 60
+RESET_REQUEST = Path('/var/lib/zmalacall/remote-reset.json')
+RESET_STATE = Path('/var/lib/zmalacall-pairing/reset.json')
+
+
+def reset_request():
+    """Read only the configured application user's bounded, fixed-name command."""
+    if not os.environ.get('ZMALA_USER'):
+        return None
+    import pwd
+    try:
+        uid = pwd.getpwnam(os.environ['ZMALA_USER']).pw_uid
+        if uid == 0:
+            return None
+        directory = os.open(RESET_REQUEST.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            info = os.fstat(directory)
+            if info.st_uid != uid or info.st_mode & 0o022:
+                return None
+            fd = os.open(RESET_REQUEST.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        finally:
+            os.close(directory)
+        with os.fdopen(fd, 'rb') as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != uid or info.st_mode & 0o077 or info.st_size > 256:
+                return None
+            value = json.loads(stream.read(257))
+        identity = value.get('request') if isinstance(value, dict) and value.get('schema') == 1 else None
+        return identity if isinstance(identity, str) and re.fullmatch('[0-9a-f]{32}', identity) else None
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def reset_state():
+    try:
+        value = json.loads(RESET_STATE.read_text())
+        return value if isinstance(value, dict) else {}
+    except FileNotFoundError:
+        return {}
+
+
+def save_reset(value):
+    temporary = RESET_STATE.with_suffix('.tmp')
+    with temporary.open('w') as stream:
+        json.dump(value, stream)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, RESET_STATE)
+    fd = os.open(RESET_STATE.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def saved_bond():
@@ -101,6 +155,9 @@ class Pairing:
 
     def publish(self, state, bond=None, reconnect_seconds=None):
         payload = {'state': state}
+        completed = reset_state()
+        if completed.get('done'):
+            payload['reset_request'] = completed['request']
         if bond:
             payload['bond'] = bond
         if reconnect_seconds is not None:
@@ -147,6 +204,34 @@ class Pairing:
         except self.GLib.Error:
             logging.info('Waiting for the paired remote to reconnect')
 
+    # @llr LLR-TERM-SETUP-033
+    def reset_remote(self, devices):
+        identity = reset_request()
+        saved = reset_state()
+        if not identity or (saved.get('request') == identity and saved.get('done')):
+            return False
+        if self.target:
+            return True  # Let the bounded pairing callback finish before removing its bond.
+        if saved.get('request') != identity:
+            paired = [path for path, props in devices.items() if is_presenter(props) and props.get('Paired')]
+            preferred = saved_bond().get('device')
+            target = preferred if preferred in paired else next(iter(paired), None)
+            saved = {'request': identity, 'device': target, 'done': False}
+            save_reset(saved)  # Resume this exact removal after interruption, not another remote.
+        target = saved.get('device')
+        if target in devices:
+            adapter = devices[target].get('Adapter')
+            if not adapter:
+                raise ValueError('Remote adapter unavailable during reset')
+            self.call(adapter, 'org.bluez.Adapter1', 'RemoveDevice', '(o)', (target,))
+        BOND.unlink(missing_ok=True)
+        saved['done'] = True
+        save_reset(saved)
+        self.reconnect_until = None
+        self.startup_reconnect = False
+        self.publish('unpaired')
+        return True
+
     def tick(self):
         try:
             objects, = self.call('/', 'org.freedesktop.DBus.ObjectManager', 'GetManagedObjects')
@@ -155,6 +240,13 @@ class Pairing:
             devices = {path: interfaces['org.bluez.Device1'] for path, interfaces in objects.items()
                        if 'org.bluez.Device1' in interfaces}
             if not adapters:
+                self.publish('bluetooth_unavailable')
+                return True
+            try:
+                if self.reset_remote(devices):
+                    return True
+            except (OSError, ValueError, self.GLib.Error):
+                logging.exception('Remote reset pending; retrying before pairing')
                 self.publish('bluetooth_unavailable')
                 return True
             adapter, props = next(iter(adapters.items()))
