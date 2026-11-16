@@ -437,8 +437,10 @@ within the screen and its process releases the camera before call-engine startup
 
 Reset is entered through Settings with a separate confirmation. It invalidates
 workers and clears the current profile's enrollment, configuration cache, missed
-counts, button verification and TV results. Existing Bluetooth pairing remains,
-but the button test repeats. Only application-owned Wi-Fi profiles are removed.
+counts, button verification and TV results. The pairing service forgets the current
+remote's Bluetooth bond and saved identity; pairing and the button test repeat.
+Interrupted Bluetooth removal resumes before setup can accept another pairing.
+Only application-owned Wi-Fi profiles are removed.
 A secret-free cleanup record survives failures/reboot; cleanup retries block new
 Wi-Fi enrollment. Other profiles and server accounts are unaffected.
 
