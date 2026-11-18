@@ -138,6 +138,8 @@ class ManagementLoop:
             if result.generation != self.generation:
                 return
             self.network_connected = result.available
+            if result.developer_enabled is not None:
+                self.developer_enabled = result.developer_enabled
             self.draw_connectivity(bool(self.engine and self.engine.registered))
 
     # @llr LLR-TERM-HISTORY-023

@@ -17,6 +17,8 @@ from zmala_terminal.common.configuration import ROOT
 
 # Match the visible webcam-to-battery gap to Bluetooth-to-terminal (~34 px).
 USB_STATUS_WIDTH = 60
+DEVELOPER_STATUS_WIDTH = 32
+AMBER_PULSE = ('#d4a64b', '#e4b552', '#f4c45a', '#e4b552')
 
 # @llr LLR-TERM-VIDEO-012
 INITIAL_VIDEO_GRACE = 8
@@ -58,7 +60,7 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.top = tk.Frame(self.root, bg=BG)
         self.top.pack(fill='x', padx=18, pady=(12, 0))
         # Equal side columns keep the call name centered between the status icons.
-        self.status_width = 246 + (USB_STATUS_WIDTH if getattr(getattr(self, 'usb_power', None), 'enabled', False) else 0)
+        self.status_width = 246 + DEVELOPER_STATUS_WIDTH + (USB_STATUS_WIDTH if getattr(getattr(self, 'usb_power', None), 'enabled', False) else 0)
         self.top.grid_columnconfigure(0, minsize=self.status_width)
         self.top.grid_columnconfigure(1, weight=1)
         self.top.grid_columnconfigure(2, minsize=self.status_width)
@@ -67,7 +69,7 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.corner_logo = self.text_renderer.portrait(ROOT / 'common/assets/zmala-mark-transparent.png', 40, BG)
         self.corner_notification_state = None
         self.draw_corner_notification(0)
-        self.connectivity = tk.Canvas(self.top, width=self.status_width, height=30, bg=BG, highlightthickness=0)
+        self.connectivity = tk.Canvas(self.top, width=self.status_width, height=60, bg=BG, highlightthickness=0)
         self.connectivity.grid(row=0, column=2, sticky='e')
         self.call_name = tk.Label(self.top, text='', bg=BG, fg=FG, borderwidth=0)
         self.title = tk.Label(self.root, text='Who would you like to call?', font=('Segoe UI', 32, 'bold'), bg=BG, fg=FG)
@@ -257,7 +259,15 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
     def draw_connectivity(self, registered):
         self.update_remote_help()
         c = self.connectivity
-        server = registered and time.monotonic() - self.server_seen < 16
+        now = time.monotonic()
+        server = registered and self.server_seen > 0 and now - self.server_seen < 16
+        from zmala_terminal.common.connection_status import ConnectionStatus
+        if not hasattr(self, 'connection_status') or self.setup_stage:
+            self.connection_status = ConnectionStatus()
+        label, state = self.connection_status.observe(now, server, self.network_connected)
+        phase = int(now * 2) % len(AMBER_PULSE) if state == 'amber' else 0
+        server_color = GREEN if state == 'green' else RED if state == 'red' else AMBER_PULSE[phase]
+        developer = getattr(self, 'developer_enabled', False)
         network = self.network_connected
         remote = getattr(getattr(self, 'presenter_input', None), 'connected', None)
         battery = getattr(getattr(self, 'presenter_input', None), 'battery', None)
@@ -267,12 +277,12 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         show_usb = bool(power and power.enabled)
         powered = power.power_state if show_usb else None
         offset = USB_STATUS_WIDTH if show_usb else 0
-        signature = (network, server, remote, battery, charger, show_usb, powered, self.language)
+        signature = (network, server, label, phase, state, developer, remote, battery, charger, show_usb, powered, self.language)
         if self.connection_drawn == signature:
             return
         self.connection_drawn = signature
         c.delete('all')
-        colors = [GREEN, GREEN if network else RED if network is False else MUTED, GREEN if server else RED]
+        colors = [GREEN, GREEN if network else RED if network is False else MUTED, server_color]
         self.network_image = self.icon_renderer.connectivity(168, 30, colors, BG)
         c.create_image(78+offset, 0, anchor='nw', image=self.network_image, tags='network-status')
         color = GREEN if remote is True else RED if remote is False else MUTED
@@ -283,6 +293,25 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         if show_usb:
             self.usb_image = self.icon_renderer.usb_power(powered, BG)
             c.create_image(0, 4, anchor='nw', image=self.usb_image, tags='usb-power')
+        if developer:
+            # A vector spanner is reliable across fonts and operating systems.
+            x = 248 + offset
+            points = (14, 0, 9, 4, 9, 10, 1, 18, 0, 21, 3, 24, 6, 23,
+                      7, 20, 15, 12, 21, 12, 25, 8, 25, 2, 19, 8, 14, 3, 19, 0)
+            c.create_polygon(*[value + (x if i % 2 == 0 else 4)
+                               for i, value in enumerate(points)], fill=RED, tags='developer-access')
+        text = self.text(label)
+        for size in (12, 11, 10, 9):
+            self.connection_label_image = self.text_renderer.photo(
+                text, self.font_family, size, BG, server_color, self.status_width, False)
+            if not self.connection_label_image or self.connection_label_image.height() <= 26:
+                break
+        if self.connection_label_image:
+            c.create_image(self.status_width, 34, anchor='ne', image=self.connection_label_image,
+                           tags='connection-label')
+        else:
+            c.create_text(self.status_width, 34, anchor='ne', text=text, fill=server_color,
+                          font=(self.font_family, 12), tags='connection-label')
 
     # @llr LLR-TERM-SETUP-027, LLR-TERM-SETUP-028, LLR-TERM-SETUP-029
     def render_setup_feedback(self):

@@ -1,7 +1,7 @@
 # @test T-HLT-037
 # @requirements HLR-TERM-NET-008
 # @environment hardware
-# @plan On an enrolled Pi with developer access manually enabled and C20 facing the TV, run this opt-in check with an operator-configured SSH alias that jumps through the server to loopback port 22001. Confirm the returned hostname is the intended Pi and normal terminal service remains active. Then deactivate through the admin UI, confirm the established shell closes and a new connection fails, and verify credentials/runtime files were removed. Repeat activation with a new password and verify the old password fails.
+# @plan On an enrolled Pi with developer access manually enabled and C20 facing the TV, run this opt-in check with an operator-configured SSH alias that jumps through the server to loopback port 22001. Confirm the returned hostname is the intended Pi and normal terminal service remains active. Then deactivate through the admin UI, confirm the established shell closes and a new connection fails, and verify credentials/runtime files were removed. Repeat activation with a new password and verify the old password fails. Confirm the red spanner appears while the local shell is active, remains visible during tunnel reconnects, and disappears after deactivation.
 # @pass The automated opt-in assertions establish shell reachability and service continuity only. Closure, password rotation and TV picture checks require recorded hardware evidence; skipped checks are not passes.
 import os
 import subprocess

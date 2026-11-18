@@ -1,5 +1,6 @@
 """Apply live developer settings only from the enrolled HTTPS server, never cache them."""
 import json
+import sys
 import hashlib
 from pathlib import Path
 import subprocess
@@ -40,3 +41,19 @@ def apply(config, bootstrap):
     if result.returncode:
         raise RuntimeError('Developer access could not be applied')
     _applied = signature
+
+
+# @llr LLR-TERM-NET-005
+def enabled():
+    """Observe the local shell, not remote reachability or cached approval."""
+    if sys.platform != 'linux':
+        return False
+    try:
+        result = subprocess.run(
+            ['systemctl', 'is-active', '--quiet', 'zmalacall-developer-shell.service'],
+            capture_output=True, timeout=2, check=False)
+        if result.returncode in (0, 3, 4):
+            return result.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return None  # Retain the last observation on a transient probe failure.

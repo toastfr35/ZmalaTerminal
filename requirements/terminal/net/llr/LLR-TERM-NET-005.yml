@@ -9,6 +9,14 @@ links:
 normative: true
 ref: ''
 references:
+- path: zmala_terminal/common/localization.py
+  type: file
+- path: zmala_terminal/common/connection_status.py
+  type: file
+- path: zmala_terminal/linux/developer_access.py
+  type: file
+- path: tests/terminal/LLT/test_connection_status.py
+  type: file
 - path: tests/terminal/LLT/test_display_states.py
   type: file
 - path: tests/terminal/LLT/test_management.py
@@ -32,7 +40,19 @@ scope: Core
 text: |
   The Wi-Fi indicator shall reflect wireless status independently of Ethernet and
   server reachability. Network and server indicators shall use their own observations.
-  Settings shall hide the status strip.
+  Settings shall hide the status strip. After enrollment or boot, the server
+  indicator shall show amber Connecting until both management freshness (less
+  than 16 seconds) and calling registration succeed. A later loss shall show
+  amber Reconnecting. Amber shall pulse gently. After 60 seconds continuously
+  disconnected it shall become red with Unable to connect. Retrying; automatic
+  retries shall continue unchanged. While Wi-Fi is known disconnected and the
+  server is unavailable, the text shall say Waiting for Wi-Fi. Each successful
+  connection shall reset the failure timer. Setup/reset shall reset this history.
+  A text label shall accompany the server indicator, including Connected.
+  A red spanner shall be visible in the status strip while the local developer
+  shell service is active, including when its tunnel is reconnecting. It shall
+  disappear when the service is stopped. Status queries shall run off the UI
+  thread, disclose no credentials, and not depend on server reachability.
 verification: |
   Vary wireless, route and server observations independently. Check displayed states
   and the Settings view.

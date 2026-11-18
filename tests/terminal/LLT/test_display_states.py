@@ -97,7 +97,7 @@ class DisplayStateTests(unittest.TestCase):
                 patch.object(display.tk, 'Canvas', side_effect=lambda *a, **k: widget(**k)), \
                 patch.object(display.tk, 'Label', side_effect=lambda *a, **k: widget(**k)):
             v.build_ui()
-        self.assertEqual(v.status_width, 306)
+        self.assertEqual(v.status_width, 338)
         self.assertIsNot(v.video, v.local_video)
         v.video.winfo_id.assert_called_once(); v.local_video.winfo_id.assert_called_once()
         callback = v.avatar.bind.call_args.args[1]
@@ -168,7 +168,7 @@ class DisplayStateTests(unittest.TestCase):
         v.presenter_input = SimpleNamespace(connected=True, battery=45, charger_connected=True)
         v.usb_power = SimpleNamespace(enabled=True, power_state=False)
         cases = [(False, True, display.RED, display.GREEN),
-                 (True, False, display.GREEN, display.RED),
+                 (True, False, display.GREEN, display.AMBER_PULSE[0]),
                  (None, True, display.MUTED, display.GREEN)]
         with patch.object(display.time, 'monotonic', return_value=100):
             for network, registered, network_color, server_color in cases:
@@ -178,11 +178,19 @@ class DisplayStateTests(unittest.TestCase):
             v.icon_renderer.bluetooth.assert_called_with(22, display.GREEN, display.BG, True)
             v.icon_renderer.usb_power.assert_called_with(False, display.BG)
             positions = {c.kwargs['tags']: c.args[0] for c in v.connectivity.create_image.call_args_list}
-            self.assertEqual(positions, {'usb-power': 0, 'remote-battery': 60, 'remote-status': 96, 'network-status': 138})
+            self.assertEqual(positions, {'usb-power': 0, 'remote-battery': 60, 'remote-status': 96, 'network-status': 138, 'connection-label': 246})
+            v.developer_enabled = True
+            v.draw_connectivity(True)
+            v.connectivity.create_polygon.assert_called_once()
+            self.assertEqual(v.connectivity.create_polygon.call_args.kwargs['fill'], display.RED)
+            v.developer_enabled = False
+            v.connectivity.create_polygon.reset_mock()
+            v.draw_connectivity(True)
+            v.connectivity.create_polygon.assert_not_called()
             draws = v.connectivity.delete.call_count
             v.draw_connectivity(True); self.assertEqual(v.connectivity.delete.call_count, draws)
             v.server_seen = 84; v.draw_connectivity(True)
-            self.assertEqual(v.icon_renderer.connectivity.call_args.args[2][-1], display.RED)
+            self.assertEqual(v.icon_renderer.connectivity.call_args.args[2][-1], display.AMBER_PULSE[0])
             for connected, color in ((False, display.RED), (None, display.MUTED)):
                 v.presenter_input.connected = connected; v.draw_connectivity(True)
                 v.icon_renderer.bluetooth.assert_called_with(22, color, display.BG, connected)
@@ -192,7 +200,7 @@ class DisplayStateTests(unittest.TestCase):
             v.icon_renderer.usb_power.reset_mock(); v.connectivity.create_image.reset_mock()
             v.draw_connectivity(True); v.icon_renderer.usb_power.assert_not_called()
             positions = {c.kwargs['tags']: c.args[0] for c in v.connectivity.create_image.call_args_list}
-            self.assertEqual(positions, {'remote-battery': 0, 'remote-status': 36, 'network-status': 78})
+            self.assertEqual(positions, {'remote-battery': 0, 'remote-status': 36, 'network-status': 78, 'connection-label': 246})
 
     def test_missing_video_preserves_inset_and_does_not_stop_media(self):
         v = fixture(); v.model.state = State.IN_CALL

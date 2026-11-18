@@ -24,3 +24,16 @@ SD-card images and complete appliance updates are owned by the
 [Zmala image repository](https://github.com/toastfr35/Zmala).
 
 After Verify passes on the merged version, dispatch **Release** on main. The release environment requires the existing Ed25519 signing secret `ZMALA_TERMINAL_UPDATE_KEY`. Keep the package and updater signing checks enabled before publishing.
+
+### Connection and developer status
+
+The status strip shows amber **Connecting…** after startup and **Reconnecting…**
+after a connection drops. It turns green **Connected** only when server polling
+and calling registration both succeed. After 60 seconds disconnected, it turns
+red **Unable to connect. Retrying…**; retries continue automatically. If Wi-Fi is
+known to be disconnected, the message is **Waiting for Wi-Fi…**. These states do
+not block navigation or change call behavior.
+
+A red spanner beside the status icons means the local developer shell is active.
+It remains visible while the tunnel reconnects and disappears when access is
+stopped. Settings retains its existing uncluttered view with the strip hidden.
