@@ -18,6 +18,7 @@ class ConfigurationResult(NamedTuple):
 class NetworkResult(NamedTuple):
     generation: int
     available: bool | None
+    developer_enabled: bool | None = None
 
 
 def poll_network(messages, generation, probe):
@@ -26,7 +27,10 @@ def poll_network(messages, generation, probe):
             available = probe()
         except Exception:
             available = None
-        messages.put(('poll-network', NetworkResult(generation, available)))
+        # The local service observation remains available when the server is down.
+        from zmala_terminal.linux.developer_access import enabled
+        developer_enabled = enabled()
+        messages.put(('poll-network', NetworkResult(generation, available, developer_enabled)))
         messages.put(('network-done', generation))
     threading.Thread(target=worker, daemon=True).start()
 

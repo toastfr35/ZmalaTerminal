@@ -31,6 +31,16 @@ for language, values in REMOTE_ORIENTATION.items():
     REMOTE_MESSAGES.setdefault(language, {}).update(zip(REMOTE_ORIENTATION_KEYS, values))
 
 
+# @llr LLR-TERM-NET-005
+CONNECTION_MESSAGES = {
+    'en': {'connection_connected': 'Connected', 'connection_connecting': 'Connecting…',
+           'connection_reconnecting': 'Reconnecting…', 'connection_retrying': 'Unable to connect. Retrying…',
+           'connection_wifi': 'Waiting for Wi-Fi…'},
+    'fr': {'connection_connected': 'Connecté', 'connection_connecting': 'Connexion…',
+           'connection_reconnecting': 'Reconnexion…', 'connection_retrying': 'Connexion impossible. Nouvel essai…',
+           'connection_wifi': 'En attente du Wi-Fi…'},
+}
+
 # @llr LLR-TERM-NAV-005
 PRESENCE_MESSAGES = {
     'en': {'available': 'Available', 'try_calling': 'Try calling'},
@@ -42,6 +52,8 @@ PRESENCE_MESSAGES = {
 def translate(language, key, **values):
     # Picture labels and turn-over instructions cover every selectable language.
     # The more detailed Bluetooth diagnostic copy still has an English fallback.
+    if key in CONNECTION_MESSAGES['en']:
+        return CONNECTION_MESSAGES.get(language, CONNECTION_MESSAGES['en'])[key]
     if key in PRESENCE_MESSAGES['en']:
         return PRESENCE_MESSAGES.get(language, PRESENCE_MESSAGES['en'])[key]
     if key in REMOTE_MESSAGES['en']:
