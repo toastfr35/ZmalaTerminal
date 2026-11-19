@@ -66,8 +66,8 @@ class ManagementLoop:
         """Refresh wireless status independently of setup and server availability."""
         if self.network_worker_busy:
             return
-        self.network_worker_busy = True
         server_sync.poll_network(self.messages, self.generation, wifi_link_available)
+        self.network_worker_busy = True
 
     def peripheral_status(self):
         return collect_peripheral_status(getattr(self, 'presenter_input', None),
@@ -82,7 +82,6 @@ class ManagementLoop:
         self.poll_wifi()
         if self.worker_busy or not self.configuration or self.setup_stage:
             return
-        self.worker_busy = True
         configuration, generation = self.configuration, self.generation
         callback_revision = self.callbacks.revision
         status = dict(self.diagnostics) | self.peripheral_status() | {
@@ -91,6 +90,7 @@ class ManagementLoop:
         }
 
         server_sync.poll_configuration(self.messages, configuration, generation, callback_revision, status)
+        self.worker_busy = True
 
     def drain_messages(self):
         while True:

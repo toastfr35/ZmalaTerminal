@@ -15,6 +15,34 @@ from tests.terminal.LLT.test_terminal import config
 
 
 class ManagementPumpTests(unittest.TestCase):
+    def test_poll_retries_after_worker_launch_fails(self):
+        for launch, busy in (('poll_configuration', 'worker_busy'), ('poll_network', 'network_worker_busy')):
+            with self.subTest(launch=launch):
+                loop = self.loop()
+                loop.network_worker_busy = launch == 'poll_configuration'
+                loop.worker_busy = launch == 'poll_network'
+                with patch.object(management.server_sync, launch, side_effect=[RuntimeError('cannot start thread'), None]) as worker:
+                    with self.assertRaises(RuntimeError):
+                        loop.poll()
+                    self.assertFalse(getattr(loop, busy))
+                    loop.poll()
+                    self.assertTrue(getattr(loop, busy))
+                    self.assertEqual(worker.call_count, 2)
+
+    def test_local_service_probe_failure_preserves_network_observation(self):
+        loop = self.loop()
+        loop.worker_busy = True
+        loop.developer_enabled = True
+        with patch.object(management.server_sync.threading, 'Thread', side_effect=lambda **kw: Mock(start=kw['target'])), \
+                patch.object(management, 'wifi_link_available', return_value=True), \
+                patch('zmala_terminal.linux.developer_access.enabled', side_effect=RuntimeError('probe failed')), \
+                self.assertLogs(level='ERROR'):
+            loop.poll()
+        loop.drain_messages()
+        self.assertTrue(loop.network_connected)
+        self.assertTrue(loop.developer_enabled)
+        self.assertFalse(loop.network_worker_busy)
+
     def test_timer_does_not_restart_maintenance_during_tv_setup(self):
         loop = self.loop()
         loop.update_client = Mock(locked=False)
