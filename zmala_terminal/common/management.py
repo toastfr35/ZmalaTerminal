@@ -17,10 +17,10 @@ USB_SETUP_STAGES = ('wifi', 'wifi_ready', 'server')
 
 
 def defer_auto_answer(model, tv, now):
-    """Start the normal answer countdown after TV wake/HDMI settling.
+    """Keep the full auto-answer interval available while the TV wakes.
 
-    Manual answering remains immediate. TVControl bounds the extra wait, and
-    deadline=None preserves manual-only accounts and red-button cancellation.
+    Manual answers bypass the TV wait. Calls without an auto-answer deadline
+    stay manual even when the TV becomes ready.
     """
     if model.state == State.RINGING and model.deadline is not None and tv and not tv.ready(now):
         model.deadline = max(model.deadline, now + model.config['auto_answer_seconds'])

@@ -123,7 +123,6 @@ class Terminal(InputControl, ConfigurationControl, IdleReturn, SettingsControl,
         self.portrait_animation = PortraitAnimation(self, ROOT / 'data')
     def restore_enrollment(self, bootstrap, unconfigured):
         if unconfigured:
-            # The test launcher always starts fresh, within its own profile.
             if self.enrollment.value and self.enrollment.value.get('wifi'):
                 forget_wifi(self.enrollment.value['wifi'], self.profile)
             self.enrollment.reset()

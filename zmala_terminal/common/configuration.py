@@ -24,7 +24,7 @@ class NoCredentialRedirect(urllib.request.HTTPRedirectHandler):
 
 # @llr LLR-TERM-COM-006
 def stable_configuration(config):
-    """Offline snapshots retain settings, never live presence or callback state."""
+    """Exclude presence, callback requests and developer access from offline snapshots."""
     stable = copy.deepcopy(config)
     stable.pop('callbacks', None)
     stable.pop('developer_access', None)
@@ -81,7 +81,7 @@ class Configuration:
             with self.opener.open(request, timeout=4) as response:
                 data = response.read(limit + 1)
         except HTTPException as error:
-            # urllib can expose protocol failures directly, including truncated chunked bodies.
+            # Download workers retry OSError when a transfer ends partway through.
             raise OSError('Invalid or incomplete management HTTP response') from error
         if len(data) > limit:
             raise ValueError('Response is too large')
@@ -99,7 +99,7 @@ class Configuration:
             return self._fetch(persist)
 
     def _fetch(self, persist=True):
-        """Validate before caching; reject version rollback and treat missing contact photos as optional."""
+        """Merge live deltas only with the configuration version they describe."""
         if self.cancelled:
             raise RuntimeError('Enrollment was reset')
         previous = self.current or self.cached()

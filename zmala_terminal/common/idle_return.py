@@ -18,7 +18,7 @@ class IdleCountdown:
 
     # @llr LLR-TERM-TV-029
     def tick(self, now, session, seconds, activity, eligible=True):
-        """Return (remaining fraction, just expired); pause always gives a fresh interval."""
+        """Return the visible fraction and signal expiry once per idle interval."""
         changed = session is not self.session or seconds != self.seconds or activity != self.activity
         if (self.anchor is None or activity != self.activity or seconds != self.seconds or
                 (eligible and self.paused) or (session is not self.session and self.session is not None)):

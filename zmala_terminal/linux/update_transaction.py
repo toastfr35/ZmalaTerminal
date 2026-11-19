@@ -25,7 +25,7 @@ def sync_directory(path):
 
 # @llr LLR-TERM-MAINT-022
 class Transactions:
-    """Durable, replayable activation. A crash at every checkpoint is safe."""
+    """Record slot selection and confirmation so recovery can replay an interrupted activation."""
     def __init__(self, root, checkpoint=lambda event: None):
         self.root = Path(root)
         self.slots = self.root / 'slots'
@@ -128,7 +128,7 @@ class Transactions:
         self.write('pending', pending)
 
     def recover(self):
-        """Boot never resumes an unconfirmed trial: one interrupted attempt rolls back."""
+        """Select the durably confirmed slot and quarantine any interrupted, unconfirmed trial."""
         confirmed = self.read('confirmed')
         if not confirmed:
             raise RecoveryError('No confirmed release; recovery installation required')

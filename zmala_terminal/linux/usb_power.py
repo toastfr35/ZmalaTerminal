@@ -211,7 +211,7 @@ class UsbPower:
             if eligible:
                 from zmala_terminal.linux.c20_volume import status
                 desired, applied, failed = status()
-                # Call mute must not mute ringing. Hardware gain is fixed at the model-specific maximum.
+                # Call and ringtone levels are independent. Ringing still requires a working mixer.
                 eligible = applied is not None and not failed and self.ringtone_volume > 0
             if not eligible:
                 self.stop_playback()

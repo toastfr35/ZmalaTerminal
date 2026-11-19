@@ -18,6 +18,7 @@ MARKER = '.zmala-update-checkpoint'
 
 
 def rollback_data_pending(pending):
+    """Slot recovery can quarantine a trial before its application data has been restored."""
     return (pending.get('state') == 'quarantined' and pending.get('data_checkpoint') is True
             and not pending.get('data_restored'))
 
