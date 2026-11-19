@@ -17,10 +17,10 @@ USB_SETUP_STAGES = ('wifi', 'wifi_ready', 'server')
 
 
 def defer_auto_answer(model, tv, now):
-    """Start the normal answer countdown after TV wake/HDMI settling.
+    """Keep the full auto-answer interval available while the TV wakes.
 
-    Manual answering remains immediate. TVControl bounds the extra wait, and
-    deadline=None preserves manual-only accounts and red-button cancellation.
+    Manual answers bypass the TV wait. Calls without an auto-answer deadline
+    stay manual even when the TV becomes ready.
     """
     if model.state == State.RINGING and model.deadline is not None and tv and not tv.ready(now):
         model.deadline = max(model.deadline, now + model.config['auto_answer_seconds'])
@@ -66,8 +66,8 @@ class ManagementLoop:
         """Refresh wireless status independently of setup and server availability."""
         if self.network_worker_busy:
             return
-        self.network_worker_busy = True
         server_sync.poll_network(self.messages, self.generation, wifi_link_available)
+        self.network_worker_busy = True
 
     def peripheral_status(self):
         return collect_peripheral_status(getattr(self, 'presenter_input', None),
@@ -82,7 +82,6 @@ class ManagementLoop:
         self.poll_wifi()
         if self.worker_busy or not self.configuration or self.setup_stage:
             return
-        self.worker_busy = True
         configuration, generation = self.configuration, self.generation
         callback_revision = self.callbacks.revision
         status = dict(self.diagnostics) | self.peripheral_status() | {
@@ -91,6 +90,7 @@ class ManagementLoop:
         }
 
         server_sync.poll_configuration(self.messages, configuration, generation, callback_revision, status)
+        self.worker_busy = True
 
     def drain_messages(self):
         while True:

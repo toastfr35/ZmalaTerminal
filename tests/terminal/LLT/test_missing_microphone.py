@@ -2,7 +2,7 @@
 # @requirements LLR-TERM-AUDIO-005
 # @environment portable
 # @plan Fail C20 discovery before native call allocation, then restore it. Exercise incoming and outgoing orchestration with a retryable media error, assert a one-second retry, successful recovery and cancellation/generation guards. No receive-only or HDMI fallback is accepted.
-# @pass Calls start only after recovery; cancelled or superseded calls never resume.
+# @pass Media retries preserve the preparation deadline. The ring timeout starts after native dialing succeeds. Cancelled or superseded calls never resume.
 
 from zmala_terminal.common.callbacks import CallbackController
 from zmala_terminal.common.media_adapter import MediaAdapter
@@ -80,3 +80,16 @@ class MissingMicrophoneTests(unittest.TestCase):
             if cancel: app.dial_serial += 1
             retry()
             self.assertEqual(app.engine.dial.call_count, 1 if cancel else 2)
+
+    def test_missing_media_retries_do_not_extend_the_preflight_deadline(self):
+        app = self.app()
+        contact = {'id': 'peer', 'sip_uri': 'sip:peer@example.test'}
+        app.model.state, app.model.contacts = State.CALLING, [contact]
+        app.outgoing_deadline = 160
+        app.engine.dial.side_effect = [MediaNotReady('waking'), MediaNotReady('waking'), None]
+        with patch('zmala_terminal.common.call_control.time.monotonic', return_value=110):
+            app.dial_ready(1, 2, contact, True, 120)
+            app.root.after.call_args.args[1]()
+            self.assertEqual(app.outgoing_deadline, 160)
+            app.root.after.call_args.args[1]()
+        self.assertEqual(app.outgoing_deadline, 230)

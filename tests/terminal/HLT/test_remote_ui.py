@@ -67,13 +67,15 @@ class RemoteUITests(unittest.TestCase):
         def mixer(command, **kwargs):
             commands.append((command, threading.get_ident()))
 
+        # Other terminal workers still need the real subprocess module during this test.
+        mixer_process = SimpleNamespace(run=mixer, SubprocessError=c20_volume.subprocess.SubprocessError)
         health = SimpleNamespace(battery=77, charger_connected=True, state='disconnected', close=lambda: None)
         with terminal_fixture() as (app, _), \
                 patch('zmala_terminal.linux.action_sounds.ActionSounds'), \
                 patch.object(PresenterInput, 'discover'), \
                 patch('zmala_terminal.linux.presenter_input.RemoteHealth', return_value=health), \
                 patch.object(c20_volume, 'audio_card', return_value='C20'), \
-                patch.object(c20_volume.subprocess, 'run', side_effect=mixer):
+                patch.object(c20_volume, 'subprocess', mixer_process):
             app.volume_control.close()
             InputControl.bind_inputs(app)
             presenter = app.presenter_input

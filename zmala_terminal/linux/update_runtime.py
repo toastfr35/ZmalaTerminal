@@ -8,7 +8,7 @@ import subprocess
 import time
 import uuid
 from zmala_terminal.linux.update_transaction import RecoveryError
-from zmala_terminal.linux.update_snapshot import DataCheckpoint
+from zmala_terminal.linux.update_snapshot import DataCheckpoint, rollback_data_pending
 
 
 # @llr LLR-TERM-MAINT-030
@@ -166,7 +166,7 @@ class Runtime:
             raise RecoveryError('No confirmed application')
         selected = self.transactions.root/'current'
         inconsistent = selected.resolve() != self.transactions.slot(confirmed.get('slot')).resolve()
-        if invalid or inconsistent or pending and pending.get('state') == 'trial':
+        if invalid or inconsistent or pending and (pending.get('state') == 'trial' or rollback_data_pending(pending)):
             phase = ('checking' if pending and pending.get('transaction') == confirmed.get('transaction')
                      else 'rollback')
             self.display(phase)

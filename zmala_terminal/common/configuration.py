@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import copy
+from http.client import HTTPException
 import threading
 import urllib.request
 from pathlib import Path
@@ -23,7 +24,7 @@ class NoCredentialRedirect(urllib.request.HTTPRedirectHandler):
 
 # @llr LLR-TERM-COM-006
 def stable_configuration(config):
-    """Offline snapshots retain settings, never live presence or callback state."""
+    """Exclude presence, callback requests and developer access from offline snapshots."""
     stable = copy.deepcopy(config)
     stable.pop('callbacks', None)
     stable.pop('developer_access', None)
@@ -75,12 +76,16 @@ class Configuration:
             data = json.dumps(data).encode()
             headers['Content-Type'] = 'application/json'
         request = urllib.request.Request(self.bootstrap['server_url'] + route, headers=headers, data=data)
-        with self.opener.open(request, timeout=4) as response:
-            limit = MAX_GIF_BYTES if route.startswith('/photos/') and route.endswith('.gif') else MAX_BYTES
-            data = response.read(limit + 1)
-            if len(data) > limit:
-                raise ValueError('Response is too large')
-            return data
+        limit = MAX_GIF_BYTES if route.startswith('/photos/') and route.endswith('.gif') else MAX_BYTES
+        try:
+            with self.opener.open(request, timeout=4) as response:
+                data = response.read(limit + 1)
+        except HTTPException as error:
+            # Download workers retry OSError when a transfer ends partway through.
+            raise OSError('Invalid or incomplete management HTTP response') from error
+        if len(data) > limit:
+            raise ValueError('Response is too large')
+        return data
 
     def update_settings(self, changes, expected):
         with self.fetch_lock:
@@ -94,7 +99,7 @@ class Configuration:
             return self._fetch(persist)
 
     def _fetch(self, persist=True):
-        """Validate before caching; reject version rollback and treat missing contact photos as optional."""
+        """Merge live deltas only with the configuration version they describe."""
         if self.cancelled:
             raise RuntimeError('Enrollment was reset')
         previous = self.current or self.cached()

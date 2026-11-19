@@ -1,7 +1,5 @@
-"""Background polling: captured inputs in, named queue results out.
-
-No worker owns Tk state, timers or hardware. The UI scheduler owns busy flags and
-rejects obsolete enrollment generations before applying these results.
+"""Workers publish observations through the UI queue. The Tk thread owns the
+busy flags and checks the enrollment generation before applying observations.
 """
 from copy import deepcopy
 import logging
@@ -27,9 +25,13 @@ def poll_network(messages, generation, probe):
             available = probe()
         except Exception:
             available = None
-        # The local service observation remains available when the server is down.
+        # A failed Wi-Fi probe still permits a local service observation.
         from zmala_terminal.linux.developer_access import enabled
-        developer_enabled = enabled()
+        try:
+            developer_enabled = enabled()
+        except Exception:
+            logging.exception('Could not read local developer service status')
+            developer_enabled = None
         messages.put(('poll-network', NetworkResult(generation, available, developer_enabled)))
         messages.put(('network-done', generation))
     threading.Thread(target=worker, daemon=True).start()

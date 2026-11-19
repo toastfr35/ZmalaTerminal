@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock
 from zmala_terminal.linux.update_transaction import Transactions, RecoveryError
 
 
@@ -54,6 +55,26 @@ class DataCheckpointTests(unittest.TestCase):
         (self.data/'enrollment.json').write_text('confirmed')
         self.owner.restore()
         self.assertEqual((self.data/'enrollment.json').read_text(), 'confirmed')
+        self.owner.collect()
+        self.assertEqual(list(self.owner.root.iterdir()), [])
+
+    def test_service_restart_finishes_quarantined_rollback_before_start(self):
+        from zmala_terminal.linux.update_runtime import Runtime
+        self.owner.snapshot()
+        self.tx.trial()
+        enrollment = self.data/'enrollment.json'
+        enrollment.write_text('trial')
+        self.tx.recover()  # Process died after slot selection, before restoring settings.
+        self.owner.collect()
+        runtime = object.__new__(Runtime)
+        runtime.transactions = self.tx
+        runtime.config = {'data': self.data, 'data_checkpoints': self.owner.root}
+        runtime.display, runtime.stop = Mock(), Mock()
+        runtime.phase, runtime.publish = 'idle', Mock()
+        runtime.start = Mock(side_effect=lambda: self.assertEqual(enrollment.read_text(), 'original'))
+        self.assertTrue(runtime.recover())
+        runtime.start.assert_called_once()
+        self.assertFalse(runtime.recover())
         self.owner.collect()
         self.assertEqual(list(self.owner.root.iterdir()), [])
 

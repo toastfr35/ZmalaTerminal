@@ -21,3 +21,5 @@ text: After the application stops, the updater shall make a durable private same
   repeated exchanges; a committed confirmation shall prevent restoration.
 verification: Check original bytes, nested files, symlink preservation, mutation rejection,
   repeated restoration, committed confirmation and unsafe checkpoint directory rejection.
+  Interrupt rollback after the confirmed slot is selected. Verify that collection
+  retains the checkpoint until service recovery restores data and restarts that slot.

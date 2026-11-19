@@ -175,6 +175,8 @@ class UpdateService:
         recovered = self.runtime.recover()
         if retained and not recovered:
             self.runtime.display('checking')
+            # A prior process may have restored the slot and data, then exited before start.
+            self.runtime.start()
             recovered = True
         pending = self.transactions.read('pending')
         if pending and pending.get('state') == 'quarantined':

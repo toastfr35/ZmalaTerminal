@@ -41,6 +41,10 @@ the optional unconditional USB cleanup hook with maintenance-aware restoration.
 Another regression covers deferred USB managers remaining eligible for consecutive
 updates without requiring user activity. Retest both through normal idle activation.
 
+A service restart during rollback must restore the confirmed application's data
+even if its slot has already been reselected. Recovery keeps the checkpoint until
+restoration completes and starts the selected application before checking readiness.
+
 Operating-system, kernel, firmware and dependency upgrades remain outside this
 feature. Signing credentials stay in the release workflow. Future qualification
 results must be recorded as executed evidence rather than converting these plans

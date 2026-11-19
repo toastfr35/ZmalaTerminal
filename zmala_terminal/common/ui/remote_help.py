@@ -1,4 +1,4 @@
-"""An idle-only recovery page; calls and enrollment always take priority."""
+"""Guide remote pairing before QR enrollment and show reconnect help on the home screen."""
 import time
 import tkinter as tk
 from zmala_terminal.common.configuration import ROOT
