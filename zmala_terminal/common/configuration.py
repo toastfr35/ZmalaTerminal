@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import copy
+from http.client import HTTPException
 import threading
 import urllib.request
 from pathlib import Path
@@ -75,12 +76,16 @@ class Configuration:
             data = json.dumps(data).encode()
             headers['Content-Type'] = 'application/json'
         request = urllib.request.Request(self.bootstrap['server_url'] + route, headers=headers, data=data)
-        with self.opener.open(request, timeout=4) as response:
-            limit = MAX_GIF_BYTES if route.startswith('/photos/') and route.endswith('.gif') else MAX_BYTES
-            data = response.read(limit + 1)
-            if len(data) > limit:
-                raise ValueError('Response is too large')
-            return data
+        limit = MAX_GIF_BYTES if route.startswith('/photos/') and route.endswith('.gif') else MAX_BYTES
+        try:
+            with self.opener.open(request, timeout=4) as response:
+                data = response.read(limit + 1)
+        except HTTPException as error:
+            # urllib can expose protocol failures directly, including truncated chunked bodies.
+            raise OSError('Invalid or incomplete management HTTP response') from error
+        if len(data) > limit:
+            raise ValueError('Response is too large')
+        return data
 
     def update_settings(self, changes, expected):
         with self.fetch_lock:

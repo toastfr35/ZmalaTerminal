@@ -57,6 +57,24 @@ class DownloadTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == 'posix', 'Requires Linux process and ownership fixtures')
 class HeartbeatTests(unittest.TestCase):
+    def test_retained_recovery_starts_selected_slot_before_checking_health(self):
+        from zmala_terminal.linux import update_service
+        with tempfile.TemporaryDirectory() as folder:
+            service = object.__new__(update_service.UpdateService)
+            service.transactions = Mock(root=Path(folder))
+            service.transactions.read.return_value = None
+            service.runtime = Mock()
+            service.runtime.recover.return_value = False
+            service.mailbox, service.collect = Mock(), Mock()
+            prior = {'phase': 'rollback', 'nonce': 'a' * 32}
+            def healthy():
+                service.runtime.start.assert_called_once_with()
+                return True
+            with patch.object(update_service, 'trusted_json', return_value=prior), patch.object(
+                    update_service.TrialSupervisor, 'healthy', side_effect=healthy):
+                service.startup()
+            service.runtime.finish.assert_called_once_with(prior['nonce'])
+
     def test_manual_timeout_reports_reason_and_does_not_retry_automatically(self):
         from datetime import date
         from zmala_terminal.linux import update_service

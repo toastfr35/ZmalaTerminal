@@ -6,13 +6,14 @@
 
 """Enrollment HTTP/cache boundaries; all endpoints and files are isolated fixtures."""
 import json
+from http.client import IncompleteRead
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import sys
 import tempfile
 import threading
 import unittest
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
@@ -21,6 +22,16 @@ from tests.terminal.LLT.test_terminal import config
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_incomplete_asset_response_uses_the_workers_retryable_io_error(self):
+        client = Configuration({'server_url': 'https://server.test', 'device_token': 'fixture'})
+        response = MagicMock()
+        response.__enter__.return_value.read.side_effect = IncompleteRead(b'partial')
+        client.opener = Mock()
+        client.opener.open.return_value = response
+        with self.assertRaises(OSError):
+            client.request('/photos/abcd.png')
+        response.__exit__.assert_called_once()
+
     def test_settings_response_rejects_rollback_without_replacing_cache(self):
         with tempfile.TemporaryDirectory() as folder:
             client = Configuration({'device_id': 'test'}, Path(folder) / 'cache.json')

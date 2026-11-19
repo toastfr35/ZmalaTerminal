@@ -213,8 +213,9 @@ class CallControl:
                 if ready and not ready():
                     self.root.after(100, lambda: self.dial_ready(generation, serial, contact, available, ring_timeout))
                     return
-                self.outgoing_deadline = time.monotonic() + ring_timeout
                 self.engine.dial(contact['sip_uri'])
+                if self.model.state in (State.CALLING, State.CONNECTING):
+                    self.outgoing_deadline = time.monotonic() + ring_timeout
             except MediaNotReady as error:
                 logging.info('Waiting for C20 before dialing: %s', error)
                 self.root.after(1000, lambda: self.dial_ready(generation, serial, contact, available, ring_timeout))

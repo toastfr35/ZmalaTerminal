@@ -17,6 +17,11 @@ from zmala_terminal.linux.update_transaction import RecoveryError, sync_director
 MARKER = '.zmala-update-checkpoint'
 
 
+def rollback_data_pending(pending):
+    return (pending.get('state') == 'quarantined' and pending.get('data_checkpoint') is True
+            and not pending.get('data_restored'))
+
+
 def flush_tree(root):
     for directory, directories, files in os.walk(root, followlinks=False):
         for name in files:
@@ -165,7 +170,8 @@ class DataCheckpoint:
                 or self.root.stat().st_mode & 0o077):
             raise RecoveryError('Data checkpoint directory is not private')
         pending = self.transactions.read('pending') or {}
-        keep = pending.get('transaction') if pending.get('state') in ('ready', 'trial') else None
+        in_flight = pending.get('state') in ('ready', 'trial') or rollback_data_pending(pending)
+        keep = pending.get('transaction') if in_flight else None
         for target in self.root.iterdir():
             if (target.name != keep and re.fullmatch('[a-f0-9]{32}', target.name)
                     and target.is_dir() and not target.is_symlink()):
