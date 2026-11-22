@@ -13,6 +13,4 @@ LANGUAGE_FLAGS = {
 def artwork_path(key, language='en'):
     if key == 'language':
         return ASSETS / 'flags' / (LANGUAGE_FLAGS[language]+'.png')
-    if key == 'server_configuration':
-        return ASSETS / 'maintenance.png'
     return ASSETS / (key+'.png')
