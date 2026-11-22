@@ -10,7 +10,7 @@ from pathlib import Path
 from zmala_terminal.common.ringtones import RingtoneCache, DEFAULT_CHOICES
 
 from zmala_terminal.common.main import Terminal
-from zmala_terminal.common.local_settings import FIELDS
+from zmala_terminal.common.local_settings import FIELDS, SettingsDraft
 from zmala_terminal.common.localization import font_family
 from zmala_terminal.common.theme import PANEL
 from tests.terminal.LLT.test_terminal import config
@@ -32,6 +32,19 @@ class MemoryConfiguration:
         self.ringtones = RingtoneCache(directory, lambda url: files[url].read_bytes())
         self.ringtones.configure(self.value)
 
+    def request(self, route, data=None):
+        if route != '/api/device/server-configuration':
+            raise ValueError('Unknown preview route')
+        fixture = Path(os.environ['ZMALA_PREVIEW_SERVER_CONFIGURATION'])
+        status = json.loads(fixture.read_text(encoding='utf-8'))
+        if data is not None:
+            self.phone_check = time.monotonic()
+        if getattr(self, 'phone_check', None):
+            status = status['phone'] if time.monotonic()-self.phone_check < 300 else status['expired']
+        else:
+            status = status['server']
+        return json.dumps(status).encode()
+
     def update_settings(self, changes, expected):
         if 'tv_profile' in changes and changes['tv_profile'] != self.value.get('tv_profile'):
             changes = {'tv_test_results': None, **changes}
@@ -46,6 +59,9 @@ class MemoryConfiguration:
 class Preview(Terminal):
     portrait_url = '/photos/a11ce.png'
     simulate_usb_power = True
+
+    def new_settings_draft(self):
+        return SettingsDraft(server_active=bool(os.environ.get('ZMALA_PREVIEW_SERVER_CONFIGURATION')))
 
     def restore_enrollment(self, *args):
         self.setup_stage = None
@@ -62,7 +78,12 @@ class Preview(Terminal):
             'auto_answer': False, 'auto_answer_seconds': 30}, self.enrollment.path.parent/'ringtones')
         self.apply_config(self.configuration.value)
         self.settings_open = True
-        self.settings_draft.row = FIELDS.index('usb_power')
+        if os.environ.get('ZMALA_PREVIEW_SERVER_CONFIGURATION'):
+            self.settings_draft = self.new_settings_draft()
+            self.settings_draft.row = self.settings_draft.fields_order.index('server_configuration')
+            self.open_server_configuration(first=True)
+        else:
+            self.settings_draft.row = FIELDS.index('usb_power')
         self.render()
         self.root.after(30, self.preview_tick)
 

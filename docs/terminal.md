@@ -1726,6 +1726,15 @@ executed hardware evidence is recorded in
 [issue #131](https://github.com/toastfr35/ZmalaCall/issues/131).
 Process-death recovery passes do not constitute physical SD power-loss evidence.
 
+### Combined server setup
+
+At the server QR prompt, scan the [Activate Server sheet](leaflet/activate-server.pdf).
+The terminal starts the server on this box, enrolls with it, and opens Server
+Configuration. Return via Settings to see the local administration address and
+QR, or test a configured public HTTPS interface with a phone using mobile data.
+For remote calling, place a real app call and confirm two-way sound and video
+before recording the result.
+
 ### Windows settings acceptance
 
 The Windows adapters recovered from `toastfr35/ZmalaCall` support the shared Tk

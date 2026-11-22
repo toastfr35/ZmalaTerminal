@@ -38,7 +38,14 @@ class SettingsHold:
 
 
 class SettingsDraft:
-    def __init__(self):
+    def __init__(self, server_active=None):
+        from zmala_terminal.common.server_activation import ACTIVE
+        if server_active is None:
+            server_active = ACTIVE.is_file()
+        maintenance = FIELDS.index('maintenance')
+        self.fields_order = (FIELDS[:maintenance] + ('server_configuration',) + FIELDS[maintenance:]
+                             if server_active else FIELDS)
+        self.server_page = None
         self.row = 0
         self.editing = False
         self.confirm_exit = False
@@ -56,7 +63,7 @@ class SettingsDraft:
 
     @property
     def key(self):
-        return FIELDS[self.row]
+        return self.fields_order[self.row]
 
     @staticmethod
     def value(config, key):
@@ -102,7 +109,7 @@ class SettingsDraft:
             self.index = ((self.index+direction) % len(self.options) if self.key in ('ringtone', 'language', 'usb_power')
                           else max(0, min(len(self.options)-1, self.index+direction)))
         else:
-            self.row = (self.row+direction) % len(FIELDS)
+            self.row = (self.row+direction) % len(self.fields_order)
         self.error = False
 
     def change(self, config):

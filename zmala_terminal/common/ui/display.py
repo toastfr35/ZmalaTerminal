@@ -342,7 +342,7 @@ class TerminalDisplay(CarouselView, ConfirmationView, RemoteHelpView, SettingsVi
         self.render_ringing_controls()
         if self.update_usb_setup() or self.update_pairing_page():
             return
-        if self.model.state not in (State.HOME, State.CONFIRMING, State.CONFIRM_CALLBACK) or self.setup_stage:
+        if self.model.state not in (State.HOME, State.CONFIRMING, State.CONFIRM_CALLBACK) or (self.setup_stage and self.setup_stage != 'activation'):
             self.settings_open = False
             self.settings_hold.clear()
         if self.render_tv_setup():

@@ -110,7 +110,13 @@ def parse_server(text):
     """Decode a compact server QR into a bounded HTTP(S) origin and credentials."""
     if not isinstance(text, str) or len(text) > 4096 or not text.startswith('ZMS1:'):
         raise ValueError('Invalid server QR code')
-    value = _compact_server_fields(text[5:])
+    return validate_bootstrap(_compact_server_fields(text[5:]))
+
+
+def validate_bootstrap(value):
+    """Apply the enrollment contract to a decoded QR or a local server export."""
+    if not isinstance(value, dict):
+        raise ValueError('Invalid enrollment')
     url = value.get('server_url')
     if not isinstance(url, str) or len(url) > 512:
         raise ValueError('Invalid server address')
