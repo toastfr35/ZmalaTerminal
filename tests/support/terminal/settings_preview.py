@@ -35,7 +35,7 @@ class MemoryConfiguration:
     def request(self, route, data=None):
         if route != '/api/device/server-configuration':
             raise ValueError('Unknown preview route')
-        fixture = Path(os.environ['ZMALA_PREVIEW_SERVER_CONFIGURATION'])
+        fixture = Path(__file__).with_name('server-configuration-preview.json')
         status = json.loads(fixture.read_text(encoding='utf-8'))
         if data is not None:
             self.phone_check = time.monotonic()

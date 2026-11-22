@@ -1746,6 +1746,11 @@ $env:TMP = $env:TEMP
 python tests/support/terminal/run_display.py tests/support/terminal/settings_preview.py
 ```
 
+Set `$env:ZMALA_PREVIEW_SERVER_CONFIGURATION = '1'` before launching to
+simulate an activated combined box. The preview uses example addresses and
+opens Server Configuration. From Contacts, hold Escape for seven seconds,
+then select Server Configuration immediately before Maintenance and press Enter.
+
 Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
 The fixture opens Settings on USB power. Information shows sample OS, IP and account
 details. Set `ZMALA_PREVIEW_ACCOUNT_PORTRAIT` to a local image to show a portrait.
