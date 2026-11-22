@@ -5,8 +5,17 @@ import subprocess
 import threading
 import time
 from datetime import datetime
+from pathlib import Path
 
 from zmala_terminal.common.json_storage import write_json
+
+
+_messages = json.loads((Path(__file__).parent/'shared/server-page-messages.json').read_text(encoding='utf-8'))
+LABELS = {language: dict(zip(_messages['en'], labels, strict=True)) for language, labels in _messages.items()}
+
+
+def server_label(language, label):
+    return LABELS.get(language, LABELS['en']).get(label, label)
 
 
 def service_running():
@@ -23,6 +32,7 @@ class ServerPage:
         self.revision = 0
         self.index = 0
         self.busy = False
+        self.start_requested = False
         self.next_read = 0
         self.responses = queue.SimpleQueue()
         self.details = {}
@@ -55,8 +65,10 @@ class ServerPage:
             self.revision += 1
 
     def read(self, configuration, *, start=False):
+        self.start_requested |= start
         if self.busy or not configuration:
             return
+        start, self.start_requested = self.start_requested, False
         self.busy = True
         def worker():
             try:
@@ -77,7 +89,7 @@ class ServerPage:
                 self.read(configuration)
             return False
         self.busy = False
-        self.next_read = time.monotonic() + (2 if details.get('state') == 'waiting' else 8)
+        self.next_read = 0 if self.start_requested else time.monotonic() + (2 if details.get('state') == 'waiting' else 8)
         if (stage, details) == (self.stage, self.details):
             return False
         self.stage, self.details = stage, details

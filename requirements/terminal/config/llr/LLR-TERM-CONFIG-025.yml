@@ -12,6 +12,8 @@ references:
   type: file
 - path: zmala_terminal/common/server_activation.py
   type: file
+- path: zmala_terminal/common/shared/server-page-messages.json
+  type: file
 - path: zmala_terminal/common/server_page.py
   type: file
 - path: zmala_terminal/common/setup_flow.py

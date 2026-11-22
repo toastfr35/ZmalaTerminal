@@ -78,7 +78,8 @@ def release_label(version):
 class SettingsView(SystemSettingsView):
     def settings_text(self, key):
         if key == 'server_configuration':
-            return 'Server Configuration'
+            from zmala_terminal.common.server_page import server_label
+            return server_label(self.language, 'Server Configuration')
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
 
     def build_settings(self):
