@@ -7,6 +7,21 @@ persistence decisions. The Terminal owns device enrollment, local recovery,
 rendering, and call/device execution. Runtime requirements and verification
 traces remain in each repository's Doorstop documents.
 
+## Combined appliance activation and public access
+
+At the server QR step, `ZMALA:ACTIVATE-SERVER:1` requests activation on a combined
+image. The printed code carries no credentials. The local terminal validates the
+server's private local-account bootstrap using the ordinary enrollment rules.
+
+On an activated combined server, the assigned terminal bearer can GET
+`/api/device/server-configuration` for the administration URL, QR PNG (base64),
+first-setup flag, public origin and check state. POST starts or replaces the
+five-minute test. With no secure public origin, the state is `unconfigured`.
+The active QR points to a single-use HTTPS GET under `/check-access/`. The matching
+public host and an off-LAN peer are required. A successful visit returns plain
+text and updates the terminal status and receipt timestamp. The TV separately
+records installer confirmation of two-way media using the app over mobile data.
+
 ## Enrollment and transport
 
 - The administrator issues GET /api/terminal-bootstrap?id=ACCOUNT for an

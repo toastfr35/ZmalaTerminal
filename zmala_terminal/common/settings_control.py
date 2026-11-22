@@ -72,13 +72,16 @@ class SettingsControl:
         elif hold.update(now):
             hold.clear()
             self.settings_open = True
-            self.settings_draft = SettingsDraft()
+            self.settings_draft = self.new_settings_draft()
             self.carousel_motion = None
             self.callback_alert = None
             self.render()
         elif hold.capturing:
             self.carousel_motion = None
             self.render()
+
+    def new_settings_draft(self):
+        return SettingsDraft()
 
     def cancel_settings_hold(self):
         visible = self.settings_hold.capturing
@@ -144,6 +147,10 @@ class SettingsControl:
                 draft.updates.apply()
             self.render()
             return
+        if draft.page == 'server_configuration':
+            self.server_configuration_button(button)
+            self.render()
+            return
         if draft.busy:
             return  # An accepted operation may already be in progress.
         if draft.page:
@@ -170,6 +177,8 @@ class SettingsControl:
             elif draft.key == 'updates':
                 from zmala_terminal.common.update_menu import UpdateMenu
                 draft.updates = UpdateMenu()
+            elif draft.key == 'server_configuration':
+                self.open_server_configuration()
             elif draft.key == 'information':
                 draft.page = 'information'
                 draft.information = None
@@ -223,6 +232,46 @@ class SettingsControl:
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def open_server_configuration(self, first=False):
+        from zmala_terminal.common.server_page import ServerPage
+        draft = self.settings_draft
+        self.settings_open = True
+        draft.page = 'server_configuration'
+        draft.server_page = ServerPage(self.enrollment.path.parent, first)
+        draft.server_page.stage = 'loading'
+        draft.server_page.read(self.configuration)
+
+    def server_configuration_button(self, button):
+        page = self.settings_draft.server_page
+        if button == 'red':
+            if page.confirm_call:
+                page.confirm_call = False
+                page.revision += 1
+            elif self.setup_stage != 'activation':
+                self.settings_draft.page = None
+                self.settings_open = not page.first
+            return
+        if button in ('left', 'right'):
+            page.select(1 if button == 'right' else -1)
+        elif button == 'green' and page.actions:
+            action = page.actions[page.index]
+            if action in ('Try again', 'Retry connection'):
+                self.begin_server_activation()
+            elif action == 'Test with a phone':
+                page.read(self.configuration, start=True)
+            elif action == 'Continue to contacts':
+                self.settings_draft.page = None
+                self.settings_open = False
+            elif page.confirm_call:
+                page.remember('call', int(time.time()*1000))
+                page.confirm_call = False
+                page.index = 0
+                page.revision += 1
+            else:
+                page.confirm_call = True
+                page.index = 0
+                page.revision += 1
+
     def read_host_information(self):
         return host_information()
 
@@ -241,6 +290,10 @@ class SettingsControl:
             self.render()
 
     def tick_settings_updates(self):
+        draft = self.settings_draft
+        if (getattr(draft, 'page', None) == 'server_configuration' and self.settings_open
+                and not self.setup_busy and draft.server_page.poll(self.configuration)):
+            self.render()
         client = getattr(self, 'update_client', None)
         if client and client.locked and (client.current or {}).get('phase') in ('updating', 'checking', 'rollback'):
             self.pending_update_menu = None

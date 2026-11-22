@@ -77,6 +77,9 @@ def release_label(version):
 
 class SettingsView(SystemSettingsView):
     def settings_text(self, key):
+        if key == 'server_configuration':
+            from zmala_terminal.common.server_page import server_label
+            return server_label(self.language, 'Server Configuration')
         return MESSAGES.get(self.language, MESSAGES['en'])[KEYS.index(key)]
 
     def build_settings(self):
@@ -92,7 +95,7 @@ class SettingsView(SystemSettingsView):
             from zmala_terminal.common.tv_profiles import DRIVERS
             profile = DRIVERS[getattr(self, 'tv_profile_saved', 'samsung')]
             return profile.model_family if profile.brand == 'Generic' else profile.brand
-        if key in ('updates', 'information', 'maintenance'):
+        if key in ('updates', 'information', 'maintenance', 'server_configuration'):
             return ''
         if key == 'usb_power':
             return self.settings_text('usb_'+value)
@@ -181,7 +184,7 @@ class SettingsView(SystemSettingsView):
     def draw_settings(self):
         if not (self.settings_open or self.settings_hold.capturing):
             return
-        c, config = self.settings_canvas, self.model.config
+        c, config = self.settings_canvas, self.model.config or {}
         width, height = max(900, c.winfo_width()), max(620, c.winfo_height())
         draft = self.settings_draft
         device_id = config.get('device_id', '')
@@ -191,6 +194,7 @@ class SettingsView(SystemSettingsView):
         update_signature = (draft.updates.state, draft.updates.version) if draft.updates else None
         signature = (width, height, self.language, self.settings_open, int(self.settings_hold.progress*100),
                      device_id, draft.row, draft.editing, draft.index,
+                     draft.server_page.revision if draft.server_page else None,
                      draft.busy, draft.error, draft.confirm_exit, update_signature, system_signature,
                      getattr(self, 'ringtone_preview_state', ''),
                      tuple(SettingsDraft.value(config, key) for key in FIELDS),
@@ -225,6 +229,10 @@ class SettingsView(SystemSettingsView):
         if draft.updates:
             self.draw_update_menu(width, height, draft.updates)
             return
+        if draft.page == 'server_configuration':
+            from zmala_terminal.common.ui.server_configuration import draw_server_configuration
+            draw_server_configuration(self, width, height)
+            return
         if draft.page == 'information':
             self.draw_information(width, height)
             return
@@ -238,7 +246,7 @@ class SettingsView(SystemSettingsView):
             gap, margin = 14, 28
             card_width = (width-2*margin-4*gap)/5
             for slot, offset in enumerate((-2,-1,0,1,2)):
-                key = FIELDS[(draft.row+offset) % len(FIELDS)]
+                key = draft.fields_order[(draft.row+offset) % len(draft.fields_order)]
                 selected = offset == 0
                 x, y = margin+slot*(card_width+gap), 126 if selected else 148
                 card_height = height-185-y
@@ -254,7 +262,7 @@ class SettingsView(SystemSettingsView):
                                     x+card_width/2, y+card_height*.83, card_width-18, 23,
                                     FG if selected else MUTED, fill, anchor='center',
                                     max_height=card_height*.23, tags=('settings-value',key))
-            self.settings_label(f'‹    {draft.row+1} / {len(FIELDS)}    ›', width/2, height-150,
+            self.settings_label(f'‹    {draft.row+1} / {len(draft.fields_order)}    ›', width/2, height-150,
                                 width-80, 22, MUTED, anchor='center')
         if draft.busy or draft.error:
             message = (self.settings_text('tv_unavailable') if draft.key == 'tv_setup' and draft.error

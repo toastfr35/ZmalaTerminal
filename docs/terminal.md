@@ -1726,6 +1726,15 @@ executed hardware evidence is recorded in
 [issue #131](https://github.com/toastfr35/ZmalaCall/issues/131).
 Process-death recovery passes do not constitute physical SD power-loss evidence.
 
+### Combined server setup
+
+At the server QR prompt, scan the [Activate Server sheet](leaflet/activate-server.pdf).
+The terminal starts the server on this box, enrolls with it, and opens Server
+Configuration. Return via Settings to see the local administration address and
+QR, or test a configured public HTTPS interface with a phone using mobile data.
+For remote calling, place a real app call and confirm two-way sound and video
+before recording the result.
+
 ### Windows settings acceptance
 
 The Windows adapters recovered from `toastfr35/ZmalaCall` support the shared Tk
@@ -1736,6 +1745,11 @@ $env:TEMP = 'W:/git/zmala/tmp/terminal-settings'
 $env:TMP = $env:TEMP
 python tests/support/terminal/run_display.py tests/support/terminal/settings_preview.py
 ```
+
+Set `$env:ZMALA_PREVIEW_SERVER_CONFIGURATION = '1'` before launching to
+simulate an activated combined box. The preview uses example addresses and
+opens Server Configuration. From Contacts, hold Escape for seven seconds,
+then select Server Configuration immediately before Maintenance and press Enter.
 
 Left/Right selects; Enter is green; Escape is red; F11 toggles fullscreen.
 The fixture opens Settings on USB power. Information shows sample OS, IP and account

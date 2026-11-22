@@ -6,6 +6,8 @@ import time
 from zmala_terminal.common.model import State, TerminalModel
 from zmala_terminal.common.provisioning import parse_wifi, parse_server
 from zmala_terminal.common.wifi import connect_wifi, forget_wifi
+from zmala_terminal.common.server_activation import ACTIVE, ACTIVATION_QR, activate_server, activation_available
+from zmala_terminal.common.server_page import ServerPage, service_running
 from zmala_terminal.common.setup_feedback import MESSAGES, WifiSetupError
 
 
@@ -39,6 +41,9 @@ class ProvisioningFlow:
                 self.render()
             elif max(0, math.ceil(self.setup_continue_at - now)) != self.setup_confirmation_seconds:
                 self.draw_wifi_confirmation()
+        if self.setup_stage == 'server' and ACTIVE.is_file() and activation_available(ACTIVATION_QR):
+            self.begin_server_activation()
+            return
         if self.setup_stage in ('wifi', 'server') and not self.scanner and not self.setup_busy and now > self.setup_error_until:
             self.start_scanner()
 
@@ -144,7 +149,8 @@ class ProvisioningFlow:
             return
         self.last_qr = value, now
         try:
-            decoded = parse_wifi(value) if self.setup_stage == 'wifi' else parse_server(value)
+            activating = self.setup_stage == 'server' and activation_available(value)
+            decoded = None if activating else parse_wifi(value) if self.setup_stage == 'wifi' else parse_server(value)
         except (ValueError, TypeError, KeyError):
             self.setup_error_until = now + 2
             logging.warning('QR code is not valid for the current setup step')
@@ -152,6 +158,9 @@ class ProvisioningFlow:
             self.render()
             return
         stage, generation, cancelled = self.setup_stage, self.generation, self.setup_cancelled
+        if activating:
+            self.begin_server_activation()
+            return
         self.setup_busy = True
         self.setup_error_until = 0
         self.setup_feedback = 'connecting' if stage == 'wifi' else 'server_connecting'
@@ -171,6 +180,29 @@ class ProvisioningFlow:
                 self.messages.put(('setup', (generation, 'error', 'server' if stage == 'server' else reason)))
         threading.Thread(target=setup_worker, daemon=True).start()
 
+    def begin_server_activation(self):
+        if self.setup_busy:
+            return
+        self.stop_scanner()
+        self.setup_stage = 'activation'
+        self.setup_busy = True
+        self.settings_open = True
+        draft = self.settings_draft
+        draft.page = 'server_configuration'
+        draft.server_page = ServerPage(self.enrollment.path.parent, first=True)
+        generation = self.generation
+        self.render()
+
+        def worker():
+            try:
+                candidate = self.make_configuration(activate_server())
+                result = candidate, candidate.fetch(persist=False)
+                self.messages.put(('setup', (generation, 'activated', result)))
+            except Exception:
+                stage = 'disconnected' if service_running() else 'stopped'
+                self.messages.put(('setup', (generation, 'activation_failed', stage)))
+        threading.Thread(target=worker, daemon=True).start()
+
     def setup_result(self, generation, kind, result):
         """Commit enrollment only on the UI thread and only for the still-current setup generation."""
         if generation != self.generation or self.closed:
@@ -187,7 +219,10 @@ class ProvisioningFlow:
             self.setup_continue_at = time.monotonic() + 5
             self.setup_confirmation_seconds = None
             self.last_qr = ('', 0)
-        elif kind == 'server':
+        elif kind == 'activation_failed':
+            self.settings_draft.server_page.stage = result
+            self.settings_draft.server_page.revision += 1
+        elif kind in ('server', 'activated'):
             candidate, config = result
             candidate.persist(config)
             self.enrollment.set_server(candidate.bootstrap)
@@ -198,6 +233,10 @@ class ProvisioningFlow:
             self.last_poll = 0
             self.apply_config(config)
             self.maintenance = self.make_maintenance(candidate)
+            if kind == 'activated':
+                from zmala_terminal.common.local_settings import SettingsDraft
+                self.settings_draft = SettingsDraft(server_active=True)
+                self.open_server_configuration(first=True)
         elif kind == 'error':
             self.setup_error_until = time.monotonic() + 3
             if result == 'server':
